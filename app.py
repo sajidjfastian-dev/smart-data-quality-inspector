@@ -368,30 +368,92 @@ def scan_data(
     return pd.DataFrame(issues, columns=ISSUE_COLUMNS), int(duplicate_mask.sum())
 
 
-def clean_data(data, numeric_columns=None):
-    cleaned = data.drop_duplicates().copy()
-    for column in cleaned.columns:
-        if cleaned[column].dtype == object or pd.api.types.is_string_dtype(cleaned[column]):
-            cleaned[column] = cleaned[column].map(
-                lambda value: value.strip() if isinstance(value, str) else value
-            )
+def clean_data(
+    data,
+    numeric_columns=None,
+    date_columns=None,
+    drop_duplicates=True,
+    trim_whitespace=True,
+    fill_numeric_missing=True,
+    standardize_dates=False,
+):
+    cleaned = data.copy()
+    if drop_duplicates:
+        cleaned = cleaned.drop_duplicates().reset_index(drop=True)
+    if trim_whitespace:
+        for column in cleaned.columns:
+            if cleaned[column].dtype == object or pd.api.types.is_string_dtype(cleaned[column]):
+                cleaned[column] = cleaned[column].map(
+                    lambda value: value.strip() if isinstance(value, str) else value
+                )
     if numeric_columns is None:
         numeric_columns = infer_column_rules(cleaned)[2]
-    for column in numeric_columns:
-        if column not in cleaned.columns or pd.api.types.is_bool_dtype(cleaned[column]):
-            continue
-        numeric_values = parse_numeric_series(cleaned[column])
-        median = numeric_values.median()
-        if pd.isna(median):
-            continue
-        missing_mask = cleaned[column].map(is_missing)
-        if pd.api.types.is_numeric_dtype(cleaned[column]):
-            if pd.api.types.is_integer_dtype(cleaned[column]) and median % 1:
-                cleaned[column] = cleaned[column].astype("float64")
-            cleaned[column] = cleaned[column].fillna(median)
-        elif missing_mask.any():
-            cleaned.loc[missing_mask, column] = str(median)
+    if fill_numeric_missing:
+        for column in numeric_columns:
+            if column not in cleaned.columns or pd.api.types.is_bool_dtype(cleaned[column]):
+                continue
+            numeric_values = parse_numeric_series(cleaned[column])
+            median = numeric_values.median()
+            if pd.isna(median):
+                continue
+            missing_mask = cleaned[column].map(is_missing)
+            if pd.api.types.is_numeric_dtype(cleaned[column]):
+                if pd.api.types.is_integer_dtype(cleaned[column]) and median % 1:
+                    cleaned[column] = cleaned[column].astype("float64")
+                cleaned[column] = cleaned[column].fillna(median)
+            elif missing_mask.any():
+                cleaned.loc[missing_mask, column] = str(median)
+    if date_columns is None:
+        date_columns = infer_column_rules(cleaned)[1]
+    if standardize_dates:
+        for column in date_columns:
+            if column not in cleaned.columns:
+                continue
+            cleaned[column] = cleaned[column].map(standardize_date_value)
     return cleaned
+
+
+def standardize_date_value(value):
+    if not isinstance(value, str) or not value.strip():
+        return value
+    for date_format in DATE_FORMATS:
+        try:
+            parsed = datetime.strptime(value.strip(), date_format)
+        except ValueError:
+            continue
+        if "%H" in date_format:
+            return parsed.strftime("%Y-%m-%d %H:%M:%S")
+        return parsed.strftime("%Y-%m-%d")
+    return value
+
+
+def dataframe_styles(data, issues):
+    styles = pd.DataFrame("", index=data.index, columns=data.columns)
+    for issue in issues.itertuples(index=False):
+        row_index = issue[0] - 1
+        if row_index not in data.index:
+            continue
+        if issue[1] == "Entire row":
+            styles.loc[row_index, :] = "background-color: #fff1ed; color: #8b3323;"
+        elif issue[1] in styles.columns:
+            styles.loc[row_index, issue[1]] = (
+                "background-color: #fff0c2; color: #694600; font-weight: 600;"
+            )
+    return data.style.apply(lambda _: styles, axis=None)
+
+
+def serialize_data_file(filename, data):
+    original_suffix = Path(filename).suffix.lower()
+    if original_suffix == ".xlsx":
+        buffer = BytesIO()
+        with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+            data.to_excel(writer, index=False, sheet_name="Fixed data")
+        return (
+            buffer.getvalue(),
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            ".xlsx",
+        )
+    return data.to_csv(index=False).encode("utf-8-sig"), "text/csv", ".csv"
 
 
 def read_uploaded_file(uploaded_file):
@@ -419,6 +481,7 @@ def load_sample_data():
     }
     st.session_state["inspector_upload_signature"] = signatures
     st.session_state["active_dataset"] = "Sample messy dataset"
+    st.session_state["fixed_datasets"] = {}
 
 
 def load_connected_sample_data():
@@ -435,6 +498,7 @@ def load_connected_sample_data():
     st.session_state["inspector_datasets"] = datasets
     st.session_state["inspector_upload_signature"] = signatures
     st.session_state["active_dataset"] = CONNECTED_SAMPLE_FILES[0]
+    st.session_state["fixed_datasets"] = {}
 
 
 def connected_sample_archive():
@@ -695,6 +759,7 @@ if uploaded_files and upload_signatures != st.session_state.get(
         st.session_state["inspector_datasets"] = datasets
         st.session_state["inspector_upload_signature"] = upload_signatures
         st.session_state["active_dataset"] = next(iter(datasets))
+        st.session_state["fixed_datasets"] = {}
     for file_error in file_errors:
         st.warning(file_error)
     if not loaded_datasets:
@@ -714,18 +779,14 @@ if not datasets:
     st.stop()
 
 with st.sidebar:
-    if len(datasets) > 1:
-        st.divider()
-        st.markdown("#### Current workspace")
-        active_dataset = st.selectbox(
-            "Analyze a file",
-            options=list(datasets),
-            key="active_dataset",
-            label_visibility="collapsed",
-        )
-    else:
-        active_dataset = next(iter(datasets))
-        st.session_state["active_dataset"] = active_dataset
+    st.divider()
+    st.markdown("#### Current workspace")
+    active_dataset = st.selectbox(
+        "Active file",
+        options=list(datasets),
+        key="active_dataset",
+        help="Choose a file in the workspace to inspect its data quality.",
+    )
 
 data = datasets[active_dataset]
 columns = list(data.columns)
@@ -808,7 +869,7 @@ with st.container(key="batch_overview"):
     batch_columns = st.columns(4)
     batch_columns[0].metric("Files in workspace", f"{len(datasets):,}")
     batch_columns[1].metric("Rows across files", f"{batch_row_count:,}")
-    batch_columns[2].metric("Active file", active_dataset)
+    batch_columns[2].metric("Active file size", f"{len(data):,} rows · {len(columns):,} columns")
     batch_columns[3].metric("Current data health", quality_label, f"{health_score}%")
 
 st.caption(
@@ -921,8 +982,13 @@ if selected_metric:
                 )
                 st.dataframe(duplicate_rows, width="stretch", hide_index=True)
 
-overview_tab, issues_tab, preview_tab = st.tabs(
-    ["Overview Dashboard", "Issue Logs", "Data Preview & Export"]
+overview_tab, issues_tab, review_tab, preview_tab = st.tabs(
+    [
+        "Overview Dashboard",
+        "Issue Logs",
+        "Data Quality Review",
+        "Data Preview & Export",
+    ]
 )
 
 with overview_tab:
@@ -1140,6 +1206,140 @@ with issues_tab:
             )
         st.caption(f"Showing {len(filtered_issues):,} of {len(issues):,} detected issues")
         st.dataframe(filtered_issues, width="stretch", hide_index=True)
+
+with review_tab:
+    st.subheader("Review and fix the active file")
+    st.caption(
+        f"All rows in **{active_dataset}** are shown below. Highlighted cells match "
+        "the current quality findings; exact duplicate rows are highlighted across the row."
+    )
+    fixed_datasets = st.session_state.setdefault("fixed_datasets", {})
+    show_fixed_key = f"show_fixed_preview_{column_signature}"
+    with st.expander("Choose safe fixes to apply", expanded=True):
+        fix_duplicates = st.checkbox(
+            "Remove exact duplicate rows",
+            value=True,
+            key=f"fix_duplicates_{column_signature}",
+        )
+        fix_whitespace = st.checkbox(
+            "Trim leading and trailing whitespace",
+            value=True,
+            key=f"fix_whitespace_{column_signature}",
+        )
+        fix_missing_numeric = st.checkbox(
+            "Fill missing values in selected Numeric columns with the median",
+            value=True,
+            key=f"fix_missing_numeric_{column_signature}",
+            disabled=not numeric_columns,
+        )
+        fix_date_formats = st.checkbox(
+            "Standardize valid dates to YYYY-MM-DD",
+            value=True,
+            key=f"fix_date_formats_{column_signature}",
+            disabled=not date_columns,
+        )
+        st.caption(
+            "Invalid emails, invalid dates, and statistical outliers need human review "
+            "and are not changed automatically."
+        )
+        if st.button(
+            "Apply selected fixes",
+            type="primary",
+            width="stretch",
+            key=f"apply_fixes_{column_signature}",
+            disabled=not any(
+                [
+                    fix_duplicates,
+                    fix_whitespace,
+                    fix_missing_numeric and numeric_columns,
+                    fix_date_formats and date_columns,
+                ]
+            ),
+        ):
+            fixed_datasets[active_dataset] = clean_data(
+                data,
+                numeric_columns=numeric_columns,
+                date_columns=date_columns,
+                drop_duplicates=fix_duplicates,
+                trim_whitespace=fix_whitespace,
+                fill_numeric_missing=fix_missing_numeric,
+                standardize_dates=fix_date_formats,
+            )
+            st.session_state[show_fixed_key] = True
+            st.success(
+                f"Applied fixes to a copy of {active_dataset}. The original workspace data is unchanged."
+            )
+
+    has_fixed_data = active_dataset in fixed_datasets
+    if has_fixed_data:
+        show_fixed = st.toggle(
+            "Show fixed preview",
+            key=show_fixed_key,
+            help="Switch between the original file and the copy with selected fixes applied.",
+        )
+    else:
+        show_fixed = False
+
+    review_data = fixed_datasets[active_dataset] if show_fixed else data
+    review_issues, _ = scan_data(
+        review_data,
+        email_columns=email_columns,
+        date_columns=date_columns,
+        numeric_columns=numeric_columns,
+        iqr_multiplier=iqr_multiplier,
+    )
+    if show_fixed:
+        st.info(
+            f"Fixed copy: {len(review_data):,} rows · "
+            f"{len(review_issues):,} remaining finding(s)."
+        )
+        st.caption(
+            "The original file remains available in the workspace; only the exported copy is fixed."
+        )
+    else:
+        st.info(
+            f"Original data: {len(review_data):,} rows · "
+            f"{len(review_issues):,} finding(s) highlighted."
+        )
+
+    if review_issues.empty:
+        st.success("No issues to highlight in this view.")
+    else:
+        st.markdown(
+            '<span style="display:inline-block;width:12px;height:12px;'
+            'background:#fff0c2;border:1px solid #e6c46a;border-radius:3px;'
+            'vertical-align:middle"></span> Cell has a finding '
+            '&nbsp;&nbsp; '
+            '<span style="display:inline-block;width:12px;height:12px;'
+            'background:#fff1ed;border:1px solid #e9b5aa;border-radius:3px;'
+            'vertical-align:middle"></span> Duplicate row',
+            unsafe_allow_html=True,
+        )
+
+    review_display = review_data.copy()
+    review_display.insert(0, "Row Number", np.arange(1, len(review_display) + 1))
+    st.dataframe(
+        dataframe_styles(review_display, review_issues),
+        width="stretch",
+        height=650,
+        hide_index=True,
+    )
+
+    if has_fixed_data and show_fixed:
+        fixed_payload, fixed_mime, fixed_extension = serialize_data_file(
+            active_dataset,
+            review_data,
+        )
+        output_stem = Path(active_dataset).stem or "data"
+        st.download_button(
+            f"Download fixed file ({fixed_extension[1:].upper()})",
+            data=fixed_payload,
+            file_name=f"{output_stem}_fixed{fixed_extension}",
+            mime=fixed_mime,
+            type="primary",
+            width="stretch",
+            key=f"download_fixed_{column_signature}",
+        )
 
 with preview_tab:
     st.subheader("Your data, ready to explore")

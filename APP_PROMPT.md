@@ -13,6 +13,7 @@ Create a wide, responsive data-quality workspace that lets a user load one or mo
 - Also include a deterministic, downloadable multi-file demo pack of around five sizeable CSV/XLSX tables with synthetic records. Make the tables relationally connected with shared customer, order, and product keys; describe the relationships and offer both a ZIP download and a one-click option to load all files as a workspace.
 - Retain the selected dataset across Streamlit reruns. If the sample is loaded while an upload is still selected, keep the sample selected instead of immediately replacing it with the previously uploaded file.
 - Let users select which file in the loaded batch to analyze. Re-run checks independently for each selected file, show a batch overview of file count and total rows, and clearly show the active dataset name, row count, and column count. Gracefully handle empty datasets and files that cannot be parsed.
+- Keep an always-visible, clearly labeled `Active file` dropdown in the workspace so any loaded file can be selected for inspection.
 - Keep the quick sample available alongside the connected multi-file sample so users can try either a fast walkthrough or larger batch analysis.
 
 ## Automated quality scanner
@@ -55,13 +56,16 @@ Display a Plotly bar chart of issue count per column and a concise, accurate bul
 
 Add a Plotly issue-type chart and missing-value completeness chart, a column profile with inferred type, storage type, missing count/percentage, and unique count, and an interactive numeric distribution histogram with summary statistics. All analytics must update with the active file and current rules. Keep charts legible at narrow/mobile viewport widths.
 
+Add a dedicated data-quality review screen that displays every row in the active file and visually highlights cells with detected issues and exact duplicate rows. Provide selectable safe fixes for exact duplicates, whitespace trimming, missing numeric values (column median), and valid date-format standardization. Apply fixes to a copy, show remaining findings in the fixed preview, preserve the original dataset, and let users download a fixed CSV or XLSX matching the active file type. Keep malformed emails, invalid dates, and statistical outliers highlighted for manual review rather than inventing corrections.
+
 ## Navigation and issue log
 
-Use three tabs named exactly:
+Use these tabs:
 
 1. `Overview Dashboard`
 2. `Issue Logs`
-3. `Data Preview & Export`
+3. `Data Quality Review`
+4. `Data Preview & Export`
 
 In the Issue Logs tab, provide a dropdown filter for Issue Type, a useful showing/total count, and a readable table with exactly these issue columns:
 
@@ -100,6 +104,7 @@ In Data Preview & Export:
 4. Verify that changing the Email/Date/Numeric selections or IQR multiplier updates KPIs, chart, recommendations, and issue log.
 5. Verify that all four KPI buttons open the correct details, including actual duplicate rows.
 6. Verify that issue filtering works and that cleaned CSV removes duplicates, trims text, and fills missing numeric values with the median without modifying source data.
-7. Verify that all three named tabs render and that multiple CSV and XLSX uploads are handled gracefully, including mixed valid and invalid files.
+7. Verify that all four named tabs render and that multiple CSV and XLSX uploads are handled gracefully, including mixed valid and invalid files.
 8. Verify that the connected sample pack contains five CSV/XLSX files, has shared relational keys without broken references, can be downloaded as a ZIP, and loads all files into the workspace.
-9. Build and run the Docker image, then check the Streamlit health endpoint.
+9. Verify that the Active file dropdown switches among all loaded files, the review screen shows all rows with issue styling, selected fixes update a copy, and fixed CSV/XLSX downloads open correctly without modifying source data.
+10. Build and run the Docker image, then check the Streamlit health endpoint.
