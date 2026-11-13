@@ -6,7 +6,7 @@ Build a polished, single-file Python web application called **Smart Data Quality
 
 Create a wide, responsive data-quality workspace that lets a user load one or more tabular files, inspect common quality problems, explore issue details and analytics, and download cleaned copies. Use a crisp enterprise analytics theme with a cool-neutral canvas, white cards, a deep navy hero, restrained royal-blue accents, legible typography, subtle borders and shadows, and an original custom brand mark combining a small chart with a quality-check symbol. Show the brand in the page header and sidebar. Make the interface keyboard-accessible and provide descriptive labels and button help text.
 
-Show a persistent, data-driven file journey that clearly confirms when the active file has loaded, when its scan is complete, how many findings and duplicate rows were detected (or that no issues were found), and that review and export actions are ready. Keep the progress layout readable at narrow widths. Show animated, accessible loading indicators and useful progress updates while loading file batches, scanning data, applying fixes, and validating the fixed preview. Do not fetch external animation assets.
+Show a persistent, data-driven file journey that clearly confirms when the active file has loaded, when its scan is complete, how many findings and duplicate rows were detected (or that no issues were found), and that review and export actions are ready. Keep the progress layout readable at narrow widths. Show a branded animated inspection loader, accessible loading indicators, and useful progress updates during file loading, sample loading, scans, safe fixes, fixed-preview validation, and assistant responses. Do not fetch external animation assets.
 
 ## Input and sample data
 
@@ -112,7 +112,8 @@ In Data Preview & Export:
 5. Verify that all four KPI buttons open the correct details, including actual duplicate rows.
 6. Verify that issue filtering works and that cleaned CSV removes duplicates, trims text, and fills missing numeric values with the median without modifying source data.
 7. Verify that all five named tabs render, the assistant correctly answers duplicate counts and common quality questions from the active dataset, and multiple CSV and XLSX uploads are handled gracefully, including mixed valid and invalid files.
-8. Verify that the file journey accurately reflects active-file row/column counts, scan completion, issue and duplicate counts, and review/export readiness; loading and fix actions show progress without external assets.
+8. Verify that the file journey accurately reflects active-file row/column counts, scan completion, issue and duplicate counts, and review/export readiness; file, scan, fix, preview, sample, and assistant loading states remain visible and use no external assets.
 9. Verify that the connected sample pack contains five CSV/XLSX files, has shared relational keys without broken references, can be downloaded as a ZIP, and loads all files into the workspace.
 10. Verify that the Active file dropdown switches among all loaded files, the review screen shows all rows with issue styling, selected fixes update a copy, and fixed CSV/XLSX downloads open correctly without modifying source data.
 11. Build and run the Docker image, then check the Streamlit health endpoint.
+12. Provide a concise PowerPoint technical-demo presentation that explains application features, technology stack, quality methods, architecture, deployment, and where uploaded data is held.

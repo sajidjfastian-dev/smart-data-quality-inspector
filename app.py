@@ -1,4 +1,5 @@
 import hashlib
+import html
 import re
 from datetime import date, datetime
 from io import BytesIO, StringIO
@@ -455,6 +456,7 @@ def scan_data(
     date_columns=None,
     numeric_columns=None,
     iqr_multiplier=1.5,
+    progress_callback=None,
 ):
     issues = []
     duplicate_mask = data.duplicated(keep="first")
@@ -478,6 +480,28 @@ def scan_data(
             and not pd.api.types.is_bool_dtype(data[column])
         }
     )
+    row_count = len(data)
+    total_passes = (
+        len(data.columns)
+        + len(email_columns)
+        + 2 * len(date_columns)
+        + len(numeric_columns)
+    )
+    total_work = max(row_count * total_passes, 1)
+    progress_interval = max(1, row_count // 10)
+    completed_work = 0
+
+    def report_progress(position, stage, column):
+        nonlocal completed_work
+        completed_work += 1
+        if progress_callback and (
+            position % progress_interval == 0 or position + 1 == row_count
+        ):
+            fraction = min(completed_work / total_work, 0.99)
+            progress_callback(
+                fraction,
+                f"{stage} · {column} · row {position + 1:,} of {row_count:,}",
+            )
 
     def add_issue(row_number, column, issue_type, value, suggestion):
         issues.append(
@@ -501,12 +525,11 @@ def scan_data(
                     value,
                     "Provide a value or fill using an appropriate default.",
                 )
+            report_progress(position, "Checking missing values", column)
 
         if column in email_columns:
             for position, value in enumerate(series):
-                if is_missing(value):
-                    continue
-                if not EMAIL_PATTERN.fullmatch(str(value).strip()):
+                if not is_missing(value) and not EMAIL_PATTERN.fullmatch(str(value).strip()):
                     add_issue(
                         position + 1,
                         column,
@@ -514,39 +537,41 @@ def scan_data(
                         value,
                         "Correct the address to a valid name@domain format.",
                     )
+                report_progress(position, "Validating email formats", column)
 
         if column in date_columns:
             valid_string_shapes = []
-            for value in series:
+            for position, value in enumerate(series):
                 if isinstance(value, str) and value.strip() and parse_date(value):
                     valid_string_shapes.append(date_shape(value))
+                report_progress(position, "Learning common date formats", column)
             shape_counts = pd.Series(valid_string_shapes).value_counts()
             common_shape = shape_counts.index[0] if not shape_counts.empty else None
 
             for position, value in enumerate(series):
-                if is_missing(value):
-                    continue
-                if not parse_date(value):
-                    add_issue(
-                        position + 1,
-                        column,
-                        "Invalid Date",
-                        value,
-                        "Replace with a valid date, such as YYYY-MM-DD.",
-                    )
-                elif (
-                    isinstance(value, str)
-                    and value.strip()
-                    and common_shape is not None
-                    and date_shape(value) != common_shape
-                ):
-                    add_issue(
-                        position + 1,
-                        column,
-                        "Inconsistent Date Format",
-                        value,
-                        f"Standardize to the most common format ({common_shape}).",
-                    )
+                if not is_missing(value):
+                    if not parse_date(value):
+                        add_issue(
+                            position + 1,
+                            column,
+                            "Invalid Date",
+                            value,
+                            "Replace with a valid date, such as YYYY-MM-DD.",
+                        )
+                    elif (
+                        isinstance(value, str)
+                        and value.strip()
+                        and common_shape is not None
+                        and date_shape(value) != common_shape
+                    ):
+                        add_issue(
+                            position + 1,
+                            column,
+                            "Inconsistent Date Format",
+                            value,
+                            f"Standardize to the most common format ({common_shape}).",
+                        )
+                report_progress(position, "Validating date formats", column)
 
         if column in numeric_columns:
             numeric_series = parse_numeric_series(series)
@@ -559,9 +584,7 @@ def scan_data(
                 lower_bound = first_quartile - iqr_multiplier * spread
                 upper_bound = third_quartile + iqr_multiplier * spread
                 for position, value in enumerate(numeric_series):
-                    if not np.isfinite(value):
-                        continue
-                    if value < lower_bound or value > upper_bound:
+                    if np.isfinite(value) and (value < lower_bound or value > upper_bound):
                         add_issue(
                             position + 1,
                             column,
@@ -569,6 +592,10 @@ def scan_data(
                             series.iloc[position],
                             "Review this value; confirm it or replace with a validated value.",
                         )
+                    report_progress(position, "Checking numeric outliers", column)
+            else:
+                for position in range(row_count):
+                    report_progress(position, "Checking numeric outliers", column)
 
     for position in np.flatnonzero(duplicate_mask.to_numpy()):
         add_issue(
@@ -579,6 +606,8 @@ def scan_data(
             "Remove the duplicate row and keep the first occurrence.",
         )
 
+    if progress_callback:
+        progress_callback(1.0, "Finalizing the inspection report")
     return pd.DataFrame(issues, columns=ISSUE_COLUMNS), int(duplicate_mask.sum())
 
 
@@ -695,6 +724,22 @@ def upload_signature(uploaded_file):
     return uploaded_file.name, len(content), hashlib.sha256(content).hexdigest()
 
 
+def reset_quality_caches():
+    st.session_state["quality_scan_cache"] = {}
+    st.session_state["review_scan_cache"] = {}
+    st.session_state["clean_export_cache"] = {}
+    st.session_state["batch_export_cache"] = None
+
+
+def column_rule_signature(email_columns, date_columns, numeric_columns, iqr_multiplier):
+    return (
+        tuple(sorted(repr(column) for column in email_columns)),
+        tuple(sorted(repr(column) for column in date_columns)),
+        tuple(sorted(repr(column) for column in numeric_columns)),
+        float(iqr_multiplier),
+    )
+
+
 def load_sample_data():
     signatures = tuple(
         upload_signature(uploaded_file)
@@ -706,6 +751,7 @@ def load_sample_data():
     st.session_state["inspector_upload_signature"] = signatures
     st.session_state["active_dataset"] = "Sample messy dataset"
     st.session_state["fixed_datasets"] = {}
+    reset_quality_caches()
 
 
 def load_connected_sample_data():
@@ -730,6 +776,7 @@ def load_connected_sample_data():
     st.session_state["inspector_upload_signature"] = signatures
     st.session_state["active_dataset"] = CONNECTED_SAMPLE_FILES[0]
     st.session_state["fixed_datasets"] = {}
+    reset_quality_caches()
 
 
 def connected_sample_archive():
@@ -738,6 +785,36 @@ def connected_sample_archive():
         for filename in CONNECTED_SAMPLE_FILES:
             zip_file.write(SAMPLE_DATA_DIR / filename, arcname=filename)
     return archive.getvalue()
+
+
+def build_cleaned_batch_archive(datasets, progress_callback=None):
+    archive = BytesIO()
+    with ZipFile(archive, mode="w") as zip_file:
+        for index, (dataset_name, dataset) in enumerate(datasets.items()):
+            cleaned = clean_data(dataset)
+            safe_name = re.sub(r"[^A-Za-z0-9._-]+", "_", dataset_name)
+            if not safe_name.lower().endswith(".csv"):
+                safe_name = f"{safe_name}.csv"
+            zip_file.writestr(
+                f"{safe_name.rsplit('.', 1)[0]}_cleaned.csv",
+                cleaned.to_csv(index=False),
+            )
+            if progress_callback:
+                progress_callback(
+                    (index + 1) / max(len(datasets), 1),
+                    f"Prepared {dataset_name} ({index + 1} of {len(datasets)})",
+                )
+    return archive.getvalue()
+
+
+def render_inspection_loader(title, detail):
+    st.markdown(
+        '<div class="inspection-loader" role="status" aria-live="polite">'
+        '<span class="inspection-loader-spinner" aria-hidden="true"></span>'
+        f'<span class="inspection-loader-copy"><strong>{html.escape(title)}</strong>'
+        f'<span>{html.escape(detail)}</span></span></div>',
+        unsafe_allow_html=True,
+    )
 
 
 st.markdown(
@@ -863,6 +940,26 @@ st.markdown(
         border-color: var(--teal) !important; background: #f8faff !important;
     }
     [data-testid="stProgressBar"] > div > div {background: var(--teal);}
+    [data-testid="stStatusWidget"] {
+        border: 1px solid #dfe5f0; border-radius: 12px; background: #fff;
+    }
+    .inspection-loader {
+        display: flex; align-items: center; gap: 14px; padding: 14px 16px;
+        margin: 4px 0 10px; border: 1px solid #e0e7f2; border-radius: 12px;
+        background: linear-gradient(110deg, #f8faff, #fff 58%, #f5f8ff);
+    }
+    .inspection-loader-spinner {
+        width: 30px; height: 30px; flex: 0 0 30px; border-radius: 50%;
+        border: 3px solid #dfe7fb; border-top-color: #365bd6;
+        animation: inspection-spin .8s linear infinite;
+    }
+    .inspection-loader-copy strong {display:block; color:var(--ink); font-size:.88rem;}
+    .inspection-loader-copy span {display:block; color:var(--muted); font-size:.76rem; margin-top:3px;}
+    @keyframes inspection-spin {to {transform: rotate(360deg);}}
+    @media (prefers-reduced-motion: reduce) {
+        .inspection-loader-spinner {animation-duration: 2.4s;}
+        .stButton button, .stDownloadButton button {transition: none;}
+    }
     [data-testid="stTabs"] [role="tablist"] {
         gap: 5px; border-bottom: 1px solid var(--line);
     }
@@ -967,21 +1064,17 @@ with st.sidebar:
         help="Drop or browse multiple CSV and XLSX files. Analyze each file independently.",
         key="data_upload",
     )
-    if st.button(
+    load_sample_clicked = st.button(
         "Explore with 50-row quick sample",
         width="stretch",
         type="secondary",
-    ):
-        with st.spinner("Preparing the 50-row sample...", show_time=True):
-            load_sample_data()
-    if st.button(
+    )
+    load_connected_clicked = st.button(
         "Load connected big-data sample",
         width="stretch",
         type="primary",
         help="Load five related CSV/XLSX demo tables with over 50,000 synthetic rows.",
-    ):
-        with st.spinner("Loading the connected sample workspace...", show_time=True):
-            load_connected_sample_data()
+    )
     st.download_button(
         "Download 5-file sample pack",
         data=connected_sample_archive(),
@@ -990,6 +1083,21 @@ with st.sidebar:
         width="stretch",
     )
     st.caption("Synthetic test data · CSV and Excel · Session-only processing")
+
+if load_sample_clicked:
+    with st.status("Preparing the 50-row sample...", expanded=True):
+        render_inspection_loader(
+            "Preparing your sample",
+            "Building a test workspace with intentional data-quality examples.",
+        )
+        load_sample_data()
+if load_connected_clicked:
+    with st.status("Loading the connected sample workspace...", expanded=True):
+        render_inspection_loader(
+            "Loading the connected sample workspace",
+            "Reading five related CSV and Excel datasets.",
+        )
+        load_connected_sample_data()
 
 uploaded_files = uploaded_files or []
 upload_signatures = tuple(upload_signature(file) for file in uploaded_files)
@@ -1000,7 +1108,14 @@ if uploaded_files and upload_signatures != st.session_state.get(
     loaded_datasets = {}
     file_errors = []
     filename_counts = {}
-    with st.spinner(f"Reading and profiling {len(uploaded_files)} file(s)..."):
+    with st.status(
+        f"Loading {len(uploaded_files)} uploaded file(s)...",
+        expanded=True,
+    ) as upload_status:
+        render_inspection_loader(
+            "Loading your files",
+            "Reading CSV and Excel content into the current inspection session.",
+        )
         progress = st.progress(0.0, text="Preparing file batch...")
         for index, uploaded_file in enumerate(uploaded_files):
             filename_counts[uploaded_file.name] = filename_counts.get(uploaded_file.name, 0) + 1
@@ -1013,6 +1128,11 @@ if uploaded_files and upload_signatures != st.session_state.get(
             progress.progress(
                 index / len(uploaded_files),
                 text=f"Reading {uploaded_file.name} ({index + 1} of {len(uploaded_files)})...",
+            )
+            upload_status.update(
+                label=f"Loading {uploaded_file.name} ({index + 1} of {len(uploaded_files)})",
+                state="running",
+                expanded=True,
             )
             try:
                 file_data = read_uploaded_file(uploaded_file)
@@ -1035,6 +1155,11 @@ if uploaded_files and upload_signatures != st.session_state.get(
                 )
         progress.progress(1.0, text="File batch ready.")
         progress.empty()
+        upload_status.update(
+            label=f"Loaded {len(loaded_datasets):,} of {len(uploaded_files):,} file(s)",
+            state="complete" if loaded_datasets else "error",
+            expanded=False,
+        )
 
     if loaded_datasets:
         datasets = loaded_datasets
@@ -1042,6 +1167,7 @@ if uploaded_files and upload_signatures != st.session_state.get(
         st.session_state["inspector_upload_signature"] = upload_signatures
         st.session_state["active_dataset"] = next(iter(datasets))
         st.session_state["fixed_datasets"] = {}
+        reset_quality_caches()
     for file_error in file_errors:
         st.warning(file_error)
     if not loaded_datasets:
@@ -1125,23 +1251,103 @@ with st.sidebar:
     st.divider()
     st.caption("Checks include missing values, exact duplicates, email/date formats, and numeric outliers.")
 
-with st.spinner(f"Inspecting {len(data):,} rows across {len(columns):,} columns...", show_time=True):
-    issues, duplicate_count = scan_data(
-        data,
-        email_columns=email_columns,
-        date_columns=date_columns,
-        numeric_columns=numeric_columns,
-        iqr_multiplier=iqr_multiplier,
-    )
-issue_count = len(issues)
-health_score = max(0, round(100 * (1 - issue_count / max(data.shape[0] * data.shape[1], 1))))
-column_profile = build_column_profile(
-    data,
+rule_signature = column_rule_signature(
     email_columns,
     date_columns,
     numeric_columns,
+    iqr_multiplier,
 )
+quality_scan_cache = st.session_state.setdefault("quality_scan_cache", {})
+cached_scan = quality_scan_cache.get(active_dataset)
+if cached_scan and cached_scan["rules"] == rule_signature:
+    issues = cached_scan["issues"]
+    duplicate_count = cached_scan["duplicates"]
+    column_profile = cached_scan["profile"]
+else:
+    with st.status(
+        f"Inspecting {len(data):,} rows across {len(columns):,} columns...",
+        expanded=True,
+    ) as inspection_status:
+        render_inspection_loader(
+            "Inspecting your active file",
+            "Checking missing values, duplicates, formats, and numeric outliers.",
+        )
+        inspection_progress = st.progress(0.0, text="Preparing quality checks...")
+
+        def update_inspection_progress(fraction, message):
+            inspection_progress.progress(fraction, text=message)
+            inspection_status.update(
+                label="Inspecting the active file...",
+                state="running",
+                expanded=True,
+            )
+
+        issues, duplicate_count = scan_data(
+            data,
+            email_columns=email_columns,
+            date_columns=date_columns,
+            numeric_columns=numeric_columns,
+            iqr_multiplier=iqr_multiplier,
+            progress_callback=update_inspection_progress,
+        )
+        inspection_progress.empty()
+        inspection_status.update(
+            label=f"Inspection complete · {len(issues):,} finding(s)",
+            state="complete",
+            expanded=False,
+        )
+    column_profile = build_column_profile(
+        data,
+        email_columns,
+        date_columns,
+        numeric_columns,
+    )
+    quality_scan_cache[active_dataset] = {
+        "rules": rule_signature,
+        "issues": issues,
+        "duplicates": duplicate_count,
+        "profile": column_profile,
+    }
+issue_count = len(issues)
+health_score = max(0, round(100 * (1 - issue_count / max(data.shape[0] * data.shape[1], 1))))
 batch_row_count = sum(len(frame) for frame in datasets.values())
+
+clean_export_cache = st.session_state.setdefault("clean_export_cache", {})
+clean_export_key = (
+    active_dataset,
+    column_signature,
+    tuple(sorted(repr(column) for column in numeric_columns)),
+)
+if clean_export_key not in clean_export_cache:
+    with st.status("Preparing the cleaned file export...", expanded=True):
+        render_inspection_loader(
+            "Preparing the cleaned file export",
+            "Applying selected numeric rules to an in-memory copy; the source stays unchanged.",
+        )
+        clean_export_cache[clean_export_key] = clean_data(
+            data,
+            numeric_columns=numeric_columns,
+        )
+cleaned_data = clean_export_cache[clean_export_key]
+
+batch_export_archive = st.session_state.get("batch_export_cache")
+if len(datasets) > 1 and batch_export_archive is None:
+    with st.status("Preparing the cleaned batch export...", expanded=True):
+        render_inspection_loader(
+            "Preparing the cleaned batch export",
+            f"Cleaning {len(datasets):,} files into a downloadable ZIP.",
+        )
+        batch_progress = st.progress(0.0, text="Preparing cleaned files...")
+
+        def update_batch_export_progress(fraction, message):
+            batch_progress.progress(fraction, text=message)
+
+        batch_export_archive = build_cleaned_batch_archive(
+            datasets,
+            progress_callback=update_batch_export_progress,
+        )
+        st.session_state["batch_export_cache"] = batch_export_archive
+        batch_progress.empty()
 
 findings_step = (
     f"{issue_count:,} finding{'s' if issue_count != 1 else ''} · "
@@ -1589,7 +1795,11 @@ with review_tab:
                 ]
             ),
         ):
-            with st.spinner("Applying selected fixes to a copy...", show_time=True):
+            with st.status("Applying selected fixes...", expanded=True):
+                render_inspection_loader(
+                    "Applying safe fixes",
+                    "Updating a copy while preserving the original file.",
+                )
                 fixed_datasets[active_dataset] = clean_data(
                     data,
                     numeric_columns=numeric_columns,
@@ -1599,6 +1809,10 @@ with review_tab:
                     fill_numeric_missing=fix_missing_numeric,
                     standardize_dates=fix_date_formats,
                 )
+            st.session_state.setdefault("review_scan_cache", {}).pop(
+                active_dataset,
+                None,
+            )
             st.session_state[show_fixed_key] = True
             st.success(
                 f"Applied fixes to a copy of {active_dataset}. The original workspace data is unchanged."
@@ -1615,14 +1829,47 @@ with review_tab:
         show_fixed = False
 
     review_data = fixed_datasets[active_dataset] if show_fixed else data
-    with st.spinner("Checking findings in the preview...", show_time=True):
-        review_issues, _ = scan_data(
-            review_data,
-            email_columns=email_columns,
-            date_columns=date_columns,
-            numeric_columns=numeric_columns,
-            iqr_multiplier=iqr_multiplier,
-        )
+    if not show_fixed:
+        review_issues = issues
+    else:
+        review_scan_cache = st.session_state.setdefault("review_scan_cache", {})
+        cached_review = review_scan_cache.get(active_dataset)
+        if cached_review and cached_review["rules"] == rule_signature:
+            review_issues = cached_review["issues"]
+        else:
+            with st.status("Validating the review preview...", expanded=True) as review_status:
+                render_inspection_loader(
+                    "Validating the review preview",
+                    "Rechecking remaining issues in the fixed copy.",
+                )
+                review_progress = st.progress(0.0, text="Preparing preview checks...")
+
+                def update_review_progress(fraction, message):
+                    review_progress.progress(fraction, text=message)
+                    review_status.update(
+                        label="Checking findings in the preview...",
+                        state="running",
+                        expanded=True,
+                    )
+
+                review_issues, _ = scan_data(
+                    review_data,
+                    email_columns=email_columns,
+                    date_columns=date_columns,
+                    numeric_columns=numeric_columns,
+                    iqr_multiplier=iqr_multiplier,
+                    progress_callback=update_review_progress,
+                )
+                review_progress.empty()
+                review_status.update(
+                    label=f"Preview check complete · {len(review_issues):,} finding(s)",
+                    state="complete",
+                    expanded=False,
+                )
+            review_scan_cache[active_dataset] = {
+                "rules": rule_signature,
+                "issues": review_issues,
+            }
     if show_fixed:
         st.info(
             f"Fixed copy: {len(review_data):,} rows · "
@@ -1729,7 +1976,6 @@ with preview_tab:
         f"Previewing **{active_dataset}**. The original data remains unchanged by export cleaning."
     )
     st.dataframe(data.head(100), width="stretch", hide_index=True)
-    cleaned_data = clean_data(data, numeric_columns=numeric_columns)
     st.caption(
         f"One-click cleaning removes exact duplicates, trims text whitespace, "
         f"and fills missing numeric values with their column median. "
@@ -1747,20 +1993,9 @@ with preview_tab:
         )
     with batch_col:
         if len(datasets) > 1:
-            archive = BytesIO()
-            with ZipFile(archive, mode="w") as zip_file:
-                for dataset_name, dataset in datasets.items():
-                    cleaned = clean_data(dataset)
-                    safe_name = re.sub(r"[^A-Za-z0-9._-]+", "_", dataset_name)
-                    if not safe_name.lower().endswith(".csv"):
-                        safe_name = f"{safe_name}.csv"
-                    zip_file.writestr(
-                        f"{safe_name.rsplit('.', 1)[0]}_cleaned.csv",
-                        cleaned.to_csv(index=False),
-                    )
             st.download_button(
                 "Download all cleaned files",
-                data=archive.getvalue(),
+                data=batch_export_archive,
                 file_name="cleaned_data_batch.zip",
                 mime="application/zip",
                 width="stretch",
@@ -1839,7 +2074,11 @@ with assistant_tab:
     if user_question:
         history = st.session_state[assistant_history_key]
         history.append({"role": "user", "content": user_question})
-        with st.spinner("Checking the active file’s quality results…"):
+        with st.status("Preparing your data-quality answer...", expanded=True):
+            render_inspection_loader(
+                "Checking the active file’s quality results",
+                "Using the current scan, column profile, and rules.",
+            )
             answer = answer_data_quality_question(
                 user_question,
                 data,

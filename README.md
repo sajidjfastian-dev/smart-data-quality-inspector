@@ -13,6 +13,7 @@ A standalone Streamlit workspace for reviewing and cleaning common data-quality 
 - Ask the built-in Data Quality Copilot about duplicate counts, missing values, findings, the health score, and individual columns. It answers from the live scan without an external AI service.
 - Select any loaded file from the **Active file** workspace dropdown.
 - Follow a live file journey that confirms loading, scan completion, detected findings, and the next review/export steps, with progress indicators during file loading, scanning, and fixes.
+- See a branded animated inspection loader with row-level progress while quality checks run; safe fixes, preview validation, file loading, and assistant responses also show clear activity states.
 - Review every row in a dedicated screen with issue cells and duplicate rows highlighted; search across values or show only affected rows.
 - Apply selected safe fixes, inspect resolved and remaining issue counts, and download the corrected CSV or XLSX. Invalid emails, dates, and statistical outliers remain for manual review.
 - Search/filter issue logs by text and column, then download the matching issue report as CSV.
@@ -20,6 +21,12 @@ A standalone Streamlit workspace for reviewing and cleaning common data-quality 
 - Keep uploaded data in the current app session only. The app does not use a database, authentication, or an AI/LLM API.
 
 See [APP_PROMPT.md](./APP_PROMPT.md) for the complete application prompt and acceptance criteria.
+
+## Technical demo presentation
+
+The concise presentation covers the user workflow, quality checks, dashboards, safe fixes, architecture, technology stack, session-only data handling, privacy notes, and Docker/GitHub deployment:
+
+- [Smart Data Quality Inspector technical demo (PowerPoint)](./Smart_Data_Quality_Inspector_Technical_Demo.pptx)
 
 ## Large synthetic test data
 
