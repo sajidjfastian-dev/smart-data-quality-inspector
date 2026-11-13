@@ -714,11 +714,18 @@ def load_connected_sample_data():
         for uploaded_file in st.session_state.get("data_upload", [])
     )
     datasets = {}
-    for filename in CONNECTED_SAMPLE_FILES:
+    progress = st.progress(0.0, text="Preparing connected sample workspace...")
+    for index, filename in enumerate(CONNECTED_SAMPLE_FILES):
+        progress.progress(
+            index / len(CONNECTED_SAMPLE_FILES),
+            text=f"Loading {filename} ({index + 1} of {len(CONNECTED_SAMPLE_FILES)})...",
+        )
         file_path = SAMPLE_DATA_DIR / filename
         with file_path.open("rb") as file_handle:
             content = file_handle.read()
         datasets[filename] = read_data_file(filename, content)
+    progress.progress(1.0, text="Connected sample workspace ready.")
+    progress.empty()
     st.session_state["inspector_datasets"] = datasets
     st.session_state["inspector_upload_signature"] = signatures
     st.session_state["active_dataset"] = CONNECTED_SAMPLE_FILES[0]
@@ -737,72 +744,77 @@ st.markdown(
     """
     <style>
     :root {
-        --ink: #172b3a;
-        --muted: #647789;
-        --line: #e3eaf0;
-        --teal: #087e83;
-        --teal-dark: #09666d;
-        --canvas: #f7f9fa;
+        --ink: #1b2940;
+        --muted: #697890;
+        --line: #e4e9f1;
+        --teal: #365bd6;
+        --teal-dark: #2848b5;
+        --canvas: #f4f6fb;
         --panel: #ffffff;
     }
+    html, body, [class*="css"] {font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;}
     .stApp, [data-testid="stAppViewContainer"] {background: var(--canvas);}
-    [data-testid="stHeader"] {background: rgba(247, 249, 250, 0.88);}
-    .block-container {padding-top: 2.25rem; padding-bottom: 3.5rem; max-width: 1480px;}
+    [data-testid="stHeader"] {background: rgba(244, 246, 251, .9);}
+    .block-container {padding-top: 1.35rem; padding-bottom: 3rem; max-width: 1540px;}
     h1, h2, h3, [data-testid="stMarkdownContainer"] p {color: var(--ink);}
+    h2 {font-size: 1.28rem; letter-spacing: -.025em;}
+    h3 {font-size: 1.08rem; letter-spacing: -.015em;}
     .brand-header {
-        display: flex; align-items: center; gap: 18px; margin-bottom: 1.65rem;
-        padding: 22px 26px; border: 1px solid #e6edf0; border-radius: 22px;
+        display: flex; align-items: center; gap: 17px; margin-bottom: 1.1rem;
+        padding: 19px 24px; border: 1px solid #243b5d; border-radius: 18px;
         background:
-            radial-gradient(ellipse at 92% 10%, rgba(201, 233, 228, .42), transparent 34%),
-            linear-gradient(120deg, #fff 0%, #fbfdfd 68%, #f1f8f6 100%);
-        box-shadow: 0 8px 28px rgba(27, 57, 70, .045);
+            radial-gradient(ellipse at 88% 4%, rgba(74, 112, 221, .28), transparent 35%),
+            linear-gradient(112deg, #17263d 0%, #1d3150 64%, #243f67 100%);
+        box-shadow: 0 12px 30px rgba(24, 39, 67, .13);
     }
-    .brand-logo {width: 58px; height: 58px; flex: 0 0 58px;}
+    .brand-logo {width: 52px; height: 52px; flex: 0 0 52px;}
     .brand-eyebrow {
-        color: var(--teal); font-size: .72rem; font-weight: 750;
+        color: #a9c1ff; font-size: .67rem; font-weight: 750;
         letter-spacing: .16em; text-transform: uppercase; margin-bottom: 5px;
     }
     .brand-title {
-        color: var(--ink); font-size: clamp(1.55rem, 3vw, 2rem);
-        line-height: 1.15; font-weight: 760; letter-spacing: -.045em;
+        color: #fff; font-size: clamp(1.45rem, 2.6vw, 1.9rem);
+        line-height: 1.15; font-weight: 740; letter-spacing: -.04em;
     }
-    .brand-subtitle {color: var(--muted); font-size: .97rem; margin-top: 6px;}
+    .brand-subtitle {color: #c4cfdf; font-size: .9rem; margin-top: 5px;}
     .sidebar-brand {
         display: flex; align-items: center; gap: 12px;
-        padding: 5px 0 18px; margin-bottom: 8px;
+        padding: 4px 0 14px; margin-bottom: 7px;
         border-bottom: 1px solid var(--line);
     }
-    .sidebar-brand .brand-logo {width: 42px; height: 42px; flex-basis: 42px;}
+    .sidebar-brand .brand-logo {width: 38px; height: 38px; flex-basis: 38px;}
     .sidebar-brand-title {color: var(--ink); font-size: 1.03rem; font-weight: 730;}
     .sidebar-brand-caption {
         color: var(--muted); font-size: .72rem; margin-top: 2px;
         letter-spacing: .045em; text-transform: uppercase;
     }
     section[data-testid="stSidebar"] {
-        background: #f1f5f6; border-right: 1px solid var(--line);
+        background: #f8f9fc; border-right: 1px solid var(--line);
     }
+    section[data-testid="stSidebar"] > div {padding-top: 1rem;}
     section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
         color: var(--muted);
     }
     [data-testid="stMetric"] {
         background: var(--panel); border: 1px solid var(--line);
-        padding: 19px 21px; border-radius: 17px;
-        box-shadow: 0 5px 18px rgba(27, 57, 70, .045);
+        padding: 15px 17px; border-radius: 14px;
+        box-shadow: 0 3px 12px rgba(27, 43, 69, .035);
     }
     [data-testid="stMetricLabel"] {color: var(--muted); font-size: .88rem;}
-    [data-testid="stMetricValue"] {color: var(--ink); font-weight: 730;}
+    [data-testid="stMetricValue"] {color: var(--ink); font-weight: 730; letter-spacing: -.025em;}
     .st-key-metric_cards [data-testid="stButton"] button {
-        min-height: 8rem; height: 100%; padding: 18px 20px;
+        min-height: 6.5rem; height: 100%; padding: 13px 16px;
         color: var(--ink); background: var(--panel); border: 1px solid var(--line);
-        border-radius: 17px; box-shadow: 0 5px 18px rgba(27, 57, 70, .045);
+        border-radius: 14px; box-shadow: 0 3px 12px rgba(27, 43, 69, .035);
         text-align: left; white-space: pre-line;
+        transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
     }
     .st-key-metric_cards [data-testid="stButton"] button p {
-        color: var(--ink); text-align: left; line-height: 1.6;
+        color: var(--ink); text-align: left; line-height: 1.42; font-size: .88rem;
     }
     .st-key-metric_cards [data-testid="stButton"] button:hover {
-        color: var(--teal-dark); background: #f5fbfa; border-color: var(--teal);
-        box-shadow: 0 8px 24px rgba(8, 126, 131, .11); transform: translateY(-2px);
+        color: var(--teal-dark); background: #f8faff; border-color: var(--teal);
+        box-shadow: 0 8px 22px rgba(54, 91, 214, .12); transform: translateY(-2px);
     }
     .st-key-metric_cards [data-testid="stButton"] button:focus:not(:active) {
         border-color: var(--teal); color: var(--teal-dark);
@@ -814,76 +826,97 @@ st.markdown(
     .section-heading h2 {margin: 0; font-size: 1.35rem; letter-spacing: -.025em;}
     .section-caption {color: var(--muted); font-size: .88rem; margin-top: .25rem;}
     .workflow-strip {
-        display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-        margin: 0 0 1.15rem; padding: 12px 16px;
-        background: #f0f7f6; border: 1px solid #dcebe8; border-radius: 14px;
+        display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+        align-items: center; gap: 8px;
+        margin: 0 0 .85rem; padding: 9px 13px;
+        background: #fff; border: 1px solid var(--line); border-radius: 12px;
     }
     .workflow-step {
-        display: inline-flex; align-items: center; gap: 8px;
-        color: #536b75; font-size: .8rem; font-weight: 650;
+        display: flex; align-items: center; gap: 8px; min-width: 0;
+        color: #758198; font-size: .77rem; font-weight: 650;
     }
+    .workflow-step > span {display: block; min-width: 0;}
+    .workflow-step b {display: block; color: var(--ink); font-size: .75rem; font-weight: 700;}
+    .workflow-step small {display: block; color: var(--muted); font-size: .66rem; font-weight: 450; margin-top: 2px;}
     .workflow-step strong {
         display: grid; place-items: center; width: 23px; height: 23px;
-        border-radius: 50%; background: #dcebe8; color: #355d61;
+        border-radius: 50%; background: #edf0f6; color: #65728a;
         font-size: .72rem;
     }
     .workflow-step-active {color: var(--teal-dark);}
     .workflow-step-active strong {background: var(--teal); color: #fff;}
-    .workflow-step-complete strong {background: #d3eee2; color: #246548;}
-    .workflow-divider {color: #9aadb3; font-size: .82rem;}
+    .workflow-step-complete strong {background: #e7efff; color: #365bd6;}
+    .workflow-step-findings strong {background: #fff0da; color: #a45b08;}
+    .workflow-step-clear strong {background: #e5f5ec; color: #21784a;}
+    .workflow-step-ready strong {background: #edf0f6; color: #758198;}
     .st-key-active_dataset [data-baseweb="select"] {
-        border-radius: 11px; background: #fff;
+        border-radius: 10px; background: #fff;
     }
-    [data-testid="stDataFrame"] {background: #fff;}
+    [data-testid="stDataFrame"] {background: #fff; border-radius: 12px;}
     [data-testid="stDataFrame"] [role="grid"] {font-variant-numeric: tabular-nums;}
-    [data-testid="stAlert"] {border-radius: 12px;}
-    .st-key-batch_overview [data-testid="stMetric"] {
-        background: linear-gradient(140deg, #fff, #f0f8f6);
-    }
+    [data-testid="stAlert"] {border-radius: 11px; border: 1px solid rgba(37, 54, 83, .08);}
     [data-testid="stFileUploaderDropzone"] {
-        min-height: 9rem; border: 1.5px dashed #91b9b8 !important;
-        border-radius: 17px !important; background: rgba(255,255,255,.82) !important;
+        min-height: 7.5rem; border: 1.5px dashed #aab8d4 !important;
+        border-radius: 13px !important; background: #fff !important;
     }
     [data-testid="stFileUploaderDropzone"]:hover {
-        border-color: var(--teal) !important; background: #f0faf8 !important;
+        border-color: var(--teal) !important; background: #f8faff !important;
     }
     [data-testid="stProgressBar"] > div > div {background: var(--teal);}
     [data-testid="stTabs"] [role="tablist"] {
-        gap: 7px; border-bottom: 1px solid var(--line);
+        gap: 5px; border-bottom: 1px solid var(--line);
     }
     [data-testid="stTabs"] button[role="tab"] {
-        color: var(--muted); font-weight: 620; border-radius: 10px 10px 0 0;
+        color: var(--muted); font-weight: 620; border-radius: 9px 9px 0 0;
+        padding: .62rem .82rem;
     }
     [data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
         color: var(--teal-dark); border-bottom-color: var(--teal);
+        background: #f0f4ff;
     }
-    .stButton > button, .stDownloadButton > button {
-        min-height: 2.7rem; border-radius: 11px; font-weight: 650;
-        border-color: #cfdddd; transition: all .16s ease;
+    .stButton button, .stDownloadButton button {
+        min-height: 2.55rem; border-radius: 10px; font-weight: 640;
+        border-color: #d7deea; transition: all .16s ease;
     }
-    .stButton > button[kind="primary"], .stDownloadButton > button[kind="primary"] {
-        color: white; background: var(--teal); border-color: var(--teal);
+    .stButton button[kind="primary"],
+    .stDownloadButton button[kind="primary"],
+    .stButton button[data-testid="stBaseButton-primary"],
+    .stDownloadButton button[data-testid="stBaseButton-primary"] {
+        color: white !important; background: var(--teal) !important; border-color: var(--teal) !important;
     }
-    .stButton > button:hover, .stDownloadButton > button:hover {
+    .stButton button:hover, .stDownloadButton button:hover {
         color: var(--teal-dark); border-color: var(--teal);
         transform: translateY(-1px);
     }
     [data-testid="stFileUploader"] section {
-        border-radius: 13px; border-color: #cfdddd; background: rgba(255,255,255,.72);
+        border-radius: 11px; border-color: #d7deea; background: rgba(255,255,255,.8);
     }
     [data-testid="stExpander"] {
-        border-color: var(--line); border-radius: 13px; background: rgba(255,255,255,.62);
+        border-color: var(--line); border-radius: 11px; background: rgba(255,255,255,.8);
     }
     [data-testid="stDataFrame"] {
-        border: 1px solid var(--line); border-radius: 13px; overflow: hidden;
+        border: 1px solid var(--line); border-radius: 11px; overflow: hidden;
+    }
+    hr {border-color: var(--line);}
+    [data-testid="stChatMessage"] {
+        background: #fff; border: 1px solid var(--line); border-radius: 13px;
     }
     @media (max-width: 760px) {
-        .block-container {padding: 1.15rem 1rem 2rem;}
-        .brand-header {padding: 18px 16px; gap: 12px; border-radius: 17px;}
-        .brand-logo {width: 46px; height: 46px; flex-basis: 46px;}
-        .brand-subtitle {font-size: .86rem;}
+        .block-container {padding: .9rem .8rem 2rem;}
+        .brand-header {padding: 16px 14px; gap: 11px; border-radius: 14px;}
+        .brand-logo {width: 42px; height: 42px; flex-basis: 42px;}
+        .brand-subtitle {font-size: .82rem;}
+        .workflow-strip {grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 9px;}
+        .workflow-step {font-size: .69rem; gap: 6px;}
+        .workflow-step strong {width: 20px; height: 20px;}
+        [data-testid="stTabs"] [role="tablist"] {overflow-x: auto; flex-wrap: nowrap; scrollbar-width: thin;}
+        [data-testid="stTabs"] button[role="tab"] {flex: 0 0 auto; padding: .5rem .65rem; font-size: .8rem; white-space: nowrap;}
+        .st-key-metric_cards [data-testid="stHorizontalBlock"] {
+            display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem;
+        }
+        .st-key-metric_cards [data-testid="column"] {width: auto !important; flex: unset !important; min-width: 0;}
         .st-key-metric_cards [data-testid="stButton"] button {
-            min-height: 7rem; padding: 14px 12px;
+            min-height: 6rem; padding: 11px 10px;
         }
     }
     </style>
@@ -897,16 +930,16 @@ def brand_logo(variant):
         f'<svg class="brand-logo" viewBox="0 0 64 64" fill="none" '
         f'xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'
         f'<defs><linearGradient id="{gradient_id}" x1="7" y1="5" x2="58" y2="59" '
-        f'gradientUnits="userSpaceOnUse"><stop stop-color="#16A6A0"/>'
-        f'<stop offset="1" stop-color="#075B68"/></linearGradient></defs>'
+        f'gradientUnits="userSpaceOnUse"><stop stop-color="#5F84F1"/>'
+        f'<stop offset="1" stop-color="#294BB6"/></linearGradient></defs>'
         f'<rect x="2" y="2" width="60" height="60" rx="19" fill="url(#{gradient_id})"/>'
         f'<path d="M17 43V33.5C17 32.67 17.67 32 18.5 32H23.5C24.33 32 25 32.67 '
         f'25 33.5V43" stroke="white" stroke-width="3.5" stroke-linecap="round"/>'
         f'<path d="M29.5 43V25.5C29.5 24.67 30.17 24 31 24H36C36.83 24 37.5 24.67 '
         f'37.5 25.5V43" stroke="white" stroke-width="3.5" stroke-linecap="round"/>'
         f'<path d="M17 48H37.5" stroke="white" stroke-width="3.5" stroke-linecap="round"/>'
-        f'<circle cx="45" cy="42" r="10" fill="#D9F5E9" stroke="white" stroke-width="2.5"/>'
-        f'<path d="M40.5 42L43.5 45L49.5 38.5" stroke="#087A69" stroke-width="2.8" '
+        f'<circle cx="45" cy="42" r="10" fill="#DCE8FF" stroke="white" stroke-width="2.5"/>'
+        f'<path d="M40.5 42L43.5 45L49.5 38.5" stroke="#294BB6" stroke-width="2.8" '
         f'stroke-linecap="round" stroke-linejoin="round"/></svg>'
     )
 
@@ -934,19 +967,21 @@ with st.sidebar:
         help="Drop or browse multiple CSV and XLSX files. Analyze each file independently.",
         key="data_upload",
     )
-    st.button(
+    if st.button(
         "Explore with 50-row quick sample",
         width="stretch",
-        on_click=load_sample_data,
         type="secondary",
-    )
-    st.button(
+    ):
+        with st.spinner("Preparing the 50-row sample...", show_time=True):
+            load_sample_data()
+    if st.button(
         "Load connected big-data sample",
         width="stretch",
-        on_click=load_connected_sample_data,
         type="primary",
         help="Load five related CSV/XLSX demo tables with over 50,000 synthetic rows.",
-    )
+    ):
+        with st.spinner("Loading the connected sample workspace...", show_time=True):
+            load_connected_sample_data()
     st.download_button(
         "Download 5-file sample pack",
         data=connected_sample_archive(),
@@ -1025,19 +1060,6 @@ if not datasets:
     )
     st.stop()
 
-st.markdown(
-    '<div class="workflow-strip" aria-label="Workspace workflow">'
-    '<span class="workflow-step workflow-step-complete"><strong>✓</strong> Load data</span>'
-    '<span class="workflow-divider">›</span>'
-    '<span class="workflow-step workflow-step-active"><strong>2</strong> Inspect quality</span>'
-    '<span class="workflow-divider">›</span>'
-    '<span class="workflow-step"><strong>3</strong> Review &amp; fix</span>'
-    '<span class="workflow-divider">›</span>'
-    '<span class="workflow-step"><strong>4</strong> Export</span>'
-    '</div>',
-    unsafe_allow_html=True,
-)
-
 with st.container(border=True):
     workspace_file_col, workspace_guidance_col = st.columns([1.1, 2])
     with workspace_file_col:
@@ -1103,13 +1125,14 @@ with st.sidebar:
     st.divider()
     st.caption("Checks include missing values, exact duplicates, email/date formats, and numeric outliers.")
 
-issues, duplicate_count = scan_data(
-    data,
-    email_columns=email_columns,
-    date_columns=date_columns,
-    numeric_columns=numeric_columns,
-    iqr_multiplier=iqr_multiplier,
-)
+with st.spinner(f"Inspecting {len(data):,} rows across {len(columns):,} columns...", show_time=True):
+    issues, duplicate_count = scan_data(
+        data,
+        email_columns=email_columns,
+        date_columns=date_columns,
+        numeric_columns=numeric_columns,
+        iqr_multiplier=iqr_multiplier,
+    )
 issue_count = len(issues)
 health_score = max(0, round(100 * (1 - issue_count / max(data.shape[0] * data.shape[1], 1))))
 column_profile = build_column_profile(
@@ -1119,29 +1142,27 @@ column_profile = build_column_profile(
     numeric_columns,
 )
 batch_row_count = sum(len(frame) for frame in datasets.values())
-quality_label = (
-    "Excellent" if health_score >= 95
-    else "Good" if health_score >= 85
-    else "Needs attention" if health_score >= 70
-    else "Review recommended"
-)
 
+findings_step = (
+    f"{issue_count:,} finding{'s' if issue_count != 1 else ''} · "
+    f"{duplicate_count:,} duplicate row{'s' if duplicate_count != 1 else ''}"
+    if issue_count
+    else "No issues found"
+)
+findings_status = "workflow-step-findings" if issue_count else "workflow-step-clear"
 st.markdown(
-    f'<div class="section-heading"><div><h2>Workspace overview</h2>'
-    f'<div class="section-caption">A live snapshot of {len(datasets)} dataset(s) in this batch.</div>'
-    f'</div></div>',
+    '<div class="workflow-strip" aria-label="File inspection progress">'
+    f'<span class="workflow-step workflow-step-complete"><strong>✓</strong><span><b>File loaded</b><small>{len(data):,} rows · {len(columns):,} columns</small></span></span>'
+    '<span class="workflow-step workflow-step-complete"><strong>✓</strong><span><b>Inspection complete</b><small>Active quality rules applied</small></span></span>'
+    f'<span class="workflow-step {findings_status}"><strong>!</strong><span><b>Findings</b><small>{findings_step}</small></span></span>'
+    '<span class="workflow-step workflow-step-ready"><strong>4</strong><span><b>Review &amp; fix</b><small>Ready when you are</small></span></span>'
+    '<span class="workflow-step workflow-step-ready"><strong>5</strong><span><b>Export</b><small>Download a clean copy</small></span></span>'
+    '</div>',
     unsafe_allow_html=True,
 )
-with st.container(key="batch_overview"):
-    batch_columns = st.columns(4)
-    batch_columns[0].metric("Files in workspace", f"{len(datasets):,}")
-    batch_columns[1].metric("Rows across files", f"{batch_row_count:,}")
-    batch_columns[2].metric("Active file size", f"{len(data):,} rows · {len(columns):,} columns")
-    batch_columns[3].metric("Current data health", quality_label, f"{health_score}%")
-
 st.caption(
-    f"Analyzing **{active_dataset}** · {data.shape[0]:,} rows · "
-    f"{data.shape[1]:,} columns · {int(data.memory_usage(deep=True).sum() / 1024):,} KB in memory"
+    f"Workspace · {len(datasets):,} file(s) · {batch_row_count:,} rows total · "
+    f"Inspecting **{active_dataset}** · {int(data.memory_usage(deep=True).sum() / 1024):,} KB in memory"
 )
 if set(CONNECTED_SAMPLE_FILES).issubset(datasets):
     with st.expander("How the sample files connect"):
@@ -1277,7 +1298,7 @@ with overview_tab:
                 x="Column Name",
                 y="Issue Count",
                 color="Issue Count",
-                color_continuous_scale=["#c5e8df", "#087e83", "#075b68"],
+                color_continuous_scale=["#d9e3ff", "#6f8de8", "#365bd6"],
                 text="Issue Count",
             )
             chart.update_layout(
@@ -1288,7 +1309,7 @@ with overview_tab:
                 margin=dict(l=12, r=12, t=15, b=20),
                 plot_bgcolor="rgba(0,0,0,0)",
                 paper_bgcolor="rgba(0,0,0,0)",
-                font=dict(color="#344b5a"),
+                font=dict(color="#43516a"),
             )
             st.plotly_chart(chart, width="stretch", config={"displayModeBar": False})
 
@@ -1309,7 +1330,7 @@ with overview_tab:
                 names="Issue Type",
                 values="Findings",
                 hole=0.66,
-                color_discrete_sequence=CHART_COLORS,
+                color_discrete_sequence=["#365bd6", "#6f8de8", "#4b8c81", "#d9a441", "#d86e62", "#7d6ac7"],
             )
             type_chart.update_traces(
                 textposition="inside",
@@ -1323,7 +1344,7 @@ with overview_tab:
                 margin=dict(l=8, r=8, t=12, b=38),
                 plot_bgcolor="rgba(0,0,0,0)",
                 paper_bgcolor="rgba(0,0,0,0)",
-                font=dict(color="#344b5a"),
+                font=dict(color="#43516a"),
             )
             st.plotly_chart(type_chart, width="stretch", config={"displayModeBar": False})
             type_counts = type_counts.rename(columns={"Findings": "Issue Count"})
@@ -1343,7 +1364,7 @@ with overview_tab:
                 y="Column",
                 orientation="h",
                 color="Missing %",
-                color_continuous_scale=["#c5e8df", "#e7b565", "#dc755c"],
+                color_continuous_scale=["#d9e3ff", "#e7b565", "#dc755c"],
                 text="Missing %",
                 hover_data={"Missing": True, "Unique": True},
             )
@@ -1356,7 +1377,7 @@ with overview_tab:
                 margin=dict(l=8, r=34, t=12, b=18),
                 plot_bgcolor="rgba(0,0,0,0)",
                 paper_bgcolor="rgba(0,0,0,0)",
-                font=dict(color="#344b5a"),
+                font=dict(color="#43516a"),
             )
             st.plotly_chart(missing_chart, width="stretch", config={"displayModeBar": False})
 
@@ -1568,15 +1589,16 @@ with review_tab:
                 ]
             ),
         ):
-            fixed_datasets[active_dataset] = clean_data(
-                data,
-                numeric_columns=numeric_columns,
-                date_columns=date_columns,
-                drop_duplicates=fix_duplicates,
-                trim_whitespace=fix_whitespace,
-                fill_numeric_missing=fix_missing_numeric,
-                standardize_dates=fix_date_formats,
-            )
+            with st.spinner("Applying selected fixes to a copy...", show_time=True):
+                fixed_datasets[active_dataset] = clean_data(
+                    data,
+                    numeric_columns=numeric_columns,
+                    date_columns=date_columns,
+                    drop_duplicates=fix_duplicates,
+                    trim_whitespace=fix_whitespace,
+                    fill_numeric_missing=fix_missing_numeric,
+                    standardize_dates=fix_date_formats,
+                )
             st.session_state[show_fixed_key] = True
             st.success(
                 f"Applied fixes to a copy of {active_dataset}. The original workspace data is unchanged."
@@ -1593,13 +1615,14 @@ with review_tab:
         show_fixed = False
 
     review_data = fixed_datasets[active_dataset] if show_fixed else data
-    review_issues, _ = scan_data(
-        review_data,
-        email_columns=email_columns,
-        date_columns=date_columns,
-        numeric_columns=numeric_columns,
-        iqr_multiplier=iqr_multiplier,
-    )
+    with st.spinner("Checking findings in the preview...", show_time=True):
+        review_issues, _ = scan_data(
+            review_data,
+            email_columns=email_columns,
+            date_columns=date_columns,
+            numeric_columns=numeric_columns,
+            iqr_multiplier=iqr_multiplier,
+        )
     if show_fixed:
         st.info(
             f"Fixed copy: {len(review_data):,} rows · "

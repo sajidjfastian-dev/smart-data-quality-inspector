@@ -12,6 +12,7 @@ A standalone Streamlit workspace for reviewing and cleaning common data-quality 
 - Explore clickable KPI details, issue and completeness charts, numeric distributions, column profiles, issue filters, and recommendations.
 - Ask the built-in Data Quality Copilot about duplicate counts, missing values, findings, the health score, and individual columns. It answers from the live scan without an external AI service.
 - Select any loaded file from the **Active file** workspace dropdown.
+- Follow a live file journey that confirms loading, scan completion, detected findings, and the next review/export steps, with progress indicators during file loading, scanning, and fixes.
 - Review every row in a dedicated screen with issue cells and duplicate rows highlighted; search across values or show only affected rows.
 - Apply selected safe fixes, inspect resolved and remaining issue counts, and download the corrected CSV or XLSX. Invalid emails, dates, and statistical outliers remain for manual review.
 - Search/filter issue logs by text and column, then download the matching issue report as CSV.
