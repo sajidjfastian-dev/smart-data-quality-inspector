@@ -4,14 +4,14 @@ Build a polished, single-file Python web application called **Smart Data Quality
 
 ## Purpose and visual design
 
-Create a wide, responsive data-quality workspace that lets a user load a tabular file, inspect common quality problems, explore issue details, and download a basic cleaned copy. Use an elegant modern visual theme with a soft cool-neutral canvas, white cards, teal accents, legible typography, restrained shadows, rounded corners, and an original custom brand mark combining a small chart with a quality-check symbol. Show the brand in the page header and sidebar. Make the interface keyboard-accessible and provide descriptive labels and button help text.
+Create a wide, responsive data-quality workspace that lets a user load one or more tabular files, inspect common quality problems, explore issue details and analytics, and download cleaned copies. Use an elegant modern visual theme with a soft cool-neutral canvas, white cards, teal accents, legible typography, restrained shadows, rounded corners, and an original custom brand mark combining a small chart with a quality-check symbol. Show the brand in the page header and sidebar. Make the interface keyboard-accessible and provide descriptive labels and button help text.
 
 ## Input and sample data
 
-- Allow CSV and `.xlsx` uploads from the sidebar. Read CSV files with UTF-8 BOM support and Excel files with `openpyxl`. Show a clear, actionable error if a file cannot be read.
+- Allow users to drag and drop or browse multiple CSV and `.xlsx` files from the sidebar. Read CSV files with UTF-8 BOM support and Excel files with `openpyxl`. Show file-batch loading progress and a clear, actionable error for every file that cannot be read; continue processing other valid files in the batch.
 - Add a **Load Sample Messy Dataset** button. Generate a deterministic, 50-row sample dataframe with numeric identifiers and measurements, text fields, and email/date fields. Intentionally include missing values, blank/whitespace-only strings, an exact duplicate row, malformed email addresses, valid dates in inconsistent formats, an invalid date, and an obvious numeric outlier.
 - Retain the selected dataset across Streamlit reruns. If the sample is loaded while an upload is still selected, keep the sample selected instead of immediately replacing it with the previously uploaded file.
-- Clearly show the current dataset name, row count, and column count. Gracefully handle empty datasets.
+- Let users select which file in the loaded batch to analyze. Re-run checks independently for each selected file, show a batch overview of file count and total rows, and clearly show the active dataset name, row count, and column count. Gracefully handle empty datasets and files that cannot be parsed.
 
 ## Automated quality scanner
 
@@ -51,6 +51,8 @@ The cards and their detail panels must always reflect the active dataset and cur
 
 Display a Plotly bar chart of issue count per column and a concise, accurate bulleted list of recommendations based on detected issues. Provide a useful success state when no issues are found.
 
+Add a Plotly issue-type chart and missing-value completeness chart, a column profile with inferred type, storage type, missing count/percentage, and unique count, and an interactive numeric distribution histogram with summary statistics. All analytics must update with the active file and current rules. Keep charts legible at narrow/mobile viewport widths.
+
 ## Navigation and issue log
 
 Use three tabs named exactly:
@@ -75,6 +77,7 @@ In Data Preview & Export:
 
 - Preview the uploaded or sample data.
 - Offer a **Download Cleaned CSV** action.
+- For a multi-file workspace, also offer a ZIP download containing a cleaned CSV for every loaded file.
 - Create the downloaded data by removing exact duplicate rows, trimming leading/trailing whitespace from text, and filling missing numeric values with each numeric column’s median where available.
 - Do not silently coerce or “fix” malformed email/date values or numeric outliers; present those as review recommendations instead.
 - Preserve the original uploaded data for issue reporting and preview. Clean a copy for export.
@@ -95,5 +98,5 @@ In Data Preview & Export:
 4. Verify that changing the Email/Date/Numeric selections or IQR multiplier updates KPIs, chart, recommendations, and issue log.
 5. Verify that all four KPI buttons open the correct details, including actual duplicate rows.
 6. Verify that issue filtering works and that cleaned CSV removes duplicates, trims text, and fills missing numeric values with the median without modifying source data.
-7. Verify that all three named tabs render and that CSV and XLSX uploads are handled gracefully.
+7. Verify that all three named tabs render and that multiple CSV and XLSX uploads are handled gracefully, including mixed valid and invalid files.
 8. Build and run the Docker image, then check the Streamlit health endpoint.

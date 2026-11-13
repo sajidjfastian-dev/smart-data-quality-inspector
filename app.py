@@ -2,7 +2,7 @@ import hashlib
 import re
 from datetime import date, datetime
 from io import BytesIO, StringIO
-from zipfile import BadZipFile
+from zipfile import BadZipFile, ZipFile
 
 import numpy as np
 import pandas as pd
@@ -47,6 +47,7 @@ ISSUE_COLUMNS = [
     "Current Value",
     "Suggested Fix",
 ]
+CHART_COLORS = ["#087e83", "#41a69b", "#94c9ae", "#f0b565", "#eb8b71", "#917ac6"]
 
 
 def make_sample_data():
@@ -63,6 +64,8 @@ def make_sample_data():
             ],
             "age": rng.integers(19, 71, size=row_count),
             "annual_spend": np.round(rng.normal(2400, 650, size=row_count), 2),
+            "region": rng.choice(["North", "South", "East", "West"], size=row_count),
+            "is_active": rng.choice([True, False], size=row_count, p=[0.78, 0.22]),
         }
     )
     data.loc[3, "email"] = "not-an-email"
@@ -115,6 +118,101 @@ def date_shape(value):
         if pattern.fullmatch(value.strip()):
             return shape
     return "other"
+
+
+def parse_numeric_series(series):
+    cleaned = series.map(
+        lambda value: re.sub(r"[$£€¥,\s]", "", value).strip()
+        if isinstance(value, str)
+        else value
+    )
+    cleaned = cleaned.map(
+        lambda value: f"-{value[1:-1]}"
+        if isinstance(value, str) and value.startswith("(") and value.endswith(")")
+        else value
+    )
+    return pd.to_numeric(cleaned, errors="coerce")
+
+
+def infer_column_rules(data):
+    email_columns = set()
+    date_columns = set()
+    numeric_columns = set()
+
+    for column in data.columns:
+        series = data[column]
+        name = str(column).lower()
+        values = [value for value in series if not is_missing(value)]
+        if not values:
+            continue
+
+        if "email" in name:
+            email_columns.add(column)
+        elif (
+            len(values) >= 2
+            and sum(bool(EMAIL_PATTERN.fullmatch(str(value).strip())) for value in values)
+            / len(values)
+            >= 0.6
+        ):
+            email_columns.add(column)
+
+        date_values = [
+            value for value in values if isinstance(value, str) and value.strip()
+        ]
+        valid_dates = [value for value in date_values if parse_date(value)]
+        is_date_named = any(token in name for token in ("date", "time", "timestamp"))
+        if is_date_named or (
+            len(date_values) >= 2 and len(valid_dates) / len(date_values) >= 0.7
+        ):
+            date_columns.add(column)
+
+        if pd.api.types.is_bool_dtype(series):
+            continue
+        if pd.api.types.is_numeric_dtype(series):
+            numeric_columns.add(column)
+            continue
+        parsed_numbers = parse_numeric_series(series)
+        non_missing_numbers = parsed_numbers.dropna()
+        if (
+            len(non_missing_numbers) >= 2
+            and len(non_missing_numbers) / len(values) >= 0.8
+            and column not in date_columns
+        ):
+            numeric_columns.add(column)
+
+    numeric_columns -= date_columns
+    return email_columns, date_columns, numeric_columns
+
+
+def build_column_profile(data, email_columns, date_columns, numeric_columns):
+    profile = []
+    for column in data.columns:
+        series = data[column]
+        missing_count = sum(is_missing(value) for value in series)
+        detected_types = []
+        if column in numeric_columns:
+            detected_types.append("Numeric")
+        if column in date_columns:
+            detected_types.append("Date")
+        if column in email_columns:
+            detected_types.append("Email")
+        if not detected_types:
+            detected_types.append(
+                "Boolean"
+                if pd.api.types.is_bool_dtype(series)
+                else "Text / category"
+            )
+        profile.append(
+            {
+                "Column": str(column),
+                "Detected type": " · ".join(detected_types),
+                "Storage type": str(series.dtype),
+                "Missing": missing_count,
+                "Missing %": round(missing_count / max(len(data), 1) * 100, 1),
+                "Unique": int(series.nunique(dropna=True)),
+            }
+        )
+    return pd.DataFrame(profile)
 
 
 def scan_data(
@@ -217,8 +315,9 @@ def scan_data(
                     )
 
         if column in numeric_columns:
-            numeric_series = pd.to_numeric(series, errors="coerce")
-            numeric_values = numeric_series.dropna()
+            numeric_series = parse_numeric_series(series)
+            finite_mask = np.isfinite(numeric_series.to_numpy(dtype=float, na_value=np.nan))
+            numeric_values = numeric_series[finite_mask].dropna()
             if not numeric_values.empty:
                 first_quartile = numeric_values.quantile(0.25)
                 third_quartile = numeric_values.quantile(0.75)
@@ -226,7 +325,7 @@ def scan_data(
                 lower_bound = first_quartile - iqr_multiplier * spread
                 upper_bound = third_quartile + iqr_multiplier * spread
                 for position, value in enumerate(numeric_series):
-                    if is_missing(value):
+                    if not np.isfinite(value):
                         continue
                     if value < lower_bound or value > upper_bound:
                         add_issue(
@@ -249,22 +348,29 @@ def scan_data(
     return pd.DataFrame(issues, columns=ISSUE_COLUMNS), int(duplicate_mask.sum())
 
 
-def clean_data(data):
+def clean_data(data, numeric_columns=None):
     cleaned = data.drop_duplicates().copy()
     for column in cleaned.columns:
         if cleaned[column].dtype == object or pd.api.types.is_string_dtype(cleaned[column]):
             cleaned[column] = cleaned[column].map(
                 lambda value: value.strip() if isinstance(value, str) else value
             )
-        if pd.api.types.is_numeric_dtype(cleaned[column]) and not pd.api.types.is_bool_dtype(
-            cleaned[column]
-        ):
-            median = cleaned[column].median()
-            if pd.notna(median):
-                if pd.api.types.is_integer_dtype(cleaned[column]) and median % 1:
-                    cleaned[column] = cleaned[column].astype("float64").fillna(median)
-                else:
-                    cleaned[column] = cleaned[column].fillna(median)
+    if numeric_columns is None:
+        numeric_columns = infer_column_rules(cleaned)[2]
+    for column in numeric_columns:
+        if column not in cleaned.columns or pd.api.types.is_bool_dtype(cleaned[column]):
+            continue
+        numeric_values = parse_numeric_series(cleaned[column])
+        median = numeric_values.median()
+        if pd.isna(median):
+            continue
+        missing_mask = cleaned[column].map(is_missing)
+        if pd.api.types.is_numeric_dtype(cleaned[column]):
+            if pd.api.types.is_integer_dtype(cleaned[column]) and median % 1:
+                cleaned[column] = cleaned[column].astype("float64")
+            cleaned[column] = cleaned[column].fillna(median)
+        elif missing_mask.any():
+            cleaned.loc[missing_mask, column] = str(median)
     return cleaned
 
 
@@ -281,12 +387,15 @@ def upload_signature(uploaded_file):
 
 
 def load_sample_data():
-    st.session_state["inspector_data"] = make_sample_data()
-    st.session_state["inspector_source"] = "Sample messy dataset"
-    uploaded_file = st.session_state.get("data_upload")
-    st.session_state["inspector_ignored_upload"] = (
-        upload_signature(uploaded_file) if uploaded_file is not None else None
+    signatures = tuple(
+        upload_signature(uploaded_file)
+        for uploaded_file in st.session_state.get("data_upload", [])
     )
+    st.session_state["inspector_datasets"] = {
+        "Sample messy dataset": make_sample_data()
+    }
+    st.session_state["inspector_upload_signature"] = signatures
+    st.session_state["active_dataset"] = "Sample messy dataset"
 
 
 st.markdown(
@@ -363,6 +472,23 @@ st.markdown(
     .st-key-metric_cards [data-testid="stButton"] button:focus:not(:active) {
         border-color: var(--teal); color: var(--teal-dark);
     }
+    .section-heading {
+        display: flex; align-items: end; justify-content: space-between;
+        gap: 1rem; margin: .4rem 0 1rem;
+    }
+    .section-heading h2 {margin: 0; font-size: 1.35rem; letter-spacing: -.025em;}
+    .section-caption {color: var(--muted); font-size: .88rem; margin-top: .25rem;}
+    .st-key-batch_overview [data-testid="stMetric"] {
+        background: linear-gradient(140deg, #fff, #f0f8f6);
+    }
+    [data-testid="stFileUploaderDropzone"] {
+        min-height: 9rem; border: 1.5px dashed #91b9b8 !important;
+        border-radius: 17px !important; background: rgba(255,255,255,.82) !important;
+    }
+    [data-testid="stFileUploaderDropzone"]:hover {
+        border-color: var(--teal) !important; background: #f0faf8 !important;
+    }
+    [data-testid="stProgressBar"] > div > div {background: var(--teal);}
     [data-testid="stTabs"] [role="tablist"] {
         gap: 7px; border-bottom: 1px solid var(--line);
     }
@@ -392,6 +518,15 @@ st.markdown(
     [data-testid="stDataFrame"] {
         border: 1px solid var(--line); border-radius: 13px; overflow: hidden;
     }
+    @media (max-width: 760px) {
+        .block-container {padding: 1.15rem 1rem 2rem;}
+        .brand-header {padding: 18px 16px; gap: 12px; border-radius: 17px;}
+        .brand-logo {width: 46px; height: 46px; flex-basis: 46px;}
+        .brand-subtitle {font-size: .86rem;}
+        .st-key-metric_cards [data-testid="stButton"] button {
+            min-height: 7rem; padding: 14px 12px;
+        }
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -420,7 +555,7 @@ st.markdown(
     f'<div class="brand-header">{brand_logo("header")}<div>'
     f'<div class="brand-eyebrow">Data quality workspace</div>'
     f'<div class="brand-title">Smart Data Quality Inspector</div>'
-    f'<div class="brand-subtitle">A clearer view of your data. Practical fixes for what needs attention.</div>'
+    f'<div class="brand-subtitle">Bring your data. Find the signal. Make every row count.</div>'
     f'</div></div>',
     unsafe_allow_html=True,
 )
@@ -433,60 +568,116 @@ with st.sidebar:
         f'</div></div>',
         unsafe_allow_html=True,
     )
-    st.caption("Upload a dataset or explore the built-in sample.")
-    uploaded_file = st.file_uploader(
-        "Upload a data file",
+    st.caption("Your data quality command center")
+    uploaded_files = st.file_uploader(
+        "Drop your data files here",
         type=["csv", "xlsx"],
-        help="Supported formats: CSV and Excel (.xlsx).",
+        accept_multiple_files=True,
+        help="Drop or browse multiple CSV and XLSX files. Analyze each file independently.",
         key="data_upload",
     )
     st.button(
-        "Load Sample Messy Dataset",
-        use_container_width=True,
+        "Explore with sample data",
+        width="stretch",
         on_click=load_sample_data,
+        type="secondary",
     )
+    st.caption("CSV and Excel · Multi-file batches · Session-only processing")
 
-if uploaded_file is None:
-    st.session_state.pop("inspector_ignored_upload", None)
-elif upload_signature(uploaded_file) != st.session_state.get("inspector_ignored_upload"):
-    try:
-        st.session_state["inspector_data"] = read_uploaded_file(uploaded_file)
-        st.session_state["inspector_source"] = uploaded_file.name
-        st.session_state["inspector_ignored_upload"] = None
-    except (
-        BadZipFile,
-        UnicodeDecodeError,
-        pd.errors.EmptyDataError,
-        pd.errors.ParserError,
-        ValueError,
-        OSError,
-    ) as error:
-        st.error(f"Could not read {uploaded_file.name}: {error}")
+uploaded_files = uploaded_files or []
+upload_signatures = tuple(upload_signature(file) for file in uploaded_files)
+datasets = st.session_state.get("inspector_datasets", {})
+if uploaded_files and upload_signatures != st.session_state.get(
+    "inspector_upload_signature"
+):
+    loaded_datasets = {}
+    file_errors = []
+    filename_counts = {}
+    with st.spinner(f"Reading and profiling {len(uploaded_files)} file(s)..."):
+        progress = st.progress(0.0, text="Preparing file batch...")
+        for index, uploaded_file in enumerate(uploaded_files):
+            filename_counts[uploaded_file.name] = filename_counts.get(uploaded_file.name, 0) + 1
+            occurrence = filename_counts[uploaded_file.name]
+            dataset_label = (
+                uploaded_file.name
+                if occurrence == 1
+                else f"{uploaded_file.name} ({occurrence})"
+            )
+            progress.progress(
+                index / len(uploaded_files),
+                text=f"Reading {uploaded_file.name} ({index + 1} of {len(uploaded_files)})...",
+            )
+            try:
+                file_data = read_uploaded_file(uploaded_file)
+                if file_data.empty or len(file_data.columns) == 0:
+                    file_errors.append(f"{uploaded_file.name}: the file has no rows or columns.")
+                    continue
+                loaded_datasets[dataset_label] = file_data
+            except (
+                BadZipFile,
+                UnicodeDecodeError,
+                pd.errors.EmptyDataError,
+                pd.errors.ParserError,
+                ValueError,
+                OSError,
+            ) as error:
+                file_errors.append(f"{uploaded_file.name}: {error}")
+            except ImportError as error:
+                file_errors.append(
+                    f"{uploaded_file.name}: a required file-reading dependency is unavailable ({error})."
+                )
+        progress.progress(1.0, text="File batch ready.")
+        progress.empty()
+
+    if loaded_datasets:
+        datasets = loaded_datasets
+        st.session_state["inspector_datasets"] = datasets
+        st.session_state["inspector_upload_signature"] = upload_signatures
+        st.session_state["active_dataset"] = next(iter(datasets))
+    for file_error in file_errors:
+        st.warning(file_error)
+    if not loaded_datasets:
+        st.error("No files could be analyzed. Check the file format and try again.")
         st.stop()
-    except ImportError as error:
-        st.error(f"Could not read the Excel file because a required dependency is unavailable: {error}")
-        st.stop()
 
-data = st.session_state.get("inspector_data")
-if data is None:
-    st.info("Upload a CSV or XLSX file, or select **Load Sample Messy Dataset** in the sidebar to get started.")
-    st.stop()
-if data.empty or len(data.columns) == 0:
-    st.warning("The selected dataset has no rows or columns to inspect.")
+if not datasets:
+    st.markdown("### Your data deserves a closer look.")
+    st.markdown(
+        "Drag and drop **one or more CSV or Excel files** in the sidebar, "
+        "or load the sample to explore the inspector."
+    )
+    st.info(
+        "Profile missingness, duplicates, contact and date formats, numeric distributions, "
+        "and statistical outliers. Your files stay in this browser session."
+    )
     st.stop()
 
+with st.sidebar:
+    if len(datasets) > 1:
+        st.divider()
+        st.markdown("#### Current workspace")
+        active_dataset = st.selectbox(
+            "Analyze a file",
+            options=list(datasets),
+            key="active_dataset",
+            label_visibility="collapsed",
+        )
+    else:
+        active_dataset = next(iter(datasets))
+        st.session_state["active_dataset"] = active_dataset
+
+data = datasets[active_dataset]
 columns = list(data.columns)
 column_signature = hashlib.sha256(
-    "\0".join(map(str, columns)).encode("utf-8")
+    (
+        active_dataset
+        + "\0"
+        + "\0".join(
+            f"{column}:{data[column].dtype}" for column in columns
+        )
+    ).encode("utf-8")
 ).hexdigest()[:12]
-email_defaults = [column for column in columns if "email" in str(column).lower()]
-date_defaults = [column for column in columns if "date" in str(column).lower()]
-numeric_defaults = [
-    column
-    for column in columns
-    if pd.api.types.is_numeric_dtype(data[column])
-    and not pd.api.types.is_bool_dtype(data[column])
-]
+email_defaults, date_defaults, numeric_defaults = infer_column_rules(data)
 
 with st.sidebar:
     with st.expander("Column Rules", expanded=False):
@@ -532,7 +723,37 @@ issues, duplicate_count = scan_data(
 )
 issue_count = len(issues)
 health_score = max(0, round(100 * (1 - issue_count / max(data.shape[0] * data.shape[1], 1))))
-st.caption(f"Inspecting **{st.session_state.get('inspector_source', 'dataset')}** · {data.shape[0]:,} rows · {data.shape[1]:,} columns")
+column_profile = build_column_profile(
+    data,
+    email_columns,
+    date_columns,
+    numeric_columns,
+)
+batch_row_count = sum(len(frame) for frame in datasets.values())
+quality_label = (
+    "Excellent" if health_score >= 95
+    else "Good" if health_score >= 85
+    else "Needs attention" if health_score >= 70
+    else "Review recommended"
+)
+
+st.markdown(
+    f'<div class="section-heading"><div><h2>Workspace overview</h2>'
+    f'<div class="section-caption">A live snapshot of {len(datasets)} dataset(s) in this batch.</div>'
+    f'</div></div>',
+    unsafe_allow_html=True,
+)
+with st.container(key="batch_overview"):
+    batch_columns = st.columns(4)
+    batch_columns[0].metric("Files in workspace", f"{len(datasets):,}")
+    batch_columns[1].metric("Rows across files", f"{batch_row_count:,}")
+    batch_columns[2].metric("Active file", active_dataset)
+    batch_columns[3].metric("Current data health", quality_label, f"{health_score}%")
+
+st.caption(
+    f"Analyzing **{active_dataset}** · {data.shape[0]:,} rows · "
+    f"{data.shape[1]:,} columns · {int(data.memory_usage(deep=True).sum() / 1024):,} KB in memory"
+)
 
 metric_cards = [
     ("health", "Data Health Score", f"{health_score}%", "How the quality score is calculated"),
@@ -579,7 +800,7 @@ if selected_metric:
                     .size()
                     .rename(columns={"size": "Issue Count"})
                     .sort_values("Issue Count", ascending=False),
-                    use_container_width=True,
+                    width="stretch",
                     hide_index=True,
                 )
         elif selected_metric == "rows":
@@ -612,12 +833,12 @@ if selected_metric:
                 type_column, field_column = st.columns(2)
                 with type_column:
                     st.caption("Findings by issue type")
-                    st.dataframe(issue_type_counts, use_container_width=True, hide_index=True)
+                    st.dataframe(issue_type_counts, width="stretch", hide_index=True)
                 with field_column:
                     st.caption("Findings by column")
-                    st.dataframe(issue_column_counts, use_container_width=True, hide_index=True)
+                    st.dataframe(issue_column_counts, width="stretch", hide_index=True)
                 st.caption("Showing every detected issue:")
-                st.dataframe(issues, use_container_width=True, hide_index=True)
+                st.dataframe(issues, width="stretch", hide_index=True)
         elif selected_metric == "duplicates":
             duplicate_mask = data.duplicated(keep="first").to_numpy()
             duplicate_positions = np.flatnonzero(duplicate_mask)
@@ -630,18 +851,18 @@ if selected_metric:
                     f"**{duplicate_count:,}** exact duplicate row(s) were found. "
                     "These rows match an earlier row across every column."
                 )
-                st.dataframe(duplicate_rows, use_container_width=True, hide_index=True)
+                st.dataframe(duplicate_rows, width="stretch", hide_index=True)
 
 overview_tab, issues_tab, preview_tab = st.tabs(
     ["Overview Dashboard", "Issue Logs", "Data Preview & Export"]
 )
 
 with overview_tab:
-    chart_col, recommendations_col = st.columns([1.55, 1])
+    chart_col, type_col = st.columns([1.35, 1])
     with chart_col:
-        st.subheader("Issues by column")
+        st.subheader("Where should you look first?")
         if issues.empty:
-            st.success("No quality issues detected.")
+            st.success("This dataset is looking healthy. No issues were found by the active checks.")
         else:
             issue_counts = (
                 issues.groupby("Column Name", as_index=False)
@@ -654,63 +875,249 @@ with overview_tab:
                 x="Column Name",
                 y="Issue Count",
                 color="Issue Count",
-                color_continuous_scale=["#b9d5ff", "#4169e1"],
+                color_continuous_scale=["#c5e8df", "#087e83", "#075b68"],
                 text="Issue Count",
             )
             chart.update_layout(
                 template="plotly_white",
                 coloraxis_showscale=False,
                 xaxis_title="",
-                yaxis_title="Number of issues",
-                margin=dict(l=10, r=10, t=15, b=10),
+                yaxis_title="Findings",
+                margin=dict(l=12, r=12, t=15, b=20),
+                plot_bgcolor="rgba(0,0,0,0)",
+                paper_bgcolor="rgba(0,0,0,0)",
+                font=dict(color="#344b5a"),
             )
-            st.plotly_chart(chart, use_container_width=True)
+            st.plotly_chart(chart, width="stretch", config={"displayModeBar": False})
+
+    with type_col:
+        st.subheader("Quality findings")
+        issue_types = set(issues["Issue Type"]) if not issues.empty else set()
+        if issues.empty:
+            st.caption("Findings will appear here after a check detects an issue.")
+        else:
+            type_counts = (
+                issues.groupby("Issue Type", as_index=False)
+                .size()
+                .rename(columns={"size": "Findings"})
+                .sort_values("Findings", ascending=False)
+            )
+            type_chart = px.pie(
+                type_counts,
+                names="Issue Type",
+                values="Findings",
+                hole=0.66,
+                color_discrete_sequence=CHART_COLORS,
+            )
+            type_chart.update_traces(
+                textposition="inside",
+                textinfo="percent",
+                hovertemplate="%{label}<br>%{value} findings<extra></extra>",
+            )
+            type_chart.update_layout(
+                template="plotly_white",
+                showlegend=True,
+                legend=dict(orientation="h", y=-0.16, x=0),
+                margin=dict(l=8, r=8, t=12, b=38),
+                plot_bgcolor="rgba(0,0,0,0)",
+                paper_bgcolor="rgba(0,0,0,0)",
+                font=dict(color="#344b5a"),
+            )
+            st.plotly_chart(type_chart, width="stretch", config={"displayModeBar": False})
+            type_counts = type_counts.rename(columns={"Findings": "Issue Count"})
+            st.dataframe(type_counts, width="stretch", hide_index=True)
+
+    st.divider()
+    missing_col, recommendations_col = st.columns([1.3, 1])
+    with missing_col:
+        st.subheader("Completeness by column")
+        missing_profile = column_profile.sort_values("Missing %", ascending=False)
+        if int(missing_profile["Missing"].sum()) == 0:
+            st.success("Every column is complete under the current missing-value check.")
+        else:
+            missing_chart = px.bar(
+                missing_profile,
+                x="Missing %",
+                y="Column",
+                orientation="h",
+                color="Missing %",
+                color_continuous_scale=["#c5e8df", "#e7b565", "#dc755c"],
+                text="Missing %",
+                hover_data={"Missing": True, "Unique": True},
+            )
+            missing_chart.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
+            missing_chart.update_layout(
+                template="plotly_white",
+                coloraxis_showscale=False,
+                xaxis_title="Missing values (%)",
+                yaxis_title="",
+                margin=dict(l=8, r=34, t=12, b=18),
+                plot_bgcolor="rgba(0,0,0,0)",
+                paper_bgcolor="rgba(0,0,0,0)",
+                font=dict(color="#344b5a"),
+            )
+            st.plotly_chart(missing_chart, width="stretch", config={"displayModeBar": False})
 
     with recommendations_col:
-        st.subheader("Top recommendations")
-        issue_types = set(issues["Issue Type"]) if not issues.empty else set()
+        st.subheader("Recommended next steps")
         recommendations = []
         if duplicate_count:
-            recommendations.append(f"Remove {duplicate_count} duplicate row(s).")
+            recommendations.append(
+                (f"Remove {duplicate_count} exact duplicate row(s).", "Duplicate Row")
+            )
         if "Missing Value" in issue_types:
-            recommendations.append("Review missing values and choose field-appropriate replacements.")
+            top_missing = column_profile.sort_values("Missing %", ascending=False).iloc[0]
+            recommendations.append(
+                (
+                    f"Review missing values first in **{top_missing['Column']}** "
+                    f"({top_missing['Missing %']:.1f}% missing).",
+                    "Missing Value",
+                )
+            )
         if "Invalid Email" in issue_types:
-            recommendations.append("Correct malformed email addresses before using contact data.")
+            recommendations.append(
+                ("Validate malformed email addresses before sending communications.", "Invalid Email")
+            )
         if {"Invalid Date", "Inconsistent Date Format"} & issue_types:
-            recommendations.append("Standardize date formats and correct unparseable date values.")
+            recommendations.append(
+                ("Standardize mixed date formats and review unparseable values.", "Invalid Date")
+            )
         if "Numeric Outlier" in issue_types:
-            recommendations.append("Validate numeric outliers against the source before changing them.")
+            recommendations.append(
+                ("Check statistical outliers against the source before changing values.", "Numeric Outlier")
+            )
         if not recommendations:
-            recommendations.append("Your dataset looks good. Continue to preview or export it.")
-        for recommendation in recommendations:
-            st.markdown(f"- {recommendation}")
+            st.success("No action needed — your data looks great.")
+            st.markdown("Preview the dataset or export a cleaned copy whenever you’re ready.")
+        else:
+            for recommendation, _ in recommendations:
+                st.markdown(f"- {recommendation}")
+        with st.expander("How to interpret this report"):
+            st.markdown(
+                "- Each finding represents a detected value or duplicate row, not a confirmed business error.\n"
+                "- Statistical outliers are review candidates, not automatic corrections.\n"
+                "- Change the column rules in the sidebar to match your data."
+            )
+
+    st.divider()
+    st.subheader("Explore a numeric distribution")
+    if numeric_columns:
+        numeric_col, distribution_col = st.columns([1, 2])
+        with numeric_col:
+            selected_numeric = st.selectbox(
+                "Choose a numeric column",
+                options=list(numeric_columns),
+                key=f"distribution_column_{column_signature}",
+            )
+            numeric_values = parse_numeric_series(data[selected_numeric]).dropna()
+            st.metric("Valid numeric values", f"{len(numeric_values):,}")
+            if not numeric_values.empty:
+                distribution_metrics = st.columns(2)
+                distribution_metrics[0].metric(
+                    "Median", f"{numeric_values.median():,.2f}"
+                )
+                distribution_metrics[1].metric(
+                    "Range", f"{numeric_values.min():,.2f} – {numeric_values.max():,.2f}"
+                )
+        with distribution_col:
+            if numeric_values.empty:
+                st.info("There are no numeric values to chart in this column.")
+            else:
+                distribution = px.histogram(
+                    numeric_values.to_frame(name=str(selected_numeric)),
+                    x=str(selected_numeric),
+                    marginal="box",
+                    color_discrete_sequence=[CHART_COLORS[0]],
+                    labels={str(selected_numeric): str(selected_numeric)},
+                    opacity=0.86,
+                )
+                distribution.update_layout(
+                    template="plotly_white",
+                    showlegend=False,
+                    xaxis_title=str(selected_numeric),
+                    yaxis_title="Rows",
+                    margin=dict(l=12, r=12, t=20, b=20),
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    font=dict(color="#344b5a"),
+                )
+                st.plotly_chart(
+                    distribution, width="stretch", config={"displayModeBar": False}
+                )
+    else:
+        st.info("Choose a Numeric column in the sidebar to explore its distribution.")
+
+    with st.expander("Column profile", expanded=False):
+        st.caption("Automatically inferred types can be adjusted in Column Rules.")
+        st.dataframe(column_profile, width="stretch", hide_index=True)
 
 with issues_tab:
-    st.subheader("Detected issues")
+    st.subheader("Issue explorer")
+    st.caption(f"Detailed findings for **{active_dataset}**.")
     if issues.empty:
-        st.success("No issues found. Your dataset passed all available checks.")
+        st.success("No issues found. Your dataset passed all checks enabled by the current rules.")
     else:
+        filter_col, summary_col = st.columns([1, 2])
         filter_options = ["All issue types"] + sorted(issues["Issue Type"].unique().tolist())
-        selected_type = st.selectbox("Filter by issue type", filter_options)
-        filtered_issues = (
-            issues if selected_type == "All issue types" else issues[issues["Issue Type"] == selected_type]
-        )
+        with filter_col:
+            selected_type = st.selectbox("Filter findings", filter_options)
+        filtered_issues = issues if selected_type == "All issue types" else issues[
+            issues["Issue Type"] == selected_type
+        ]
+        with summary_col:
+            st.markdown(
+                f"**{len(filtered_issues):,}** visible · "
+                f"**{issue_count:,}** total findings · "
+                f"**{issues['Column Name'].nunique():,}** affected columns"
+            )
         st.caption(f"Showing {len(filtered_issues):,} of {len(issues):,} detected issues")
-        st.dataframe(filtered_issues, use_container_width=True, hide_index=True)
+        st.dataframe(filtered_issues, width="stretch", hide_index=True)
 
 with preview_tab:
-    st.subheader("Data preview")
-    st.dataframe(data.head(100), use_container_width=True, hide_index=True)
-    cleaned_data = clean_data(data)
+    st.subheader("Your data, ready to explore")
+    st.caption(
+        f"Previewing **{active_dataset}**. The original data remains unchanged by export cleaning."
+    )
+    st.dataframe(data.head(100), width="stretch", hide_index=True)
+    cleaned_data = clean_data(data, numeric_columns=numeric_columns)
     st.caption(
         f"One-click cleaning removes exact duplicates, trims text whitespace, "
         f"and fills missing numeric values with their column median. "
         f"Preview: {len(cleaned_data):,} rows after cleaning."
     )
-    st.download_button(
-        "Download Cleaned CSV",
-        data=cleaned_data.to_csv(index=False).encode("utf-8"),
-        file_name="cleaned_data.csv",
-        mime="text/csv",
-        type="primary",
+    download_col, batch_col = st.columns([1, 1])
+    with download_col:
+        st.download_button(
+            "Download this cleaned CSV",
+            data=cleaned_data.to_csv(index=False).encode("utf-8"),
+            file_name=f"{active_dataset.rsplit('.', 1)[0]}_cleaned.csv",
+            mime="text/csv",
+            type="primary",
+            width="stretch",
+        )
+    with batch_col:
+        if len(datasets) > 1:
+            archive = BytesIO()
+            with ZipFile(archive, mode="w") as zip_file:
+                for dataset_name, dataset in datasets.items():
+                    cleaned = clean_data(dataset)
+                    safe_name = re.sub(r"[^A-Za-z0-9._-]+", "_", dataset_name)
+                    if not safe_name.lower().endswith(".csv"):
+                        safe_name = f"{safe_name}.csv"
+                    zip_file.writestr(
+                        f"{safe_name.rsplit('.', 1)[0]}_cleaned.csv",
+                        cleaned.to_csv(index=False),
+                    )
+            st.download_button(
+                "Download all cleaned files",
+                data=archive.getvalue(),
+                file_name="cleaned_data_batch.zip",
+                mime="application/zip",
+                width="stretch",
+            )
+        else:
+            st.info("Upload multiple files to export the full batch as one ZIP.")
+    st.caption(
+        "Quality reports are calculated independently for each file. "
+        "Uploaded files stay in the current app session and are not saved to a database."
     )
