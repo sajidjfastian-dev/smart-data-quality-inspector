@@ -12,6 +12,7 @@ RUN python -m pip install --no-cache-dir -r requirements.txt \
     && useradd --create-home --uid 10001 appuser
 
 COPY app.py ./app.py
+COPY sample_data ./sample_data
 
 USER 10001
 

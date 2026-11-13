@@ -1,0 +1,1201 @@
+﻿product_id,product_name,category,unit_price,stock_units,supplier,launch_date
+7001,Product 07001,Books,16.04,810.0,Blue Oak Goods,2021-04-14
+7002,Product 07002,Home,55.67,692.0,Blue Oak Goods,2024-03-24
+7003,Product 07003,Outdoor,5.99,2185.0,Harbor Market,2025-11-10
+7004,Product 07004,Outdoor,17.15,397.0,Summit Wholesale,2025-03-19
+7005,Product 07005,Kitchen,23.73,1310.0,Northstar Supply,2023-11-02
+7006,Product 07006,Outdoor,22.77,149.0,Northstar Supply,2021-11-25
+7007,Product 07007,Kitchen,17.85,605.0,Summit Wholesale,2020-12-04
+7008,Product 07008,Office,38.25,2158.0,Blue Oak Goods,2020-07-29
+7009,Product 07009,Books,13.85,132.0,Harbor Market,2019-02-19
+7010,Product 07010,Office,55.63,595.0,Summit Wholesale,2019-12-05
+7011,Product 07011,Books,34.86,1314.0,Blue Oak Goods,2022-04-27
+7012,Product 07012,Office,19.86,1298.0,Blue Oak Goods,2023-06-22
+7013,Product 07013,Outdoor,14.99,2092.0,Summit Wholesale,2023-02-16
+7014,Product 07014,Electronics,37.83,869.0,Blue Oak Goods,2020-09-10
+7015,Product 07015,Outdoor,56.29,2344.0,Northstar Supply,2023-06-08
+7016,Product 07016,Home,31.85,1314.0,Summit Wholesale,2020-12-24
+7017,Product 07017,Office,114.49,1834.0,Harbor Market,2020-08-29
+7018,Product 07018,Books,11.21,1329.0,Summit Wholesale,2025-08-21
+7019,Product 07019,Office,19.41,2097.0,Harbor Market,2025-04-25
+7020,Product 07020,Kitchen,36.44,193.0,Summit Wholesale,2025-11-02
+7021,Product 07021,Books,9.69,1953.0,Northstar Supply,2019-08-15
+7022,Product 07022,Outdoor,50.23,1748.0,Summit Wholesale,2021-11-23
+7023,Product 07023,Home,36.32,970.0,Blue Oak Goods,2020-10-12
+7024,Product 07024,Books,21.7,2419.0,Harbor Market,2023-11-03
+7025,Product 07025,Outdoor,9.46,1270.0,Summit Wholesale,2026-01-06
+7026,Product 07026,Office,22.53,1466.0,Summit Wholesale,2023-06-04
+7027,Product 07027,Office,63.11,720.0,Summit Wholesale,2024-12-28
+7028,Product 07028,Books,8.2,87.0,Blue Oak Goods,2024-06-08
+7029,Product 07029,Home,32.5,1356.0,Blue Oak Goods,2021-03-29
+7030,Product 07030,Home,55.58,2483.0,Summit Wholesale,2020-10-30
+7031,Product 07031,Books,19.17,298.0,Blue Oak Goods,2023-08-18
+7032,Product 07032,Electronics,44.5,2084.0,Blue Oak Goods,2025-01-03
+7033,Product 07033,Outdoor,129.08,134.0,Blue Oak Goods,2023-04-06
+7034,Product 07034,Outdoor,370.28,580.0,Northstar Supply,2024-08-17
+7035,Product 07035,Home,22.63,1185.0,Northstar Supply,2021-01-16
+7036,Product 07036,Outdoor,34.17,2416.0,Summit Wholesale,2019-04-24
+7037,Product 07037,Outdoor,10.3,875.0,Summit Wholesale,2022-08-29
+7038,Product 07038,Books,36.27,205.0,Blue Oak Goods,2021-11-16
+7039,Product 07039,Home,6.53,279.0,Summit Wholesale,2019-01-05
+7040,Product 07040,Books,25.06,1259.0,Blue Oak Goods,2023-12-09
+7041,Product 07041,Home,29.6,2133.0,Northstar Supply,2020-12-30
+7042,Product 07042,Books,7.84,1620.0,Summit Wholesale,2025-06-22
+7043,Product 07043,Home,17.66,1571.0,Blue Oak Goods,2021-03-01
+7044,Product 07044,Electronics,17.61,579.0,Harbor Market,2024-03-05
+7045,Product 07045,Home,615.15,2141.0,Northstar Supply,2021-07-31
+7046,Product 07046,Home,46.35,549.0,Summit Wholesale,2022-08-13
+7047,Product 07047,Office,7.36,750.0,Summit Wholesale,2024-07-15
+7048,Product 07048,Electronics,13.86,1733.0,Summit Wholesale,2025-08-30
+7049,Product 07049,Kitchen,7.66,551.0,Blue Oak Goods,2022-10-16
+7050,Product 07050,Home,3.62,1069.0,Harbor Market,2021-12-29
+7051,Product 07051,Outdoor,46.34,1843.0,Northstar Supply,2021-10-20
+7052,Product 07052,Home,21.68,2323.0,Harbor Market,2019-01-19
+7053,Product 07053,Books,57.15,2249.0,Summit Wholesale,2020-04-30
+7054,Product 07054,Electronics,172.57,1545.0,Blue Oak Goods,2024-03-11
+7055,Product 07055,Electronics,58.04,1356.0,Harbor Market,2022-08-20
+7056,Product 07056,Kitchen,34.31,2424.0,Blue Oak Goods,2026-04-23
+7057,Product 07057,Office,79.39,105.0,Blue Oak Goods,2024-07-11
+7058,Product 07058,Electronics,29.58,380.0,Northstar Supply,2024-02-05
+7059,Product 07059,Kitchen,40.01,2142.0,Blue Oak Goods,2022-11-24
+7060,Product 07060,Books,50.71,613.0,Summit Wholesale,2020-01-08
+7061,Product 07061,Home,69.97,827.0,Harbor Market,2025-01-03
+7062,Product 07062,Kitchen,33.23,339.0,Blue Oak Goods,2025-11-14
+7063,Product 07063,Kitchen,6.25,800.0,Blue Oak Goods,2021-08-29
+7064,Product 07064,Electronics,125000.0,2409.0,Blue Oak Goods,2023-03-30
+7065,Product 07065,Outdoor,12.97,2405.0,Harbor Market,2025-06-27
+7066,Product 07066,Books,48.14,2010.0,Harbor Market,2020-06-24
+7067,Product 07067,Books,11.97,31.0,Harbor Market,2021-04-23
+7068,Product 07068,Books,12.91,146.0,Northstar Supply,2024-08-15
+7069,Product 07069,Home,29.51,721.0,Harbor Market,2024-10-11
+7070,Product 07070,Kitchen,25.9,1977.0,Harbor Market,2022-02-04
+7071,Product 07071,Office,39.25,1831.0,Summit Wholesale,2022-01-11
+7072,Product 07072,Outdoor,9.73,852.0,Harbor Market,2020-10-05
+7073,Product 07073,Books,55.49,1706.0,Summit Wholesale,2019-02-12
+7074,Product 07074,Office,92.42,1643.0,Summit Wholesale,2023-06-12
+7075,Product 07075,Books,14.18,291.0,Northstar Supply,2019-02-16
+7076,Product 07076,Outdoor,16.92,585.0,Northstar Supply,2020-10-11
+7077,Product 07077,Home,6.53,21.0,Harbor Market,2021-07-15
+7078,Product 07078,Kitchen,23.29,514.0,Summit Wholesale,2024-01-05
+7079,Product 07079,Electronics,9.16,99.0,Summit Wholesale,2020-12-10
+7080,Product 07080,Outdoor,25.53,566.0,Summit Wholesale,2019-11-16
+7081,Product 07081,Home,8.31,2070.0,Summit Wholesale,2019-12-11
+7082,Product 07082,Home,33.28,1264.0,Northstar Supply,2025-07-07
+7083,Product 07083,Home,28.71,881.0,Blue Oak Goods,2022-09-18
+7084,Product 07084,Office,23.34,79.0,Harbor Market,2026-05-22
+7085,Product 07085,Kitchen,28.55,1098.0,Blue Oak Goods,2020-06-08
+7086,Product 07086,Electronics,19.29,2098.0,Blue Oak Goods,2019-08-08
+7087,Product 07087,Outdoor,9.28,1702.0,Blue Oak Goods,2019-05-18
+7088,Product 07088,Electronics,19.48,631.0,Harbor Market,2019-07-13
+7089,Product 07089,Kitchen,18.81,854.0,Summit Wholesale,2019-09-14
+7090,Product 07090,Kitchen,11.92,173.0,Blue Oak Goods,2025-08-21
+7091,Product 07091,Outdoor,21.45,644.0,Harbor Market,2019-06-25
+7092,Product 07092,Outdoor,62.08,772.0,Summit Wholesale,2023-05-20
+7093,Product 07093,Electronics,45.22,1547.0,Blue Oak Goods,2019-04-01
+7094,Product 07094,Office,5.76,1744.0,Blue Oak Goods,2023-11-14
+7095,Product 07095,Books,119.08,2247.0,Summit Wholesale,2024-01-13
+7096,Product 07096,Outdoor,13.53,1552.0,Summit Wholesale,2025-10-22
+7097,Product 07097,Kitchen,32.11,274.0,Summit Wholesale,2020-12-30
+7098,Product 07098,Home,69.38,886.0,Summit Wholesale,2020-03-29
+7099,Product 07099,Outdoor,22.83,1280.0,Summit Wholesale,2023-03-08
+7100,Product 07100,Kitchen,93.73,1130.0,Summit Wholesale,2025-12-10
+7101,Product 07101,Home,30.82,2441.0,Blue Oak Goods,2021-05-23
+7102,Product 07102,Books,106.53,1037.0,Northstar Supply,2021-09-29
+7103,Product 07103,Electronics,19.75,1948.0,Northstar Supply,2022-12-27
+7104,Product 07104,Books,28.19,494.0,Summit Wholesale,2025-06-03
+7105,Product 07105,Office,71.32,296.0,Harbor Market,2024-12-27
+7106,Product 07106,Kitchen,45.94,1058.0,Blue Oak Goods,2026-02-24
+7107,Product 07107,Office,14.52,1708.0,Harbor Market,2020-01-21
+7108,Product 07108,Home,19.01,622.0,Summit Wholesale,2024-08-02
+7109,Product 07109,Office,35.86,2364.0,Northstar Supply,2024-10-21
+7110,Product 07110,Home,12.19,709.0,Northstar Supply,2026-03-09
+7111,Product 07111,Kitchen,2.65,2014.0,Summit Wholesale,2019-02-02
+7112,Product 07112,Kitchen,19.73,920.0,Blue Oak Goods,2025-02-26
+7113,Product 07113,Books,45.42,1449.0,Northstar Supply,2020-06-16
+7114,Product 07114,Books,8.66,2139.0,Blue Oak Goods,2025-09-20
+7115,Product 07115,Kitchen,29.43,2465.0,Blue Oak Goods,2019-04-11
+7116,Product 07116,Home,24.83,1602.0,Northstar Supply,2021-11-09
+7117,Product 07117,Electronics,36.05,2013.0,Summit Wholesale,2019-07-09
+7118,Product 07118,Outdoor,20.94,1085.0,Harbor Market,2021-07-15
+7119,Product 07119,Electronics,36.14,554.0,Summit Wholesale,2023-12-30
+7120,Product 07120,Office,19.97,,Northstar Supply,2019-04-29
+7121,Product 07121,Kitchen,12.42,1717.0,Blue Oak Goods,2026-03-24
+7122,Product 07122,Office,38.91,189.0,Northstar Supply,2025-09-22
+7123,Product 07123,Home,49.4,1823.0,Summit Wholesale,2022-11-15
+7124,Product 07124,Outdoor,68.45,865.0,Harbor Market,2021-08-12
+7125,Product 07125,Kitchen,9.83,1189.0,Summit Wholesale,2026-03-08
+7126,Product 07126,Books,44.32,2449.0,Summit Wholesale,2026-01-06
+7127,Product 07127,Kitchen,11.69,1295.0,Summit Wholesale,2022-11-01
+7128,Product 07128,Outdoor,22.16,2371.0,Harbor Market,2019-03-17
+7129,Product 07129,Home,74.2,338.0,Summit Wholesale,2025-03-08
+7130,Product 07130,Home,31.96,2255.0,Blue Oak Goods,2019-04-28
+7131,Product 07131,Office,7.6,492.0,Harbor Market,2023-01-24
+7132,Product 07132,Kitchen,26.31,1646.0,Summit Wholesale,2022-06-24
+7133,Product 07133,Kitchen,7.82,2373.0,Blue Oak Goods,2019-12-31
+7134,Product 07134,Office,37.27,1701.0,Blue Oak Goods,2024-10-11
+7135,Product 07135,Kitchen,43.56,103.0,Summit Wholesale,2024-02-13
+7136,Product 07136,Books,35.14,264.0,Northstar Supply,2019-09-24
+7137,Product 07137,Books,39.36,1973.0,Harbor Market,2023-11-25
+7138,Product 07138,Electronics,113.78,750.0,Summit Wholesale,2026-02-01
+7139,Product 07139,Home,18.21,481.0,Summit Wholesale,2019-05-22
+7140,Product 07140,Office,30.9,39.0,Summit Wholesale,2020-03-18
+7141,Product 07141,Office,34.53,998.0,Blue Oak Goods,2020-03-28
+7142,Product 07142,Office,19.81,468.0,Harbor Market,2021-05-28
+7143,Product 07143,Kitchen,73.1,394.0,Blue Oak Goods,2024-08-08
+7144,Product 07144,Office,29.81,1384.0,Harbor Market,2024-07-04
+7145,Product 07145,Outdoor,5.21,2138.0,Harbor Market,2021-08-07
+7146,Product 07146,Electronics,22.8,2134.0,Harbor Market,2021-12-17
+7147,Product 07147,Office,12.87,987.0,Summit Wholesale,2022-10-27
+7148,Product 07148,Kitchen,11.74,189.0,Harbor Market,2024-07-10
+7149,Product 07149,Electronics,82.63,582.0,Harbor Market,2024-10-15
+7150,Product 07150,Home,12.56,11.0,Harbor Market,2020-09-19
+7151,Product 07151,Home,19.08,741.0,Northstar Supply,2021-05-06
+7152,Product 07152,Home,15.28,1421.0,Blue Oak Goods,2021-02-15
+7153,Product 07153,Office,6.86,1361.0,Harbor Market,2019-04-21
+7154,Product 07154,Electronics,85.51,2179.0,Blue Oak Goods,2019-08-21
+7155,Product 07155,Home,14.39,2141.0,Summit Wholesale,2021-03-17
+7156,Product 07156,Electronics,5.04,842.0,Northstar Supply,2021-04-02
+7157,Product 07157,Electronics,41.05,1857.0,Summit Wholesale,2022-10-12
+7158,Product 07158,Office,25.1,2064.0,Northstar Supply,2025-03-10
+7159,Product 07159,Office,16.01,1292.0,Blue Oak Goods,2025-11-22
+7160,Product 07160,Outdoor,19.68,1145.0,Blue Oak Goods,2020-01-31
+7161,Product 07161,Home,126.09,588.0,Harbor Market,2025-09-26
+7162,Product 07162,Outdoor,79.89,1297.0,Harbor Market,2026-03-06
+7163,Product 07163,Books,5.15,1397.0,Northstar Supply,2025-05-14
+7164,Product 07164,Office,9.28,2426.0,Harbor Market,2024-01-30
+7165,Product 07165,Books,219.46,2220.0,Northstar Supply,2019-06-15
+7166,Product 07166,Books,60.77,1354.0,Harbor Market,2019-10-29
+7167,Product 07167,Books,65.65,917.0,Harbor Market,2021-12-03
+7168,Product 07168,Books,13.39,2008.0,Blue Oak Goods,2025-06-17
+7169,Product 07169,Books,68.78,1453.0,Blue Oak Goods,2021-04-02
+7170,Product 07170,Office,30.06,2170.0,Northstar Supply,2021-12-19
+7171,Product 07171,Office,14.85,659.0,Northstar Supply,2019-09-06
+7172,Product 07172,Outdoor,15.24,472.0,Blue Oak Goods,2020-07-05
+7173,Product 07173,Office,13.71,1712.0,Harbor Market,2022-11-22
+7174,Product 07174,Office,75.37,2330.0,Summit Wholesale,2026-03-17
+7175,Product 07175,Office,77.51,940.0,Blue Oak Goods,2025-08-17
+7176,Product 07176,Kitchen,14.41,1542.0,Northstar Supply,2025-03-17
+7177,Product 07177,Kitchen,8.9,1436.0,Northstar Supply,2023-10-16
+7178,Product 07178,Home,51.01,360.0,Harbor Market,2026-02-19
+7179,Product 07179,Electronics,10.23,1211.0,Blue Oak Goods,2022-12-16
+7180,Product 07180,Home,9.33,246.0,Northstar Supply,2019-11-02
+7181,Product 07181,Office,8.47,1991.0,Blue Oak Goods,2023-12-15
+7182,Product 07182,Kitchen,48.12,2212.0,Harbor Market,2022-02-12
+7183,Product 07183,Books,81.19,1574.0,Harbor Market,2020-05-04
+7184,Product 07184,Kitchen,6.66,1971.0,Summit Wholesale,2023-08-13
+7185,Product 07185,Books,108.28,2404.0,Harbor Market,2022-03-26
+7186,Product 07186,Home,7.49,2451.0,Summit Wholesale,2024-07-27
+7187,Product 07187,Books,25.27,1657.0,Harbor Market,2023-02-09
+7188,Product 07188,Home,50.51,738.0,Blue Oak Goods,2021-07-16
+7189,Product 07189,Home,25.45,975.0,Summit Wholesale,2022-09-20
+7190,Product 07190,Outdoor,20.15,660.0,Summit Wholesale,2020-04-20
+7191,Product 07191,Office,8.93,1382.0,Northstar Supply,2022-06-13
+7192,Product 07192,Office,24.14,756.0,Summit Wholesale,2023-01-25
+7193,Product 07193,Kitchen,12.27,221.0,Harbor Market,2021-02-18
+7194,Product 07194,Home,26.05,1861.0,Harbor Market,2025-11-12
+7195,Product 07195,Outdoor,6.1,938.0,Summit Wholesale,2021-09-14
+7196,Product 07196,Electronics,20.39,597.0,Northstar Supply,2020-12-05
+7197,Product 07197,Home,21.65,1848.0,Blue Oak Goods,2026-02-27
+7198,Product 07198,Books,44.12,1677.0,Harbor Market,2019-05-10
+7199,Product 07199,Kitchen,29.06,1497.0,Summit Wholesale,2022-04-11
+7200,Product 07200,Electronics,19.91,149.0,Harbor Market,2025-12-16
+7201,Product 07201,Outdoor,113.96,1648.0,Harbor Market,2022-02-03
+7202,Product 07202,Outdoor,8.69,534.0,Northstar Supply,2022-02-19
+7203,Product 07203,Office,8.92,1523.0,Blue Oak Goods,2022-09-15
+7204,Product 07204,Kitchen,75.25,2272.0,Northstar Supply,2024-12-26
+7205,Product 07205,Books,27.14,1001.0,Harbor Market,2021-09-21
+7206,Product 07206,Books,4.61,1995.0,Northstar Supply,2025-07-02
+7207,Product 07207,Office,8.56,222.0,Blue Oak Goods,2020-06-11
+7208,Product 07208,   ,34.97,1651.0,Northstar Supply,2022-10-13
+7209,Product 07209,Home,64.41,2192.0,Summit Wholesale,2024-09-11
+7210,Product 07210,Electronics,15.23,2162.0,Harbor Market,2020-02-27
+7211,Product 07211,Outdoor,9.4,166.0,Blue Oak Goods,2020-03-26
+7212,Product 07212,Electronics,16.4,146.0,Harbor Market,2021-09-12
+7213,Product 07213,Home,20.61,1265.0,Northstar Supply,2022-02-15
+7214,Product 07214,Home,37.63,178.0,Northstar Supply,2026-03-25
+7215,Product 07215,Electronics,25.59,2042.0,Summit Wholesale,2022-01-02
+7216,Product 07216,Outdoor,77.36,1983.0,Blue Oak Goods,2024-06-30
+7217,Product 07217,Office,89.73,894.0,Summit Wholesale,2023-12-25
+7218,Product 07218,Outdoor,6.2,1435.0,Summit Wholesale,2021-07-20
+7219,Product 07219,Kitchen,7.12,1020.0,Blue Oak Goods,2021-08-05
+7220,Product 07220,Electronics,23.76,1637.0,Summit Wholesale,2019-01-21
+7221,Product 07221,Kitchen,64.59,1353.0,Summit Wholesale,2023-08-10
+7222,Product 07222,Outdoor,33.19,342.0,Harbor Market,2025-04-10
+7223,Product 07223,Books,24.0,1006.0,Blue Oak Goods,2021-08-31
+7224,Product 07224,Outdoor,7.19,1895.0,Summit Wholesale,2024-09-17
+7225,Product 07225,Kitchen,11.33,893.0,Harbor Market,2020-11-01
+7226,Product 07226,Office,7.18,997.0,Blue Oak Goods,2022-06-06
+7227,Product 07227,Outdoor,27.73,582.0,Blue Oak Goods,2026-04-08
+7228,Product 07228,Home,26.73,674.0,Harbor Market,2021-12-05
+7229,Product 07229,Office,11.29,1767.0,Summit Wholesale,2026-03-28
+7230,Product 07230,Books,8.76,203.0,Northstar Supply,2026-01-24
+7231,Product 07231,Electronics,37.55,1246.0,Northstar Supply,2019-07-07
+7232,Product 07232,Office,18.1,1877.0,Northstar Supply,2020-09-22
+7233,Product 07233,Outdoor,18.98,1849.0,Northstar Supply,2020-02-26
+7234,Product 07234,Electronics,20.69,425.0,Northstar Supply,2024-10-15
+7235,Product 07235,Office,26.72,1764.0,Blue Oak Goods,2021-04-18
+7236,Product 07236,Kitchen,20.91,816.0,Harbor Market,2024-12-20
+7237,Product 07237,Outdoor,103.98,683.0,Harbor Market,2022-05-17
+7238,Product 07238,Home,68.48,866.0,Blue Oak Goods,2022-08-14
+7239,Product 07239,Electronics,12.26,271.0,Harbor Market,2021-11-12
+7240,Product 07240,Kitchen,39.32,294.0,Harbor Market,2021-04-09
+7241,Product 07241,Kitchen,22.47,1087.0,Harbor Market,2024-06-10
+7242,Product 07242,Electronics,7.61,1195.0,Northstar Supply,2026-03-12
+7243,Product 07243,Kitchen,8.76,260.0,Blue Oak Goods,2020-05-22
+7244,Product 07244,Electronics,27.41,804.0,Blue Oak Goods,2021-09-20
+7245,Product 07245,Books,11.47,801.0,Summit Wholesale,2021-08-13
+7246,Product 07246,Books,16.81,221.0,Summit Wholesale,2025-05-20
+7247,Product 07247,Electronics,32.24,1301.0,Summit Wholesale,2021-07-28
+7248,Product 07248,Office,67.54,1748.0,Blue Oak Goods,2025-02-06
+7249,Product 07249,Office,158.5,2408.0,Blue Oak Goods,2022-09-25
+7250,Product 07250,Books,3.37,1466.0,Harbor Market,2022-07-10
+7251,Product 07251,Office,48.97,218.0,Blue Oak Goods,2026-01-29
+7252,Product 07252,Office,28.09,2478.0,Blue Oak Goods,2025-09-27
+7253,Product 07253,Kitchen,45.37,1830.0,Harbor Market,2025-01-29
+7254,Product 07254,Electronics,11.95,1909.0,Summit Wholesale,2021-12-10
+7255,Product 07255,Kitchen,21.12,1785.0,Northstar Supply,2026-04-29
+7256,Product 07256,Office,108.18,177.0,Blue Oak Goods,2025-02-09
+7257,Product 07257,Outdoor,109.49,710.0,Northstar Supply,2020-09-23
+7258,Product 07258,Electronics,11.88,994.0,Summit Wholesale,2021-05-12
+7259,Product 07259,Electronics,60.95,1653.0,Blue Oak Goods,2024-07-28
+7260,Product 07260,Kitchen,58.97,2008.0,Blue Oak Goods,2026-05-08
+7261,Product 07261,Home,35.25,2075.0,Harbor Market,2019-12-19
+7262,Product 07262,Kitchen,11.66,130.0,Summit Wholesale,2019-04-17
+7263,Product 07263,Home,8.32,1362.0,Blue Oak Goods,2019-01-13
+7264,Product 07264,Electronics,7.91,431.0,Harbor Market,2021-09-01
+7265,Product 07265,Books,23.46,133.0,Summit Wholesale,2021-07-27
+7266,Product 07266,Books,2.64,1756.0,Northstar Supply,2024-07-10
+7267,Product 07267,Electronics,22.18,759.0,Summit Wholesale,2020-06-10
+7268,Product 07268,Kitchen,17.5,568.0,Blue Oak Goods,2023-05-02
+7269,Product 07269,Books,54.53,483.0,Summit Wholesale,2023-01-09
+7270,Product 07270,Office,37.45,2063.0,Blue Oak Goods,2023-06-29
+7271,Product 07271,Electronics,20.81,326.0,Northstar Supply,2025-09-25
+7272,Product 07272,Kitchen,29.05,1907.0,Blue Oak Goods,2025-03-02
+7273,Product 07273,Home,9.9,1824.0,Summit Wholesale,2019-06-18
+7274,Product 07274,Outdoor,26.01,2037.0,Northstar Supply,2025-03-13
+7275,Product 07275,Home,38.59,792.0,Harbor Market,2023-12-15
+7276,Product 07276,Kitchen,45.62,606.0,Blue Oak Goods,2019-06-05
+7277,Product 07277,Kitchen,11.3,1836.0,Blue Oak Goods,2023-04-19
+7278,Product 07278,Electronics,150.67,2018.0,Summit Wholesale,2020-08-09
+7279,Product 07279,Outdoor,26.49,2130.0,Harbor Market,2021-01-19
+7280,Product 07280,Kitchen,8.34,1174.0,Blue Oak Goods,2023-09-24
+7281,Product 07281,Office,7.16,1017.0,Summit Wholesale,2019-07-02
+7282,Product 07282,Electronics,23.59,1484.0,Northstar Supply,2025-12-23
+7283,Product 07283,Outdoor,128.5,220.0,Summit Wholesale,2024-09-10
+7284,Product 07284,Electronics,34.21,253.0,Summit Wholesale,2019-06-02
+7285,Product 07285,Outdoor,12.04,1044.0,Harbor Market,2025-09-08
+7286,Product 07286,Home,12.75,1859.0,Summit Wholesale,2020-06-16
+7287,Product 07287,Books,8.98,1517.0,Northstar Supply,2021-03-04
+7288,Product 07288,Home,40.47,1565.0,Summit Wholesale,2023-09-20
+7289,Product 07289,Outdoor,20.7,113.0,Harbor Market,2026-02-02
+7290,Product 07290,Electronics,20.14,2215.0,Harbor Market,2022-07-12
+7291,Product 07291,Home,128.49,1946.0,Blue Oak Goods,2024-03-19
+7292,Product 07292,Electronics,73.21,1213.0,Blue Oak Goods,2023-03-07
+7293,Product 07293,Home,55.91,157.0,Summit Wholesale,2025-06-14
+7294,Product 07294,Books,44.05,1821.0,Northstar Supply,2022-08-18
+7295,Product 07295,Kitchen,108.31,1473.0,Northstar Supply,2019-04-20
+7296,Product 07296,Books,66.84,877.0,Harbor Market,2021-01-16
+7297,Product 07297,Books,22.15,485.0,Summit Wholesale,2020-12-08
+7298,Product 07298,Home,18.44,1002.0,Summit Wholesale,2026-05-03
+7299,Product 07299,Electronics,45.12,1456.0,Harbor Market,2022-12-16
+7300,Product 07300,Books,7.99,602.0,Summit Wholesale,2026-01-11
+7301,Product 07301,Home,14.34,1011.0,Summit Wholesale,2020-12-10
+7302,Product 07302,Office,18.66,190.0,Northstar Supply,2022-06-04
+7303,Product 07303,Outdoor,25.51,2118.0,Harbor Market,2025-12-22
+7304,Product 07304,Electronics,14.8,511.0,Blue Oak Goods,2021-06-18
+7305,Product 07305,Home,27.14,2053.0,Summit Wholesale,2022-05-18
+7306,Product 07306,Electronics,15.48,1729.0,Blue Oak Goods,2025-01-27
+7307,Product 07307,Home,19.9,2163.0,Northstar Supply,2024-09-12
+7308,Product 07308,Electronics,38.99,1885.0,Harbor Market,2022-10-20
+7309,Product 07309,Kitchen,117.91,2475.0,Harbor Market,2021-08-07
+7310,Product 07310,Office,37.31,672.0,Summit Wholesale,2026-01-24
+7311,Product 07311,Kitchen,13.27,1128.0,Harbor Market,2022-09-09
+7312,Product 07312,Electronics,14.2,1535.0,Northstar Supply,2020-01-02
+7313,Product 07313,Office,24.69,1581.0,Northstar Supply,2025-08-09
+7314,Product 07314,Office,13.68,1500.0,Summit Wholesale,2026-03-28
+7315,Product 07315,Electronics,38.56,1930.0,Harbor Market,2024-11-28
+7316,Product 07316,Kitchen,33.46,1733.0,Harbor Market,2024-01-08
+7317,Product 07317,Office,10.75,350.0,Summit Wholesale,2025-07-25
+7318,Product 07318,Home,9.57,283.0,Harbor Market,2019-06-29
+7319,Product 07319,Electronics,37.46,1925.0,Harbor Market,2019-01-06
+7320,Product 07320,Kitchen,10.35,1483.0,Harbor Market,2024-08-24
+7321,Product 07321,Books,48.21,128.0,Northstar Supply,2025-06-05
+7322,Product 07322,Outdoor,68.24,1644.0,Harbor Market,2021-06-22
+7323,Product 07323,Kitchen,18.67,387.0,Northstar Supply,2020-12-07
+7324,Product 07324,Office,14.34,487.0,Blue Oak Goods,2019-03-23
+7325,Product 07325,Electronics,62.93,1369.0,Summit Wholesale,2021-04-15
+7326,Product 07326,Home,9.39,1299.0,Blue Oak Goods,2021-04-02
+7327,Product 07327,Office,23.37,1421.0,Blue Oak Goods,2024-02-04
+7328,Product 07328,Outdoor,19.77,149.0,Summit Wholesale,2023-01-31
+7329,Product 07329,Office,38.42,662.0,Summit Wholesale,2023-05-23
+7330,Product 07330,Office,24.98,2358.0,Northstar Supply,2020-02-18
+7331,Product 07331,Electronics,21.28,2003.0,Harbor Market,2025-08-12
+7332,Product 07332,Electronics,22.68,43.0,Harbor Market,2025-09-13
+7333,Product 07333,Electronics,27.93,982.0,Blue Oak Goods,2020-12-11
+7334,Product 07334,Electronics,10.82,2278.0,Northstar Supply,2024-06-22
+7335,Product 07335,Electronics,5.73,1506.0,Northstar Supply,2022-04-11
+7336,Product 07336,Kitchen,10.75,1073.0,Northstar Supply,2023-03-04
+7337,Product 07337,Books,6.51,462.0,Summit Wholesale,2022-06-20
+7338,Product 07338,Office,3.26,69.0,Northstar Supply,2019-11-13
+7339,Product 07339,Books,67.07,197.0,Blue Oak Goods,2023-05-20
+7340,Product 07340,Kitchen,6.05,652.0,Northstar Supply,2025-03-03
+7341,Product 07341,Home,23.04,594.0,Blue Oak Goods,2023-12-04
+7342,Product 07342,Electronics,26.77,1376.0,Summit Wholesale,2025-06-10
+7343,Product 07343,Outdoor,35.44,2361.0,Northstar Supply,2022-04-02
+7344,Product 07344,Electronics,16.91,207.0,Blue Oak Goods,2023-10-13
+7345,Product 07345,Office,41.91,227.0,Summit Wholesale,2022-03-30
+7346,Product 07346,Books,33.32,834.0,Northstar Supply,2022-12-22
+7347,Product 07347,Office,11.26,88.0,Summit Wholesale,2026-01-23
+7348,Product 07348,Office,32.59,598.0,Harbor Market,2019-04-26
+7349,Product 07349,Kitchen,22.42,1590.0,Summit Wholesale,2021-09-08
+7350,Product 07350,Home,11.64,2208.0,Northstar Supply,2022-12-09
+7351,Product 07351,Kitchen,40.04,333.0,Summit Wholesale,2025-12-13
+7352,Product 07352,Electronics,13.88,1279.0,Harbor Market,2024-07-06
+7353,Product 07353,Books,17.69,336.0,Summit Wholesale,2020-08-29
+7354,Product 07354,Books,20.79,1926.0,Harbor Market,2020-11-15
+7355,Product 07355,Kitchen,78.09,943.0,Blue Oak Goods,2022-03-19
+7356,Product 07356,Home,53.33,2359.0,Summit Wholesale,2025-01-09
+7357,Product 07357,Electronics,18.78,49.0,Harbor Market,2021-02-09
+7358,Product 07358,Outdoor,8.83,1186.0,Blue Oak Goods,2023-02-12
+7359,Product 07359,Books,19.58,1522.0,Harbor Market,2021-05-18
+7360,Product 07360,Office,31.79,259.0,Northstar Supply,2021-12-29
+7361,Product 07361,Office,36.12,2155.0,Northstar Supply,2022-06-03
+7362,Product 07362,Books,7.49,956.0,Harbor Market,2025-12-26
+7363,Product 07363,Office,141.76,1261.0,Blue Oak Goods,2022-11-22
+7364,Product 07364,Home,21.86,990.0,Northstar Supply,2024-04-07
+7365,Product 07365,Home,63.64,1727.0,Northstar Supply,2025-03-24
+7366,Product 07366,Books,66.77,2492.0,Harbor Market,2019-07-14
+7367,Product 07367,Home,64.27,762.0,Blue Oak Goods,2022-11-19
+7368,Product 07368,Electronics,86.53,1241.0,Harbor Market,2019-06-15
+7369,Product 07369,Books,16.99,2295.0,Blue Oak Goods,2025-06-22
+7370,Product 07370,Outdoor,27.64,883.0,Harbor Market,2019-09-21
+7371,Product 07371,Kitchen,26.19,2042.0,Northstar Supply,2026-01-30
+7372,Product 07372,Outdoor,25.43,762.0,Summit Wholesale,2026-05-13
+7373,Product 07373,Home,20.62,1730.0,Blue Oak Goods,2024-04-30
+7374,Product 07374,Outdoor,59.69,712.0,Blue Oak Goods,2019-03-10
+7375,Product 07375,Home,9.27,1229.0,Summit Wholesale,2025-09-25
+7376,Product 07376,Kitchen,10.4,39.0,Harbor Market,2025-01-03
+7377,Product 07377,Office,51.48,587.0,Summit Wholesale,2019-09-11
+7378,Product 07378,Home,15.57,1473.0,Northstar Supply,2023-08-05
+7379,Product 07379,Office,38.9,272.0,Northstar Supply,2024-04-09
+7380,Product 07380,Electronics,21.14,932.0,Northstar Supply,2023-11-27
+7381,Product 07381,Books,11.87,407.0,Northstar Supply,2020-02-18
+7382,Product 07382,Home,31.06,1939.0,Harbor Market,2022-03-12
+7383,Product 07383,Books,4.82,1331.0,Northstar Supply,2019-08-29
+7384,Product 07384,Office,52.15,2029.0,Blue Oak Goods,2021-02-20
+7385,Product 07385,Outdoor,17.56,822.0,Harbor Market,2022-01-18
+7386,Product 07386,Outdoor,10.13,1284.0,Summit Wholesale,2021-01-15
+7387,Product 07387,Electronics,37.29,2120.0,Summit Wholesale,2021-08-06
+7388,Product 07388,Office,208.53,1775.0,Summit Wholesale,2025-08-08
+7389,Product 07389,Electronics,15.8,13.0,Northstar Supply,2021-10-06
+7390,Product 07390,Office,5.1,2092.0,Summit Wholesale,2019-12-15
+7391,Product 07391,Electronics,4.26,873.0,Blue Oak Goods,2025-10-17
+7392,Product 07392,Home,17.4,158.0,Harbor Market,2021-06-29
+7393,Product 07393,Books,15.45,1936.0,Northstar Supply,2019-12-12
+7394,Product 07394,Home,43.72,1706.0,Blue Oak Goods,2022-06-25
+7395,Product 07395,Kitchen,17.34,2078.0,Summit Wholesale,2022-03-30
+7396,Product 07396,Books,37.04,1384.0,Northstar Supply,2021-06-06
+7397,Product 07397,Electronics,32.54,650.0,Blue Oak Goods,2021-04-24
+7398,Product 07398,Kitchen,35.67,877.0,Northstar Supply,2019-02-10
+7399,Product 07399,Books,45.44,2055.0,Summit Wholesale,2021-05-20
+7400,Product 07400,Kitchen,27.58,639.0,Blue Oak Goods,2021-01-17
+7401,Product 07401,Electronics,14.6,2441.0,Northstar Supply,2026-04-22
+7402,Product 07402,Office,14.52,174.0,Harbor Market,2019-03-12
+7403,Product 07403,Books,24.93,1790.0,Harbor Market,2020-12-22
+7404,Product 07404,Electronics,70.36,1932.0,Blue Oak Goods,2024-04-29
+7405,Product 07405,Home,27.08,276.0,Harbor Market,2021-10-16
+7406,Product 07406,Kitchen,5.53,2049.0,Summit Wholesale,2020-12-19
+7407,Product 07407,Home,38.25,1989.0,Blue Oak Goods,2022-05-09
+7408,Product 07408,Office,35.44,1337.0,Harbor Market,2021-03-01
+7409,Product 07409,Books,195.65,2165.0,Northstar Supply,2021-06-14
+7410,Product 07410,Outdoor,74.91,495.0,Harbor Market,2019-05-28
+7411,Product 07411,Outdoor,79.8,666.0,Blue Oak Goods,2024-05-09
+7412,Product 07412,Office,24.98,2471.0,Northstar Supply,2021-01-17
+7413,Product 07413,Office,20.95,1889.0,Harbor Market,2024-01-04
+7414,Product 07414,Home,20.36,1393.0,Summit Wholesale,2021-03-31
+7415,Product 07415,Kitchen,15.47,2423.0,Northstar Supply,2019-02-08
+7416,Product 07416,Outdoor,39.69,1909.0,Harbor Market,2022-08-14
+7417,Product 07417,Outdoor,43.03,823.0,Blue Oak Goods,2022-09-14
+7418,Product 07418,Home,32.98,374.0,Harbor Market,2026-03-29
+7419,Product 07419,Electronics,24.32,2102.0,Blue Oak Goods,2022-04-12
+7420,Product 07420,Kitchen,18.22,281.0,Northstar Supply,2023-05-23
+7421,Product 07421,Books,11.67,341.0,Northstar Supply,2024-04-10
+7422,Product 07422,Office,47.49,1637.0,Harbor Market,2022-06-21
+7423,Product 07423,Outdoor,35.03,1703.0,Northstar Supply,2019-08-30
+7424,Product 07424,Electronics,14.46,529.0,Northstar Supply,2022-07-25
+7425,Product 07425,Home,11.63,526.0,Blue Oak Goods,2023-03-06
+7426,Product 07426,Electronics,40.1,63.0,Blue Oak Goods,2022-11-24
+7427,Product 07427,Home,15.03,1571.0,Harbor Market,2026-01-02
+7428,Product 07428,Home,12.99,912.0,Northstar Supply,2022-05-12
+7429,Product 07429,Office,19.14,1171.0,Northstar Supply,2019-06-29
+7430,Product 07430,Books,15.39,2039.0,Summit Wholesale,2022-02-18
+7431,Product 07431,Electronics,35.6,1821.0,Harbor Market,2020-06-23
+7432,Product 07432,Books,49.94,837.0,Summit Wholesale,2020-03-08
+7433,Product 07433,Kitchen,15.69,1852.0,Harbor Market,2024-11-12
+7434,Product 07434,Office,15.4,474.0,Blue Oak Goods,2019-06-28
+7435,Product 07435,Kitchen,34.35,425.0,Northstar Supply,2022-12-08
+7436,Product 07436,Books,26.75,583.0,Summit Wholesale,2024-04-29
+7437,Product 07437,Electronics,14.54,192.0,Harbor Market,2019-07-04
+7438,Product 07438,Books,26.22,488.0,Summit Wholesale,2020-10-07
+7439,Product 07439,Books,58.88,237.0,Harbor Market,2024-01-27
+7440,Product 07440,Outdoor,69.03,1348.0,Harbor Market,2025-03-28
+7441,Product 07441,Home,8.57,489.0,Summit Wholesale,2024-07-16
+7442,Product 07442,Kitchen,17.76,190.0,Summit Wholesale,2025-03-14
+7443,Product 07443,Electronics,59.92,1558.0,Northstar Supply,2020-08-11
+7444,Product 07444,Electronics,25.77,677.0,Summit Wholesale,2024-06-08
+7445,Product 07445,Office,18.43,639.0,Summit Wholesale,2024-07-08
+7446,Product 07446,Electronics,4.75,1229.0,Summit Wholesale,2020-04-24
+7447,Product 07447,Books,42.51,444.0,Northstar Supply,2019-05-31
+7448,Product 07448,Electronics,20.83,1683.0,Blue Oak Goods,2023-04-27
+7449,Product 07449,Books,16.31,574.0,Blue Oak Goods,2020-08-30
+7450,Product 07450,Kitchen,12.35,2.0,Northstar Supply,2019-02-15
+7451,Product 07451,Electronics,16.25,819.0,Northstar Supply,2019-04-10
+7452,Product 07452,Outdoor,15.1,409.0,Summit Wholesale,2023-02-09
+7453,Product 07453,Office,53.36,2177.0,Northstar Supply,2026-02-10
+7454,Product 07454,Electronics,69.28,551.0,Harbor Market,2023-05-23
+7455,Product 07455,Home,5.65,1182.0,Harbor Market,2019-06-20
+7456,Product 07456,Home,22.78,1711.0,Northstar Supply,2023-07-07
+7457,Product 07457,Kitchen,7.3,1761.0,Summit Wholesale,2023-01-20
+7458,Product 07458,Home,4.92,1324.0,Summit Wholesale,2020-04-15
+7459,Product 07459,Office,115.52,644.0,Harbor Market,2019-02-19
+7460,Product 07460,Kitchen,88.57,426.0,Northstar Supply,2019-08-10
+7461,Product 07461,Electronics,69.46,959.0,Harbor Market,2025-05-15
+7462,Product 07462,Books,21.23,1024.0,Summit Wholesale,2019-11-12
+7463,Product 07463,Books,9.16,974.0,Summit Wholesale,2021-02-23
+7464,Product 07464,Electronics,28.48,2248.0,Northstar Supply,2022-06-26
+7465,Product 07465,Kitchen,17.84,1450.0,Blue Oak Goods,2021-04-09
+7466,Product 07466,Home,18.53,1736.0,Harbor Market,2019-12-13
+7467,Product 07467,Electronics,7.44,2358.0,Blue Oak Goods,2026-01-07
+7468,Product 07468,Books,49.52,582.0,Harbor Market,2021-01-20
+7469,Product 07469,Office,21.64,1377.0,Northstar Supply,2022-03-29
+7470,Product 07470,Kitchen,8.73,1220.0,Blue Oak Goods,2019-06-13
+7471,Product 07471,Kitchen,19.19,2091.0,Harbor Market,2023-08-10
+7472,Product 07472,Outdoor,50.05,2390.0,Blue Oak Goods,2021-11-18
+7473,Product 07473,Kitchen,3.48,530.0,Summit Wholesale,2021-10-21
+7474,Product 07474,Office,13.88,1906.0,Northstar Supply,2019-08-13
+7475,Product 07475,Home,25.45,1662.0,Summit Wholesale,2026-02-24
+7476,Product 07476,Electronics,206.81,522.0,Northstar Supply,2023-10-17
+7477,Product 07477,Home,11.44,1353.0,Blue Oak Goods,2024-10-23
+7478,Product 07478,Home,21.81,288.0,Summit Wholesale,2020-07-19
+7479,Product 07479,Kitchen,14.66,1964.0,Northstar Supply,2026-02-13
+7480,Product 07480,Books,12.43,2260.0,Northstar Supply,2026-01-31
+7481,Product 07481,Electronics,11.96,1973.0,Harbor Market,2024-09-04
+7482,Product 07482,Outdoor,9.51,1985.0,Blue Oak Goods,2024-10-25
+7483,Product 07483,Electronics,53.82,1278.0,Blue Oak Goods,2020-05-18
+7484,Product 07484,Home,14.22,1139.0,Northstar Supply,2024-06-13
+7485,Product 07485,Outdoor,47.29,798.0,Blue Oak Goods,2020-05-10
+7486,Product 07486,Home,31.42,2370.0,Summit Wholesale,2020-09-28
+7487,Product 07487,Books,3.29,778.0,Harbor Market,2026-04-21
+7488,Product 07488,Office,76.91,1856.0,Harbor Market,2019-04-06
+7489,Product 07489,Home,23.44,441.0,Harbor Market,2019-04-22
+7490,Product 07490,Office,58.6,1088.0,Blue Oak Goods,2022-12-13
+7491,Product 07491,Electronics,26.38,2484.0,Summit Wholesale,2020-01-09
+7492,Product 07492,Home,6.1,1693.0,Summit Wholesale,2023-08-29
+7493,Product 07493,Kitchen,2.26,678.0,Blue Oak Goods,2022-08-30
+7494,Product 07494,Electronics,20.09,408.0,Northstar Supply,2024-01-15
+7495,Product 07495,Kitchen,22.47,1233.0,Blue Oak Goods,2024-12-08
+7496,Product 07496,Books,25.64,975.0,Summit Wholesale,2023-10-21
+7497,Product 07497,Outdoor,24.41,2101.0,Blue Oak Goods,2019-01-26
+7498,Product 07498,Home,64.22,436.0,Blue Oak Goods,2023-08-14
+7499,Product 07499,Outdoor,6.57,1039.0,Harbor Market,2021-08-25
+7500,Product 07500,Kitchen,55.11,2354.0,Blue Oak Goods,2021-11-19
+7501,Product 07501,Office,15.72,1744.0,Blue Oak Goods,2023-08-27
+7502,Product 07502,Home,17.24,1479.0,Blue Oak Goods,2021-05-09
+7503,Product 07503,Books,4.34,1951.0,Blue Oak Goods,2023-06-20
+7504,Product 07504,Electronics,3.48,1168.0,Summit Wholesale,2024-06-05
+7505,Product 07505,Kitchen,76.3,793.0,Summit Wholesale,2019-08-16
+7506,Product 07506,Kitchen,48.47,1370.0,Northstar Supply,2022-03-14
+7507,Product 07507,Home,10.3,909.0,Summit Wholesale,2023-05-19
+7508,Product 07508,Electronics,21.4,1652.0,Northstar Supply,2019-10-26
+7509,Product 07509,Office,11.28,175.0,Harbor Market,2020-11-18
+7510,Product 07510,Electronics,94.14,2178.0,Summit Wholesale,2020-04-26
+7511,Product 07511,Books,30.04,2148.0,Summit Wholesale,2025-11-02
+7512,Product 07512,Office,30.86,2015.0,Northstar Supply,2020-03-30
+7513,Product 07513,Kitchen,39.31,1040.0,Summit Wholesale,2019-09-27
+7514,Product 07514,Outdoor,112.42,1344.0,Harbor Market,2022-09-11
+7515,Product 07515,Books,21.36,779.0,Blue Oak Goods,2021-10-04
+7516,Product 07516,Electronics,28.14,1035.0,Harbor Market,2025-10-04
+7517,Product 07517,Outdoor,10.02,28.0,Blue Oak Goods,2024-09-16
+7518,Product 07518,Electronics,27.04,1386.0,Blue Oak Goods,2023-10-15
+7519,Product 07519,Books,25.31,1069.0,Blue Oak Goods,2025-10-03
+7520,Product 07520,Office,12.5,1449.0,Blue Oak Goods,2025-09-29
+7521,Product 07521,Office,8.04,1266.0,Northstar Supply,2023-05-09
+7522,Product 07522,Outdoor,19.96,2236.0,Harbor Market,2025-05-04
+7523,Product 07523,Office,68.54,1116.0,Northstar Supply,2026-02-20
+7524,Product 07524,Books,3.09,1820.0,Blue Oak Goods,2021-03-27
+7525,Product 07525,Kitchen,6.49,595.0,Harbor Market,2020-02-26
+7526,Product 07526,Outdoor,21.16,1310.0,Summit Wholesale,2021-01-06
+7527,Product 07527,Electronics,62.79,93.0,Northstar Supply,2019-08-08
+7528,Product 07528,Books,29.64,919.0,Summit Wholesale,2021-04-16
+7529,Product 07529,Outdoor,48.77,1996.0,Blue Oak Goods,2021-05-28
+7530,Product 07530,Books,12.13,5.0,Summit Wholesale,2020-09-10
+7531,Product 07531,Office,18.48,1289.0,Blue Oak Goods,2020-01-01
+7532,Product 07532,Electronics,27.7,281.0,Summit Wholesale,2020-09-15
+7533,Product 07533,Outdoor,59.29,851.0,Summit Wholesale,2019-02-15
+7534,Product 07534,Kitchen,11.34,349.0,Blue Oak Goods,2019-12-25
+7535,Product 07535,Outdoor,75.59,1713.0,Harbor Market,2019-08-12
+7536,Product 07536,Home,79.74,1273.0,Blue Oak Goods,2024-07-22
+7537,Product 07537,Books,129.04,979.0,Northstar Supply,2024-02-05
+7538,Product 07538,Home,64.75,2116.0,Harbor Market,2020-06-09
+7539,Product 07539,Outdoor,11.13,502.0,Summit Wholesale,2024-11-18
+7540,Product 07540,Electronics,7.18,1460.0,Blue Oak Goods,2026-03-25
+7541,Product 07541,Office,20.52,740.0,Blue Oak Goods,2020-03-28
+7542,Product 07542,Electronics,9.16,650.0,Blue Oak Goods,2023-12-31
+7543,Product 07543,Books,171.91,609.0,Northstar Supply,2020-09-29
+7544,Product 07544,Home,12.54,2210.0,Northstar Supply,2022-01-05
+7545,Product 07545,Office,13.22,2423.0,Harbor Market,2023-08-15
+7546,Product 07546,Kitchen,19.42,1464.0,Summit Wholesale,2021-10-26
+7547,Product 07547,Home,40.75,717.0,Northstar Supply,2022-04-02
+7548,Product 07548,Kitchen,10.74,442.0,Harbor Market,2024-12-16
+7549,Product 07549,Electronics,4.95,1493.0,Harbor Market,2023-08-29
+7550,Product 07550,Books,13.53,79.0,Summit Wholesale,2021-09-01
+7551,Product 07551,Home,62.53,1567.0,Blue Oak Goods,2026-01-08
+7552,Product 07552,Kitchen,16.97,942.0,Northstar Supply,2020-06-24
+7553,Product 07553,Home,19.78,570.0,Harbor Market,2021-02-17
+7554,Product 07554,Outdoor,13.52,1978.0,Harbor Market,2024-09-28
+7555,Product 07555,Office,45.04,139.0,Northstar Supply,2024-03-31
+7556,Product 07556,Home,16.41,1632.0,Harbor Market,2020-11-15
+7557,Product 07557,Kitchen,31.48,1877.0,Harbor Market,2025-03-09
+7558,Product 07558,Office,55.25,2129.0,Summit Wholesale,2019-07-23
+7559,Product 07559,Home,6.17,1132.0,Blue Oak Goods,2024-04-20
+7560,Product 07560,Outdoor,40.3,93.0,Blue Oak Goods,2023-02-10
+7561,Product 07561,Outdoor,30.8,444.0,Harbor Market,2021-03-31
+7562,Product 07562,Kitchen,41.32,917.0,Northstar Supply,2025-04-25
+7563,Product 07563,Home,10.5,209.0,Harbor Market,2025-09-04
+7564,Product 07564,Books,22.06,313.0,Northstar Supply,2023-09-23
+7565,Product 07565,Office,52.26,331.0,Blue Oak Goods,2024-05-14
+7566,Product 07566,Outdoor,50.09,227.0,Summit Wholesale,2025-09-05
+7567,Product 07567,Electronics,29.0,1927.0,Northstar Supply,2020-10-30
+7568,Product 07568,Home,61.06,2232.0,Summit Wholesale,2020-02-24
+7569,Product 07569,Office,44.27,948.0,Harbor Market,2025-05-16
+7570,Product 07570,Outdoor,20.29,1814.0,Summit Wholesale,2020-12-21
+7571,Product 07571,Kitchen,17.17,753.0,Northstar Supply,2023-07-16
+7572,Product 07572,Outdoor,28.5,2236.0,Harbor Market,2020-05-19
+7573,Product 07573,Home,36.94,1746.0,Summit Wholesale,2019-02-23
+7574,Product 07574,Kitchen,32.22,338.0,Harbor Market,2023-01-27
+7575,Product 07575,Outdoor,10.26,1110.0,Northstar Supply,2021-02-16
+7576,Product 07576,Books,22.31,1597.0,Blue Oak Goods,2021-05-28
+7577,Product 07577,Kitchen,124.87,2497.0,Summit Wholesale,2020-05-24
+7578,Product 07578,Outdoor,29.34,249.0,Northstar Supply,2023-05-04
+7579,Product 07579,Home,194.89,2289.0,Northstar Supply,2023-10-31
+7580,Product 07580,Home,19.75,1058.0,Summit Wholesale,2021-08-03
+7581,Product 07581,Office,71.51,940.0,Blue Oak Goods,2020-12-09
+7582,Product 07582,Outdoor,27.76,956.0,Summit Wholesale,2022-06-09
+7583,Product 07583,Books,63.25,1220.0,Harbor Market,2020-02-12
+7584,Product 07584,Office,34.32,1912.0,Blue Oak Goods,2022-02-14
+7585,Product 07585,Kitchen,26.23,2383.0,Summit Wholesale,2020-01-16
+7586,Product 07586,Kitchen,10.02,537.0,Blue Oak Goods,2022-03-22
+7587,Product 07587,Kitchen,21.72,1904.0,Northstar Supply,2024-07-04
+7588,Product 07588,Books,19.36,873.0,Blue Oak Goods,2024-08-07
+7589,Product 07589,Books,11.11,1034.0,Northstar Supply,2021-02-18
+7590,Product 07590,Outdoor,8.55,868.0,Northstar Supply,2020-05-31
+7591,Product 07591,Electronics,112.37,915.0,Summit Wholesale,2025-05-15
+7592,Product 07592,Home,49.63,1227.0,Blue Oak Goods,2024-11-30
+7593,Product 07593,Office,56.89,2264.0,Northstar Supply,2019-01-12
+7594,Product 07594,Books,25.8,829.0,Harbor Market,2023-11-28
+7595,Product 07595,Outdoor,10.11,484.0,Blue Oak Goods,2021-02-24
+7596,Product 07596,Office,25.15,160.0,Harbor Market,2026-04-20
+7597,Product 07597,Books,71.38,1432.0,Northstar Supply,2024-11-20
+7598,Product 07598,Outdoor,63.62,1377.0,Blue Oak Goods,2022-03-15
+7599,Product 07599,Outdoor,33.18,1833.0,Harbor Market,2022-11-12
+7600,Product 07600,Electronics,7.17,2082.0,Northstar Supply,2021-01-11
+7601,Product 07601,Home,25.72,2231.0,Blue Oak Goods,2023-12-11
+7602,Product 07602,Office,8.95,2355.0,Northstar Supply,2025-12-25
+7603,Product 07603,Home,27.4,1833.0,Blue Oak Goods,2022-01-20
+7604,Product 07604,Electronics,104.92,1546.0,Blue Oak Goods,2022-06-27
+7605,Product 07605,Outdoor,8.28,1592.0,Summit Wholesale,2025-11-12
+7606,Product 07606,Books,6.12,487.0,Northstar Supply,2022-07-07
+7607,Product 07607,Home,25.42,1351.0,Summit Wholesale,2026-03-20
+7608,Product 07608,Books,57.89,462.0,Summit Wholesale,2024-02-15
+7609,Product 07609,Kitchen,24.81,800.0,Harbor Market,2020-12-12
+7610,Product 07610,Books,19.34,1947.0,Blue Oak Goods,2024-02-20
+7611,Product 07611,Home,33.38,1267.0,Summit Wholesale,2021-09-22
+7612,Product 07612,Outdoor,15.94,452.0,Northstar Supply,2020-01-29
+7613,Product 07613,Office,35.78,742.0,Harbor Market,2021-03-15
+7614,Product 07614,Office,57.38,1087.0,Northstar Supply,2022-11-04
+7615,Product 07615,Outdoor,38.57,851.0,Northstar Supply,2025-03-14
+7616,Product 07616,Electronics,32.0,1894.0,Harbor Market,2019-12-13
+7617,Product 07617,Electronics,49.1,120.0,Blue Oak Goods,2024-11-03
+7618,Product 07618,Kitchen,49.87,1588.0,Harbor Market,2021-04-07
+7619,Product 07619,Home,30.34,1878.0,Northstar Supply,2019-12-24
+7620,Product 07620,Books,12.37,233.0,Harbor Market,2019-10-11
+7621,Product 07621,Outdoor,41.52,228.0,Summit Wholesale,2019-04-27
+7622,Product 07622,Outdoor,18.06,204.0,Summit Wholesale,2023-09-25
+7623,Product 07623,Electronics,62.62,1295.0,Northstar Supply,2021-04-11
+7624,Product 07624,Electronics,17.17,740.0,Blue Oak Goods,2024-10-22
+7625,Product 07625,Kitchen,20.52,37.0,Northstar Supply,2024-03-07
+7626,Product 07626,Outdoor,23.23,1853.0,Harbor Market,2020-12-04
+7627,Product 07627,Outdoor,19.12,2087.0,Blue Oak Goods,2021-02-11
+7628,Product 07628,Electronics,2.42,956.0,Harbor Market,2019-11-26
+7629,Product 07629,Outdoor,38.59,2282.0,Harbor Market,2019-08-09
+7630,Product 07630,Kitchen,11.23,31.0,Harbor Market,2023-08-22
+7631,Product 07631,Electronics,20.9,1617.0,Northstar Supply,2019-10-23
+7632,Product 07632,Outdoor,95.24,1166.0,Harbor Market,2020-05-13
+7633,Product 07633,Kitchen,34.97,975.0,Harbor Market,2020-02-08
+7634,Product 07634,Office,133.14,1732.0,Harbor Market,2022-12-10
+7635,Product 07635,Office,49.66,1572.0,Harbor Market,2024-06-19
+7636,Product 07636,Office,36.61,790.0,Blue Oak Goods,2024-01-29
+7637,Product 07637,Office,22.47,1429.0,Blue Oak Goods,2023-08-08
+7638,Product 07638,Kitchen,35.21,177.0,Harbor Market,2019-08-25
+7639,Product 07639,Electronics,38.44,1160.0,Northstar Supply,2024-09-14
+7640,Product 07640,Office,44.73,1293.0,Blue Oak Goods,2022-11-23
+7641,Product 07641,Home,22.23,724.0,Harbor Market,2022-11-24
+7642,Product 07642,Electronics,36.99,2479.0,Blue Oak Goods,2023-11-17
+7643,Product 07643,Kitchen,38.59,626.0,Summit Wholesale,2019-10-03
+7644,Product 07644,Office,10.61,1986.0,Summit Wholesale,2019-01-16
+7645,Product 07645,Books,74.8,1997.0,Blue Oak Goods,2025-03-26
+7646,Product 07646,Home,22.61,2188.0,Summit Wholesale,2021-05-29
+7647,Product 07647,Outdoor,33.75,1395.0,Harbor Market,2023-05-24
+7648,Product 07648,Home,11.42,1331.0,Northstar Supply,2024-10-26
+7649,Product 07649,Outdoor,35.21,1064.0,Summit Wholesale,2019-07-16
+7650,Product 07650,Books,28.65,1765.0,Harbor Market,2022-11-23
+7651,Product 07651,Books,54.17,1247.0,Northstar Supply,2020-11-14
+7652,Product 07652,Electronics,27.78,811.0,Northstar Supply,2025-12-02
+7653,Product 07653,Books,32.54,1356.0,Harbor Market,2024-03-18
+7654,Product 07654,Books,14.87,412.0,Blue Oak Goods,2024-12-14
+7655,Product 07655,Office,84.2,756.0,Harbor Market,2021-10-31
+7656,Product 07656,Home,123.0,2482.0,Summit Wholesale,2023-03-22
+7657,Product 07657,Office,28.9,997.0,Summit Wholesale,2019-10-26
+7658,Product 07658,Electronics,46.13,699.0,Harbor Market,2020-10-03
+7659,Product 07659,Books,25.58,676.0,Northstar Supply,2022-07-24
+7660,Product 07660,Home,12.36,877.0,Summit Wholesale,2019-10-27
+7661,Product 07661,Outdoor,16.14,11.0,Summit Wholesale,2024-10-11
+7662,Product 07662,Outdoor,59.42,2423.0,Blue Oak Goods,2019-09-28
+7663,Product 07663,Office,18.94,729.0,Northstar Supply,2021-04-23
+7664,Product 07664,Outdoor,38.05,1309.0,Harbor Market,2021-07-05
+7665,Product 07665,Books,3.5,1035.0,Northstar Supply,2020-08-20
+7666,Product 07666,Books,17.67,2305.0,Harbor Market,2025-10-19
+7667,Product 07667,Home,51.86,337.0,Summit Wholesale,2021-10-24
+7668,Product 07668,Electronics,42.09,2404.0,Harbor Market,2025-11-24
+7669,Product 07669,Outdoor,24.23,1130.0,Summit Wholesale,2025-12-24
+7670,Product 07670,Kitchen,19.45,1663.0,Harbor Market,2022-05-29
+7671,Product 07671,Books,16.48,391.0,Northstar Supply,2020-09-25
+7672,Product 07672,Office,111.43,971.0,Blue Oak Goods,2026-02-25
+7673,Product 07673,Outdoor,37.47,2466.0,Northstar Supply,2026-03-07
+7674,Product 07674,Home,27.12,388.0,Summit Wholesale,2020-10-17
+7675,Product 07675,Kitchen,84.86,2131.0,Summit Wholesale,2020-06-27
+7676,Product 07676,Electronics,133.96,1736.0,Northstar Supply,2020-04-05
+7677,Product 07677,Home,8.05,1679.0,Blue Oak Goods,2021-11-18
+7678,Product 07678,Outdoor,68.93,1600.0,Harbor Market,2021-05-28
+7679,Product 07679,Office,56.25,1693.0,Blue Oak Goods,2023-05-11
+7680,Product 07680,Books,47.95,2155.0,Northstar Supply,2025-03-12
+7681,Product 07681,Kitchen,14.89,768.0,Summit Wholesale,2022-08-27
+7682,Product 07682,Books,12.53,84.0,Summit Wholesale,2019-04-15
+7683,Product 07683,Kitchen,47.08,2408.0,Harbor Market,2021-09-24
+7684,Product 07684,Electronics,7.52,343.0,Northstar Supply,2021-05-24
+7685,Product 07685,Home,12.0,1206.0,Northstar Supply,2021-03-24
+7686,Product 07686,Kitchen,45.57,142.0,Summit Wholesale,2023-07-11
+7687,Product 07687,Kitchen,123.37,64.0,Harbor Market,2021-03-30
+7688,Product 07688,Electronics,23.5,857.0,Blue Oak Goods,2026-01-09
+7689,Product 07689,Kitchen,15.14,1368.0,Harbor Market,2024-09-08
+7690,Product 07690,Kitchen,10.75,681.0,Blue Oak Goods,2026-02-25
+7691,Product 07691,Outdoor,37.16,1090.0,Summit Wholesale,2019-11-30
+7692,Product 07692,Home,22.43,1758.0,Summit Wholesale,2021-10-22
+7693,Product 07693,Books,6.31,339.0,Northstar Supply,2019-07-11
+7694,Product 07694,Home,6.25,1064.0,Summit Wholesale,2025-07-10
+7695,Product 07695,Kitchen,53.84,1810.0,Harbor Market,2022-10-29
+7696,Product 07696,Home,48.37,631.0,Northstar Supply,2026-02-05
+7697,Product 07697,Books,27.75,579.0,Harbor Market,2019-10-01
+7698,Product 07698,Home,19.89,1928.0,Blue Oak Goods,2019-09-22
+7699,Product 07699,Outdoor,32.35,279.0,Summit Wholesale,2026-04-22
+7700,Product 07700,Electronics,12.4,2018.0,Summit Wholesale,2025-07-20
+7701,Product 07701,Office,96.27,1462.0,Northstar Supply,2026-01-18
+7702,Product 07702,Electronics,17.88,1164.0,Blue Oak Goods,2024-02-06
+7703,Product 07703,Kitchen,2.1,1517.0,Harbor Market,2022-12-10
+7704,Product 07704,Kitchen,30.44,1599.0,Summit Wholesale,2021-09-13
+7705,Product 07705,Office,23.63,2182.0,Harbor Market,2019-02-08
+7706,Product 07706,Office,13.6,1027.0,Harbor Market,2025-03-18
+7707,Product 07707,Outdoor,13.94,1744.0,Harbor Market,2025-07-02
+7708,Product 07708,Books,55.61,158.0,Northstar Supply,2021-01-08
+7709,Product 07709,Kitchen,14.34,294.0,Harbor Market,2021-08-17
+7710,Product 07710,Electronics,30.82,807.0,Summit Wholesale,2023-12-01
+7711,Product 07711,Home,11.42,1235.0,Summit Wholesale,2023-03-29
+7712,Product 07712,Electronics,12.84,343.0,Blue Oak Goods,2022-05-18
+7713,Product 07713,Outdoor,54.28,1041.0,Summit Wholesale,2025-07-12
+7714,Product 07714,Kitchen,27.18,1315.0,Blue Oak Goods,2020-06-30
+7715,Product 07715,Books,26.76,655.0,Blue Oak Goods,2024-12-06
+7716,Product 07716,Outdoor,51.51,784.0,Harbor Market,2024-11-21
+7717,Product 07717,Kitchen,6.86,2187.0,Northstar Supply,2021-08-07
+7718,Product 07718,Electronics,20.95,2486.0,Blue Oak Goods,2025-07-26
+7719,Product 07719,Home,21.34,527.0,Harbor Market,2023-03-10
+7720,Product 07720,Outdoor,56.29,981.0,Harbor Market,2026-04-30
+7721,Product 07721,Books,32.12,1592.0,Northstar Supply,2025-12-27
+7722,Product 07722,Books,27.03,152.0,Northstar Supply,2024-07-13
+7723,Product 07723,Home,19.04,2012.0,Northstar Supply,2020-10-27
+7724,Product 07724,Home,28.5,2197.0,Blue Oak Goods,2019-10-22
+7725,Product 07725,Home,10.66,54.0,Blue Oak Goods,2024-03-30
+7726,Product 07726,Home,29.01,1862.0,Blue Oak Goods,2020-12-16
+7727,Product 07727,Home,54.02,2307.0,Blue Oak Goods,2023-11-11
+7728,Product 07728,Office,15.88,1554.0,Blue Oak Goods,2020-12-13
+7729,Product 07729,Office,9.78,45.0,Northstar Supply,2023-03-10
+7730,Product 07730,Books,17.97,1667.0,Blue Oak Goods,2023-08-18
+7731,Product 07731,Outdoor,13.27,1721.0,Harbor Market,2022-07-25
+7732,Product 07732,Electronics,40.28,674.0,Northstar Supply,2025-05-25
+7733,Product 07733,Books,9.97,975.0,Blue Oak Goods,2022-03-07
+7734,Product 07734,Books,5.38,2491.0,Summit Wholesale,2020-10-28
+7735,Product 07735,Kitchen,5.69,1884.0,Blue Oak Goods,2023-01-28
+7736,Product 07736,Electronics,7.35,256.0,Blue Oak Goods,2022-04-20
+7737,Product 07737,Home,10.07,142.0,Northstar Supply,2022-01-21
+7738,Product 07738,Kitchen,63.01,754.0,Summit Wholesale,2021-07-18
+7739,Product 07739,Kitchen,39.88,485.0,Blue Oak Goods,2025-10-31
+7740,Product 07740,Kitchen,37.26,1900.0,Harbor Market,2021-04-24
+7741,Product 07741,Home,7.75,650.0,Blue Oak Goods,2022-04-25
+7742,Product 07742,Outdoor,34.13,256.0,Summit Wholesale,2023-09-16
+7743,Product 07743,Office,75.68,1998.0,Northstar Supply,2019-03-23
+7744,Product 07744,Books,16.57,2437.0,Harbor Market,2020-06-21
+7745,Product 07745,Office,71.56,1304.0,Harbor Market,2020-12-17
+7746,Product 07746,Outdoor,62.42,124.0,Northstar Supply,2020-12-10
+7747,Product 07747,Books,17.99,584.0,Harbor Market,2020-08-13
+7748,Product 07748,Books,83.03,537.0,Blue Oak Goods,2019-04-18
+7749,Product 07749,Books,6.25,474.0,Summit Wholesale,2023-01-07
+7750,Product 07750,Home,11.69,1104.0,Harbor Market,2021-01-14
+7751,Product 07751,Office,18.01,1266.0,Blue Oak Goods,2023-12-24
+7752,Product 07752,Outdoor,18.7,1113.0,Summit Wholesale,2023-03-15
+7753,Product 07753,Books,26.8,1553.0,Blue Oak Goods,2021-09-18
+7754,Product 07754,Electronics,24.99,347.0,Northstar Supply,2019-11-01
+7755,Product 07755,Outdoor,10.58,1883.0,Summit Wholesale,2020-03-26
+7756,Product 07756,Office,52.97,1248.0,Summit Wholesale,2020-12-30
+7757,Product 07757,Office,53.48,547.0,Northstar Supply,2025-08-05
+7758,Product 07758,Kitchen,8.41,201.0,Blue Oak Goods,2022-01-24
+7759,Product 07759,Electronics,10.24,1601.0,Blue Oak Goods,2026-03-04
+7760,Product 07760,Office,25.41,1392.0,Blue Oak Goods,2025-08-27
+7761,Product 07761,Electronics,14.01,2483.0,Northstar Supply,2022-05-17
+7762,Product 07762,Kitchen,8.2,957.0,Summit Wholesale,2021-04-28
+7763,Product 07763,Outdoor,18.21,1817.0,Summit Wholesale,2026-03-11
+7764,Product 07764,Outdoor,24.79,993.0,Blue Oak Goods,2020-07-28
+7765,Product 07765,Electronics,15.56,1076.0,Northstar Supply,2021-07-26
+7766,Product 07766,Electronics,53.47,205.0,Summit Wholesale,2025-10-10
+7767,Product 07767,Kitchen,37.48,2301.0,Summit Wholesale,2020-05-08
+7768,Product 07768,Home,37.23,2458.0,Blue Oak Goods,2022-06-02
+7769,Product 07769,Outdoor,37.89,1812.0,Summit Wholesale,2024-10-30
+7770,Product 07770,Office,29.71,236.0,Northstar Supply,2024-03-06
+7771,Product 07771,Home,10.97,1030.0,Blue Oak Goods,2023-05-19
+7772,Product 07772,Books,35.47,318.0,Northstar Supply,2019-11-29
+7773,Product 07773,Books,11.44,2221.0,Blue Oak Goods,2025-07-08
+7774,Product 07774,Kitchen,127.22,2366.0,Harbor Market,2024-01-05
+7775,Product 07775,Outdoor,11.35,503.0,Blue Oak Goods,2021-09-07
+7776,Product 07776,Kitchen,21.91,609.0,Summit Wholesale,2019-08-07
+7777,Product 07777,Outdoor,93.44,1726.0,Harbor Market,2025-05-02
+7778,Product 07778,Home,59.08,291.0,Northstar Supply,2021-03-28
+7779,Product 07779,Books,27.28,1676.0,Northstar Supply,2020-05-12
+7780,Product 07780,Books,38.8,1453.0,Northstar Supply,2024-03-28
+7781,Product 07781,Electronics,44.45,589.0,Northstar Supply,2022-05-26
+7782,Product 07782,Outdoor,28.4,292.0,Blue Oak Goods,2024-03-05
+7783,Product 07783,Books,11.1,1467.0,Summit Wholesale,2019-06-15
+7784,Product 07784,Home,32.89,1449.0,Northstar Supply,2022-02-15
+7785,Product 07785,Electronics,17.54,114.0,Northstar Supply,2025-04-23
+7786,Product 07786,Home,30.63,2048.0,Summit Wholesale,2020-08-30
+7787,Product 07787,Kitchen,26.15,1439.0,Harbor Market,2019-02-24
+7788,Product 07788,Kitchen,36.7,718.0,Northstar Supply,2019-02-21
+7789,Product 07789,Office,63.92,558.0,Harbor Market,2025-03-08
+7790,Product 07790,Electronics,52.39,477.0,Summit Wholesale,2019-10-14
+7791,Product 07791,Home,20.1,624.0,Summit Wholesale,2021-02-27
+7792,Product 07792,Kitchen,25.44,568.0,Harbor Market,2020-09-22
+7793,Product 07793,Electronics,8.37,1285.0,Northstar Supply,2020-09-07
+7794,Product 07794,Kitchen,180.42,2092.0,Blue Oak Goods,2020-09-19
+7795,Product 07795,Office,68.61,759.0,Harbor Market,2020-05-22
+7796,Product 07796,Office,42.74,986.0,Northstar Supply,2022-10-07
+7797,Product 07797,Home,10.18,2232.0,Northstar Supply,2023-03-19
+7798,Product 07798,Books,8.93,1919.0,Harbor Market,2024-06-04
+7799,Product 07799,Outdoor,27.55,2093.0,Harbor Market,2024-12-11
+7800,Product 07800,Office,12.84,242.0,Northstar Supply,2020-12-01
+7801,Product 07801,Electronics,54.27,2168.0,Summit Wholesale,2024-06-30
+7802,Product 07802,Outdoor,6.88,319.0,Harbor Market,2024-12-08
+7803,Product 07803,Books,189.17,224.0,Blue Oak Goods,2020-05-26
+7804,Product 07804,Kitchen,30.81,2133.0,Summit Wholesale,2019-10-25
+7805,Product 07805,Outdoor,16.25,10.0,Blue Oak Goods,2023-04-07
+7806,Product 07806,Kitchen,47.06,1375.0,Blue Oak Goods,2025-10-22
+7807,Product 07807,Home,25.15,814.0,Harbor Market,2019-12-28
+7808,Product 07808,Office,17.62,1645.0,Summit Wholesale,2021-03-13
+7809,Product 07809,Kitchen,11.67,1580.0,Harbor Market,2021-11-01
+7810,Product 07810,Office,15.28,834.0,Blue Oak Goods,2021-11-28
+7811,Product 07811,Outdoor,5.41,574.0,Summit Wholesale,2024-11-16
+7812,Product 07812,Kitchen,58.37,160.0,Harbor Market,2021-07-12
+7813,Product 07813,Books,14.57,2440.0,Blue Oak Goods,2024-12-12
+7814,Product 07814,Kitchen,209.24,652.0,Summit Wholesale,2024-07-16
+7815,Product 07815,Kitchen,83.27,1554.0,Summit Wholesale,2019-07-01
+7816,Product 07816,Books,47.88,1293.0,Northstar Supply,2023-11-25
+7817,Product 07817,Office,473.66,996.0,Harbor Market,2025-11-26
+7818,Product 07818,Kitchen,15.39,125.0,Northstar Supply,2021-03-27
+7819,Product 07819,Office,17.32,2061.0,Harbor Market,2019-01-06
+7820,Product 07820,Office,15.7,2134.0,Northstar Supply,2023-11-11
+7821,Product 07821,Outdoor,95.8,703.0,Harbor Market,2021-03-02
+7822,Product 07822,Outdoor,28.96,150.0,Harbor Market,2021-12-21
+7823,Product 07823,Home,3.33,850.0,Northstar Supply,2024-05-06
+7824,Product 07824,Kitchen,28.4,1776.0,Blue Oak Goods,2023-08-06
+7825,Product 07825,Home,30.05,1618.0,Blue Oak Goods,2023-04-08
+7826,Product 07826,Kitchen,35.93,2316.0,Northstar Supply,2021-02-19
+7827,Product 07827,Outdoor,22.22,1092.0,Northstar Supply,2021-06-01
+7828,Product 07828,Electronics,20.47,870.0,Blue Oak Goods,2025-01-12
+7829,Product 07829,Kitchen,19.0,797.0,Harbor Market,2022-02-18
+7830,Product 07830,Outdoor,47.54,1909.0,Harbor Market,2019-02-05
+7831,Product 07831,Electronics,14.03,481.0,Harbor Market,2025-08-22
+7832,Product 07832,Electronics,23.68,1671.0,Harbor Market,2019-03-13
+7833,Product 07833,Office,9.88,1353.0,Northstar Supply,2020-12-26
+7834,Product 07834,Books,38.56,25.0,Summit Wholesale,2023-11-27
+7835,Product 07835,Electronics,32.54,846.0,Northstar Supply,2026-05-18
+7836,Product 07836,Home,41.65,326.0,Northstar Supply,2021-11-18
+7837,Product 07837,Kitchen,29.92,1131.0,Blue Oak Goods,2026-05-14
+7838,Product 07838,Office,14.14,1365.0,Blue Oak Goods,2026-04-21
+7839,Product 07839,Electronics,36.18,2039.0,Summit Wholesale,2023-11-13
+7840,Product 07840,Electronics,15.4,24.0,Northstar Supply,2022-10-10
+7841,Product 07841,Home,43.45,2141.0,Summit Wholesale,2024-03-03
+7842,Product 07842,Books,8.25,1176.0,Northstar Supply,2022-05-31
+7843,Product 07843,Home,27.06,1831.0,Harbor Market,2019-10-25
+7844,Product 07844,Books,27.32,1415.0,Harbor Market,2019-08-29
+7845,Product 07845,Electronics,13.02,7.0,Harbor Market,2021-05-15
+7846,Product 07846,Kitchen,26.42,559.0,Northstar Supply,2021-03-09
+7847,Product 07847,Electronics,17.04,727.0,Northstar Supply,2025-11-25
+7848,Product 07848,Home,40.57,1162.0,Blue Oak Goods,2024-04-18
+7849,Product 07849,Home,14.78,144.0,Summit Wholesale,2025-08-20
+7850,Product 07850,Home,15.33,1727.0,Summit Wholesale,2021-07-18
+7851,Product 07851,Home,35.07,2093.0,Blue Oak Goods,2020-10-12
+7852,Product 07852,Home,35.55,2148.0,Blue Oak Goods,2022-08-26
+7853,Product 07853,Kitchen,42.79,2194.0,Northstar Supply,2022-03-25
+7854,Product 07854,Electronics,111.65,697.0,Summit Wholesale,2024-09-12
+7855,Product 07855,Office,20.2,1170.0,Summit Wholesale,2023-08-30
+7856,Product 07856,Home,12.33,469.0,Harbor Market,2020-06-30
+7857,Product 07857,Outdoor,21.18,1890.0,Blue Oak Goods,2023-09-10
+7858,Product 07858,Books,8.0,160.0,Blue Oak Goods,2019-04-09
+7859,Product 07859,Office,20.47,519.0,Northstar Supply,2021-01-29
+7860,Product 07860,Books,53.47,1809.0,Harbor Market,2023-11-29
+7861,Product 07861,Kitchen,38.16,93.0,Harbor Market,2021-06-24
+7862,Product 07862,Outdoor,7.19,1214.0,Blue Oak Goods,2020-10-06
+7863,Product 07863,Books,59.34,2198.0,Blue Oak Goods,2021-03-12
+7864,Product 07864,Kitchen,13.82,2189.0,Summit Wholesale,2026-03-28
+7865,Product 07865,Outdoor,38.38,754.0,Northstar Supply,2026-04-06
+7866,Product 07866,Books,13.4,843.0,Harbor Market,2019-08-04
+7867,Product 07867,Books,7.18,2469.0,Blue Oak Goods,2022-01-16
+7868,Product 07868,Home,34.75,817.0,Summit Wholesale,2023-03-18
+7869,Product 07869,Kitchen,45.72,1198.0,Blue Oak Goods,2024-05-31
+7870,Product 07870,Office,7.63,1085.0,Harbor Market,2021-12-23
+7871,Product 07871,Home,30.96,2480.0,Blue Oak Goods,2019-08-01
+7872,Product 07872,Books,12.28,619.0,Northstar Supply,2026-04-17
+7873,Product 07873,Electronics,30.83,1195.0,Blue Oak Goods,2024-10-12
+7874,Product 07874,Home,61.16,1274.0,Harbor Market,2020-08-17
+7875,Product 07875,Home,11.76,2368.0,Northstar Supply,2023-02-26
+7876,Product 07876,Outdoor,9.6,2274.0,Northstar Supply,2019-12-13
+7877,Product 07877,Home,26.45,540.0,Summit Wholesale,2025-11-14
+7878,Product 07878,Electronics,7.38,163.0,Harbor Market,2023-09-12
+7879,Product 07879,Kitchen,95.08,1781.0,Summit Wholesale,2019-03-16
+7880,Product 07880,Books,8.84,2295.0,Northstar Supply,2025-02-10
+7881,Product 07881,Home,34.8,1350.0,Harbor Market,2023-10-05
+7882,Product 07882,Office,4.04,952.0,Harbor Market,2021-11-12
+7883,Product 07883,Home,38.08,1762.0,Blue Oak Goods,2020-03-17
+7884,Product 07884,Books,11.76,1438.0,Harbor Market,2022-08-13
+7885,Product 07885,Kitchen,12.67,2040.0,Summit Wholesale,2022-11-08
+7886,Product 07886,Home,24.2,481.0,Northstar Supply,2025-03-24
+7887,Product 07887,Kitchen,195.14,751.0,Harbor Market,2024-05-16
+7888,Product 07888,Outdoor,53.68,1140.0,Blue Oak Goods,2025-06-30
+7889,Product 07889,Electronics,16.76,132.0,Northstar Supply,2022-05-08
+7890,Product 07890,Outdoor,11.48,1092.0,Harbor Market,2020-06-26
+7891,Product 07891,Electronics,76.46,618.0,Blue Oak Goods,2019-09-25
+7892,Product 07892,Home,13.85,1727.0,Harbor Market,2020-04-09
+7893,Product 07893,Outdoor,120.93,2229.0,Northstar Supply,2021-09-28
+7894,Product 07894,Electronics,20.0,2240.0,Harbor Market,2023-05-17
+7895,Product 07895,Home,37.85,1494.0,Northstar Supply,2022-09-22
+7896,Product 07896,Outdoor,72.69,245.0,Northstar Supply,2021-03-14
+7897,Product 07897,Electronics,8.78,2272.0,Summit Wholesale,2022-12-13
+7898,Product 07898,Home,23.19,1465.0,Northstar Supply,2022-06-12
+7899,Product 07899,Electronics,40.11,1959.0,Northstar Supply,2025-03-08
+7900,Product 07900,Books,21.41,1846.0,Blue Oak Goods,2023-09-16
+7901,Product 07901,Home,7.42,849.0,Summit Wholesale,2025-07-06
+7902,Product 07902,Kitchen,52.54,527.0,Northstar Supply,2019-10-27
+7903,Product 07903,Electronics,22.94,180.0,Summit Wholesale,2022-03-29
+7904,Product 07904,Kitchen,7.14,1119.0,Blue Oak Goods,2019-07-07
+7905,Product 07905,Electronics,1.95,2491.0,Harbor Market,2023-10-03
+7906,Product 07906,Home,5.3,2421.0,Summit Wholesale,2025-06-19
+7907,Product 07907,Books,28.76,1448.0,Harbor Market,2025-12-01
+7908,Product 07908,Outdoor,4.23,2045.0,Blue Oak Goods,2022-05-30
+7909,Product 07909,Office,19.39,2156.0,Blue Oak Goods,2022-12-03
+7910,Product 07910,Kitchen,7.65,464.0,Blue Oak Goods,2025-01-22
+7911,Product 07911,Electronics,78.66,963.0,Harbor Market,2025-10-03
+7912,Product 07912,Books,33.3,2007.0,Harbor Market,2024-08-02
+7913,Product 07913,Office,47.37,1117.0,Northstar Supply,2025-05-04
+7914,Product 07914,Books,39.56,2103.0,Summit Wholesale,2020-08-20
+7915,Product 07915,Books,34.69,1264.0,Harbor Market,2021-07-02
+7916,Product 07916,Books,82.86,1489.0,Summit Wholesale,2023-03-03
+7917,Product 07917,Electronics,5.83,149.0,Summit Wholesale,2024-08-27
+7918,Product 07918,Books,7.02,521.0,Summit Wholesale,2021-09-05
+7919,Product 07919,Home,9.74,882.0,Harbor Market,2021-02-16
+7920,Product 07920,Home,52.61,1811.0,Harbor Market,2019-05-07
+7921,Product 07921,Books,11.56,410.0,Blue Oak Goods,2023-03-15
+7922,Product 07922,Electronics,27.57,1711.0,Summit Wholesale,2020-10-05
+7923,Product 07923,Books,18.23,194.0,Blue Oak Goods,2019-06-05
+7924,Product 07924,Home,54.53,1917.0,Northstar Supply,2025-12-28
+7925,Product 07925,Books,20.09,288.0,Blue Oak Goods,2021-08-28
+7926,Product 07926,Home,18.03,892.0,Blue Oak Goods,2021-09-08
+7927,Product 07927,Electronics,78.48,2333.0,Harbor Market,2024-08-03
+7928,Product 07928,Books,66.42,59.0,Blue Oak Goods,2023-06-15
+7929,Product 07929,Outdoor,58.46,1728.0,Northstar Supply,2024-03-18
+7930,Product 07930,Home,15.37,1182.0,Blue Oak Goods,2026-04-08
+7931,Product 07931,Electronics,12.46,540.0,Harbor Market,2020-06-07
+7932,Product 07932,Kitchen,12.11,1049.0,Harbor Market,2019-02-19
+7933,Product 07933,Home,16.87,650.0,Blue Oak Goods,2023-10-20
+7934,Product 07934,Kitchen,15.05,269.0,Harbor Market,2021-10-26
+7935,Product 07935,Electronics,22.93,1273.0,Blue Oak Goods,2022-06-17
+7936,Product 07936,Books,54.69,110.0,Blue Oak Goods,2022-12-20
+7937,Product 07937,Outdoor,19.72,2076.0,Blue Oak Goods,2020-04-15
+7938,Product 07938,Outdoor,50.69,2373.0,Northstar Supply,2019-05-13
+7939,Product 07939,Outdoor,34.14,1616.0,Summit Wholesale,2020-09-17
+7940,Product 07940,Office,22.74,944.0,Blue Oak Goods,2020-08-25
+7941,Product 07941,Electronics,26.31,1411.0,Blue Oak Goods,2024-07-27
+7942,Product 07942,Office,14.62,1453.0,Blue Oak Goods,2024-05-22
+7943,Product 07943,Outdoor,19.83,1253.0,Blue Oak Goods,2020-03-14
+7944,Product 07944,Office,32.15,855.0,Harbor Market,2025-05-04
+7945,Product 07945,Electronics,20.44,433.0,Harbor Market,2024-07-24
+7946,Product 07946,Outdoor,12.17,1667.0,Summit Wholesale,2019-07-13
+7947,Product 07947,Books,7.43,778.0,Northstar Supply,2021-01-17
+7948,Product 07948,Home,50.66,883.0,Northstar Supply,2026-04-25
+7949,Product 07949,Home,20.97,2247.0,Blue Oak Goods,2023-08-20
+7950,Product 07950,Books,4.98,379.0,Northstar Supply,2022-01-21
+7951,Product 07951,Home,36.52,881.0,Northstar Supply,2020-08-28
+7952,Product 07952,Office,24.63,2064.0,Blue Oak Goods,2023-09-14
+7953,Product 07953,Kitchen,14.79,1153.0,Harbor Market,2020-11-15
+7954,Product 07954,Electronics,11.97,1108.0,Summit Wholesale,2021-04-25
+7955,Product 07955,Electronics,31.04,201.0,Northstar Supply,2023-09-19
+7956,Product 07956,Home,50.78,1948.0,Harbor Market,2021-10-23
+7957,Product 07957,Books,13.88,2185.0,Harbor Market,2022-01-25
+7958,Product 07958,Kitchen,20.6,1485.0,Blue Oak Goods,2020-02-18
+7959,Product 07959,Books,47.4,1173.0,Blue Oak Goods,2019-10-24
+7960,Product 07960,Electronics,91.83,1321.0,Summit Wholesale,2019-09-02
+7961,Product 07961,Books,1.47,2220.0,Harbor Market,2022-02-27
+7962,Product 07962,Home,64.57,1105.0,Summit Wholesale,2021-06-24
+7963,Product 07963,Outdoor,36.89,1396.0,Northstar Supply,2021-10-10
+7964,Product 07964,Home,30.31,1889.0,Northstar Supply,2026-01-02
+7965,Product 07965,Kitchen,75.09,114.0,Northstar Supply,2020-06-18
+7966,Product 07966,Books,25.78,1222.0,Northstar Supply,2019-06-04
+7967,Product 07967,Office,96.81,2448.0,Blue Oak Goods,2024-06-07
+7968,Product 07968,Outdoor,34.37,1116.0,Blue Oak Goods,2023-11-28
+7969,Product 07969,Kitchen,50.37,1396.0,Northstar Supply,2022-06-17
+7970,Product 07970,Outdoor,31.01,1045.0,Northstar Supply,2021-03-31
+7971,Product 07971,Office,129.79,1305.0,Northstar Supply,2022-04-12
+7972,Product 07972,Kitchen,29.29,2315.0,Blue Oak Goods,2019-05-29
+7973,Product 07973,Electronics,40.74,1073.0,Blue Oak Goods,2022-04-13
+7974,Product 07974,Office,29.0,2086.0,Summit Wholesale,2020-06-08
+7975,Product 07975,Office,106.44,2421.0,Summit Wholesale,2023-10-15
+7976,Product 07976,Electronics,13.95,2287.0,Blue Oak Goods,2022-05-29
+7977,Product 07977,Books,4.36,2125.0,Northstar Supply,2026-04-03
+7978,Product 07978,Outdoor,27.4,1099.0,Northstar Supply,2024-08-31
+7979,Product 07979,Outdoor,50.39,1357.0,Northstar Supply,2019-10-07
+7980,Product 07980,Office,23.41,1048.0,Summit Wholesale,2021-07-01
+7981,Product 07981,Outdoor,9.49,373.0,Summit Wholesale,2021-07-17
+7982,Product 07982,Office,15.33,1090.0,Blue Oak Goods,2024-11-23
+7983,Product 07983,Outdoor,19.42,2236.0,Northstar Supply,2022-10-29
+7984,Product 07984,Kitchen,31.08,1456.0,Harbor Market,2021-12-16
+7985,Product 07985,Electronics,76.36,655.0,Blue Oak Goods,2023-01-22
+7986,Product 07986,Electronics,19.35,365.0,Summit Wholesale,2021-05-30
+7987,Product 07987,Electronics,13.78,732.0,Blue Oak Goods,2026-01-10
+7988,Product 07988,Outdoor,5.55,1851.0,Northstar Supply,2024-10-19
+7989,Product 07989,Outdoor,67.09,2008.0,Summit Wholesale,2023-03-08
+7990,Product 07990,Kitchen,15.59,2426.0,Blue Oak Goods,2019-02-05
+7991,Product 07991,Outdoor,28.13,439.0,Blue Oak Goods,2019-08-01
+7992,Product 07992,Office,4.69,2432.0,Summit Wholesale,2020-12-02
+7993,Product 07993,Books,33.08,866.0,Blue Oak Goods,2022-04-23
+7994,Product 07994,Kitchen,13.73,1960.0,Blue Oak Goods,2021-08-19
+7995,Product 07995,Books,133.68,154.0,Blue Oak Goods,2024-02-04
+7996,Product 07996,Books,83.16,856.0,Harbor Market,2023-04-05
+7997,Product 07997,Office,23.49,2260.0,Harbor Market,2021-05-20
+7998,Product 07998,Books,10.13,299.0,Northstar Supply,2024-12-27
+7999,Product 07999,Outdoor,86.01,1501.0,Harbor Market,2019-04-05
+8000,Product 08000,Home,29.99,2138.0,Summit Wholesale,2021-01-20
+8001,Product 08001,Outdoor,5.17,2027.0,Harbor Market,2022-06-25
+8002,Product 08002,Electronics,23.01,2021.0,Blue Oak Goods,2023-07-23
+8003,Product 08003,Books,28.03,745.0,Blue Oak Goods,2022-09-10
+8004,Product 08004,Outdoor,28.41,744.0,Summit Wholesale,2024-04-24
+8005,Product 08005,Office,54.5,1655.0,Harbor Market,2025-06-27
+8006,Product 08006,Books,59.87,1972.0,Blue Oak Goods,2023-02-15
+8007,Product 08007,Home,16.65,903.0,Summit Wholesale,2025-01-23
+8008,Product 08008,Electronics,11.56,55.0,Northstar Supply,2020-02-20
+8009,Product 08009,Kitchen,13.86,1306.0,Summit Wholesale,2019-05-02
+8010,Product 08010,Kitchen,20.62,1971.0,Blue Oak Goods,2021-05-06
+8011,Product 08011,Outdoor,9.23,1486.0,Northstar Supply,2022-05-16
+8012,Product 08012,Office,12.37,112.0,Northstar Supply,2022-03-29
+8013,Product 08013,Outdoor,80.01,673.0,Harbor Market,2023-05-29
+8014,Product 08014,Kitchen,38.95,2268.0,Blue Oak Goods,2025-03-28
+8015,Product 08015,Kitchen,39.97,2183.0,Northstar Supply,2020-12-28
+8016,Product 08016,Home,25.07,2094.0,Blue Oak Goods,2024-06-09
+8017,Product 08017,Outdoor,14.88,1529.0,Northstar Supply,2019-02-14
+8018,Product 08018,Home,23.94,1807.0,Summit Wholesale,2024-11-24
+8019,Product 08019,Outdoor,49.96,2335.0,Northstar Supply,2023-10-03
+8020,Product 08020,Home,31.14,815.0,Harbor Market,2025-06-02
+8021,Product 08021,Electronics,106.75,1019.0,Northstar Supply,2020-01-09
+8022,Product 08022,Office,50.71,1890.0,Northstar Supply,2021-11-22
+8023,Product 08023,Outdoor,12.59,2413.0,Harbor Market,2025-01-29
+8024,Product 08024,Books,13.29,1605.0,Northstar Supply,2022-04-26
+8025,Product 08025,Outdoor,29.4,2396.0,Summit Wholesale,2021-03-29
+8026,Product 08026,Home,13.2,1846.0,Northstar Supply,2021-10-10
+8027,Product 08027,Outdoor,72.88,1539.0,Blue Oak Goods,2022-11-01
+8028,Product 08028,Home,50.09,729.0,Harbor Market,2023-11-13
+8029,Product 08029,Kitchen,46.73,490.0,Blue Oak Goods,2022-08-16
+8030,Product 08030,Outdoor,170.05,7.0,Blue Oak Goods,2021-01-08
+8031,Product 08031,Office,18.66,2240.0,Northstar Supply,2025-01-30
+8032,Product 08032,Books,9.37,1235.0,Northstar Supply,2020-05-07
+8033,Product 08033,Office,12.4,2229.0,Summit Wholesale,2019-06-17
+8034,Product 08034,Electronics,102.57,1606.0,Blue Oak Goods,2019-05-27
+8035,Product 08035,Outdoor,28.84,86.0,Harbor Market,2021-07-27
+8036,Product 08036,Office,15.77,1677.0,Northstar Supply,2021-08-02
+8037,Product 08037,Outdoor,24.43,1465.0,Summit Wholesale,2023-01-04
+8038,Product 08038,Office,166.77,1677.0,Summit Wholesale,2019-07-29
+8039,Product 08039,Kitchen,15.57,2366.0,Summit Wholesale,2019-06-21
+8040,Product 08040,Home,19.6,1513.0,Harbor Market,2022-02-20
+8041,Product 08041,Home,27.1,1214.0,Summit Wholesale,2023-06-25
+8042,Product 08042,Home,33.17,1111.0,Northstar Supply,2023-02-11
+8043,Product 08043,Office,23.29,486.0,Harbor Market,2019-08-23
+8044,Product 08044,Electronics,50.82,125.0,Summit Wholesale,2022-09-29
+8045,Product 08045,Outdoor,49.51,131.0,Blue Oak Goods,2019-11-09
+8046,Product 08046,Kitchen,22.74,950.0,Northstar Supply,2021-03-09
+8047,Product 08047,Office,32.46,1618.0,Northstar Supply,2025-01-04
+8048,Product 08048,Books,147.32,2131.0,Summit Wholesale,2021-10-06
+8049,Product 08049,Electronics,3.29,812.0,Summit Wholesale,2019-10-27
+8050,Product 08050,Outdoor,71.72,1103.0,Harbor Market,2021-01-19
+8051,Product 08051,Office,30.39,1253.0,Northstar Supply,2023-08-17
+8052,Product 08052,Home,39.22,494.0,Harbor Market,2024-02-04
+8053,Product 08053,Electronics,35.72,2053.0,Blue Oak Goods,2024-11-30
+8054,Product 08054,Home,49.79,44.0,Northstar Supply,2022-03-10
+8055,Product 08055,Office,16.95,1493.0,Harbor Market,2022-07-14
+8056,Product 08056,Electronics,107.2,2363.0,Blue Oak Goods,2024-12-16
+8057,Product 08057,Outdoor,22.89,1264.0,Summit Wholesale,2021-10-30
+8058,Product 08058,Outdoor,20.69,1334.0,Summit Wholesale,2023-11-19
+8059,Product 08059,Outdoor,18.48,2325.0,Summit Wholesale,2019-11-09
+8060,Product 08060,Electronics,16.59,487.0,Blue Oak Goods,2019-07-13
+8061,Product 08061,Home,13.01,2091.0,Harbor Market,2026-03-15
+8062,Product 08062,Outdoor,9.9,916.0,Summit Wholesale,2020-11-17
+8063,Product 08063,Home,30.99,1127.0,Northstar Supply,2019-03-15
+8064,Product 08064,Office,59.79,856.0,Northstar Supply,2023-07-20
+8065,Product 08065,Kitchen,39.54,2212.0,Harbor Market,2020-03-22
+8066,Product 08066,Electronics,7.84,1891.0,Summit Wholesale,2020-11-01
+8067,Product 08067,Kitchen,21.26,736.0,Blue Oak Goods,2019-04-21
+8068,Product 08068,Kitchen,34.89,2432.0,Harbor Market,2023-12-30
+8069,Product 08069,Books,22.53,1588.0,Northstar Supply,2019-11-10
+8070,Product 08070,Office,76.4,342.0,Harbor Market,2020-07-14
+8071,Product 08071,Outdoor,14.44,1076.0,Northstar Supply,2022-11-21
+8072,Product 08072,Outdoor,12.18,866.0,Blue Oak Goods,2022-04-11
+8073,Product 08073,Kitchen,19.3,2353.0,Blue Oak Goods,2024-08-12
+8074,Product 08074,Office,11.17,938.0,Northstar Supply,2019-10-16
+8075,Product 08075,Home,32.52,560.0,Northstar Supply,2020-01-28
+8076,Product 08076,Outdoor,13.66,1812.0,Harbor Market,2025-02-09
+8077,Product 08077,Books,12.66,168.0,Northstar Supply,2025-04-20
+8078,Product 08078,Outdoor,74.78,531.0,Northstar Supply,2021-08-16
+8079,Product 08079,Outdoor,20.56,2380.0,Northstar Supply,2024-08-01
+8080,Product 08080,Outdoor,16.47,1483.0,Harbor Market,2021-01-24
+8081,Product 08081,Kitchen,7.75,1462.0,Harbor Market,2019-07-09
+8082,Product 08082,Outdoor,27.54,71.0,Harbor Market,2026-01-01
+8083,Product 08083,Outdoor,45.06,2268.0,Northstar Supply,2022-08-10
+8084,Product 08084,Office,4.29,906.0,Blue Oak Goods,2020-06-15
+8085,Product 08085,Electronics,21.56,994.0,Summit Wholesale,2025-12-30
+8086,Product 08086,Kitchen,51.48,814.0,Northstar Supply,2023-09-30
+8087,Product 08087,Electronics,20.75,1770.0,Blue Oak Goods,2025-03-07
+8088,Product 08088,Home,3.89,2204.0,Summit Wholesale,2020-02-14
+8089,Product 08089,Outdoor,7.88,1684.0,Summit Wholesale,2022-08-27
+8090,Product 08090,Electronics,14.38,199.0,Harbor Market,2019-03-23
+8091,Product 08091,Outdoor,11.7,1126.0,Blue Oak Goods,2021-08-23
+8092,Product 08092,Electronics,20.61,736.0,Summit Wholesale,2025-05-03
+8093,Product 08093,Office,28.38,339.0,Summit Wholesale,2025-08-04
+8094,Product 08094,Books,35.34,1869.0,Northstar Supply,2022-09-16
+8095,Product 08095,Electronics,21.43,1019.0,Northstar Supply,2020-02-05
+8096,Product 08096,Kitchen,7.96,1615.0,Harbor Market,2026-01-23
+8097,Product 08097,Electronics,28.27,2208.0,Northstar Supply,2025-09-04
+8098,Product 08098,Kitchen,16.73,261.0,Northstar Supply,2025-03-19
+8099,Product 08099,Home,43.36,2048.0,Summit Wholesale,2025-09-17
+8100,Product 08100,Home,108.17,1771.0,Summit Wholesale,2022-07-18
+8101,Product 08101,Home,11.16,1151.0,Northstar Supply,2021-01-27
+8102,Product 08102,Office,114.27,2181.0,Summit Wholesale,2022-11-02
+8103,Product 08103,Office,80.68,992.0,Summit Wholesale,2023-03-10
+8104,Product 08104,Outdoor,29.69,347.0,Harbor Market,2019-07-04
+8105,Product 08105,Books,154.38,1459.0,Harbor Market,2025-01-01
+8106,Product 08106,Outdoor,35.26,1958.0,Summit Wholesale,2019-05-15
+8107,Product 08107,Home,6.91,1219.0,Northstar Supply,2020-01-16
+8108,Product 08108,Home,13.51,1377.0,Harbor Market,2023-05-24
+8109,Product 08109,Office,8.3,2136.0,Summit Wholesale,2025-03-06
+8110,Product 08110,Home,4.64,336.0,Blue Oak Goods,2022-08-12
+8111,Product 08111,Kitchen,73.94,2407.0,Summit Wholesale,2023-12-17
+8112,Product 08112,Electronics,96.51,2319.0,Blue Oak Goods,2023-08-03
+8113,Product 08113,Kitchen,77.38,807.0,Blue Oak Goods,2026-03-27
+8114,Product 08114,Books,25.18,2454.0,Northstar Supply,2022-03-03
+8115,Product 08115,Outdoor,25.67,1519.0,Summit Wholesale,2021-07-12
+8116,Product 08116,Electronics,22.5,1633.0,Harbor Market,2019-07-26
+8117,Product 08117,Outdoor,41.78,1909.0,Summit Wholesale,2023-03-30
+8118,Product 08118,Kitchen,51.21,713.0,Summit Wholesale,2020-12-08
+8119,Product 08119,Electronics,27.21,1499.0,Blue Oak Goods,2019-07-31
+8120,Product 08120,Outdoor,11.46,1681.0,Northstar Supply,2022-05-12
+8121,Product 08121,Books,26.28,1583.0,Harbor Market,2025-01-03
+8122,Product 08122,Office,7.46,1912.0,Summit Wholesale,2025-10-19
+8123,Product 08123,Books,15.68,2063.0,Northstar Supply,2019-01-13
+8124,Product 08124,Electronics,42.33,8.0,Harbor Market,2024-03-07
+8125,Product 08125,Books,30.02,436.0,Summit Wholesale,2019-07-07
+8126,Product 08126,Electronics,23.32,1254.0,Summit Wholesale,2022-01-27
+8127,Product 08127,Kitchen,8.35,1345.0,Harbor Market,2019-08-05
+8128,Product 08128,Outdoor,56.7,1113.0,Blue Oak Goods,2020-11-29
+8129,Product 08129,Office,8.69,748.0,Blue Oak Goods,2024-08-16
+8130,Product 08130,Home,4.52,1304.0,Blue Oak Goods,2025-04-05
+8131,Product 08131,Office,25.79,991.0,Summit Wholesale,2024-07-10
+8132,Product 08132,Outdoor,36.29,2058.0,Harbor Market,2025-09-15
+8133,Product 08133,Home,20.81,852.0,Blue Oak Goods,2022-12-14
+8134,Product 08134,Books,41.09,1673.0,Northstar Supply,2024-10-23
+8135,Product 08135,Books,82.99,724.0,Blue Oak Goods,2025-07-15
+8136,Product 08136,Office,30.07,1490.0,Harbor Market,2026-05-02
+8137,Product 08137,Office,140.78,449.0,Blue Oak Goods,2021-08-13
+8138,Product 08138,Books,12.38,2287.0,Northstar Supply,2021-05-06
+8139,Product 08139,Kitchen,48.66,2451.0,Northstar Supply,2022-09-16
+8140,Product 08140,Books,15.78,179.0,Blue Oak Goods,2024-12-26
+8141,Product 08141,Office,44.95,31.0,Harbor Market,2020-06-26
+8142,Product 08142,Kitchen,61.6,2123.0,Summit Wholesale,2021-10-27
+8143,Product 08143,Home,41.32,1410.0,Northstar Supply,2026-05-07
+8144,Product 08144,Home,32.42,2469.0,Blue Oak Goods,2022-02-09
+8145,Product 08145,Home,23.67,2106.0,Northstar Supply,2023-03-04
+8146,Product 08146,Home,61.38,1886.0,Summit Wholesale,2025-05-09
+8147,Product 08147,Kitchen,16.27,1209.0,Northstar Supply,2023-10-31
+8148,Product 08148,Books,46.4,1288.0,Northstar Supply,2023-10-16
+8149,Product 08149,Electronics,23.85,1150.0,Blue Oak Goods,2025-06-18
+8150,Product 08150,Kitchen,11.5,2156.0,Harbor Market,2022-12-05
+8151,Product 08151,Kitchen,21.29,1240.0,Summit Wholesale,2021-10-27
+8152,Product 08152,Kitchen,42.94,2498.0,Blue Oak Goods,2022-10-29
+8153,Product 08153,Office,40.93,501.0,Northstar Supply,2025-04-27
+8154,Product 08154,Books,12.94,1605.0,Northstar Supply,2025-03-19
+8155,Product 08155,Outdoor,17.42,2.0,Blue Oak Goods,2025-03-25
+8156,Product 08156,Books,16.71,1500.0,Harbor Market,2023-02-01
+8157,Product 08157,Outdoor,72.1,1239.0,Northstar Supply,2023-01-01
+8158,Product 08158,Office,71.03,2220.0,Summit Wholesale,2019-08-27
+8159,Product 08159,Electronics,54.41,931.0,Summit Wholesale,2022-02-10
+8160,Product 08160,Outdoor,60.25,443.0,Northstar Supply,2020-08-04
+8161,Product 08161,Books,46.11,728.0,Summit Wholesale,2021-07-23
+8162,Product 08162,Electronics,23.44,1539.0,Northstar Supply,2023-02-06
+8163,Product 08163,Office,14.69,135.0,Summit Wholesale,2021-08-15
+8164,Product 08164,Home,22.24,2291.0,Summit Wholesale,2019-12-15
+8165,Product 08165,Outdoor,41.89,1586.0,Northstar Supply,2020-07-22
+8166,Product 08166,Books,27.25,1740.0,Harbor Market,2022-08-21
+8167,Product 08167,Kitchen,71.88,2272.0,Harbor Market,2020-07-24
+8168,Product 08168,Home,20.14,846.0,Northstar Supply,2022-04-27
+8169,Product 08169,Office,23.43,1737.0,Summit Wholesale,2025-05-20
+8170,Product 08170,Office,6.42,1940.0,Blue Oak Goods,2021-01-30
+8171,Product 08171,Home,19.34,994.0,Blue Oak Goods,2025-05-19
+8172,Product 08172,Home,17.76,2085.0,Harbor Market,2020-06-20
+8173,Product 08173,Home,20.61,73.0,Northstar Supply,2022-06-18
+8174,Product 08174,Kitchen,11.75,433.0,Summit Wholesale,2022-02-24
+8175,Product 08175,Electronics,38.31,831.0,Northstar Supply,2025-03-25
+8176,Product 08176,Home,12.36,1951.0,Northstar Supply,2023-01-24
+8177,Product 08177,Electronics,34.12,331.0,Blue Oak Goods,2021-11-09
+8178,Product 08178,Books,44.73,580.0,Northstar Supply,2023-04-30
+8179,Product 08179,Books,36.06,2211.0,Summit Wholesale,2024-08-05
+8180,Product 08180,Books,24.89,2170.0,Summit Wholesale,2022-12-15
+8181,Product 08181,Kitchen,216.03,1998.0,Blue Oak Goods,2022-08-07
+8182,Product 08182,Office,16.01,1204.0,Northstar Supply,2021-12-04
+8183,Product 08183,Outdoor,56.38,2101.0,Blue Oak Goods,2023-06-08
+8184,Product 08184,Outdoor,91.91,1626.0,Summit Wholesale,2022-01-03
+8185,Product 08185,Electronics,64.24,1865.0,Harbor Market,2023-06-10
+8186,Product 08186,Books,28.78,2155.0,Blue Oak Goods,2022-11-13
+8187,Product 08187,Home,126.25,1410.0,Blue Oak Goods,2021-12-10
+8188,Product 08188,Office,7.11,198.0,Northstar Supply,2022-10-21
+8189,Product 08189,Home,46.85,1647.0,Summit Wholesale,2025-08-03
+8190,Product 08190,Books,13.9,520.0,Harbor Market,2024-07-18
+8191,Product 08191,Outdoor,15.43,2029.0,Summit Wholesale,2019-08-24
+8192,Product 08192,Kitchen,11.68,230.0,Blue Oak Goods,2019-04-10
+8193,Product 08193,Books,38.88,1779.0,Northstar Supply,2022-11-27
+8194,Product 08194,Books,14.64,1804.0,Northstar Supply,2025-12-21
+8195,Product 08195,Kitchen,47.09,693.0,Summit Wholesale,2021-05-01
+8196,Product 08196,Home,13.54,1448.0,Harbor Market,2024-04-21
+8197,Product 08197,Kitchen,13.61,1905.0,Summit Wholesale,2019-11-03
+8198,Product 08198,Books,13.21,1326.0,Blue Oak Goods,2023-02-06
+8199,Product 08199,Kitchen,13.58,1901.0,Blue Oak Goods,2021-11-23
+7009,Product 07009,Books,13.85,132.0,Harbor Market,2019-02-19

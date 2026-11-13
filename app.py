@@ -2,6 +2,7 @@ import hashlib
 import re
 from datetime import date, datetime
 from io import BytesIO, StringIO
+from pathlib import Path
 from zipfile import BadZipFile, ZipFile
 
 import numpy as np
@@ -48,6 +49,25 @@ ISSUE_COLUMNS = [
     "Suggested Fix",
 ]
 CHART_COLORS = ["#087e83", "#41a69b", "#94c9ae", "#f0b565", "#eb8b71", "#917ac6"]
+SAMPLE_DATA_DIR = Path(__file__).resolve().parent / "sample_data"
+CONNECTED_SAMPLE_FILES = (
+    "customers.csv",
+    "orders.xlsx",
+    "products.csv",
+    "support_tickets.xlsx",
+    "web_events.csv",
+)
+SAMPLE_RELATIONSHIPS = pd.DataFrame(
+    [
+        ("customers.csv", "customer_id", "orders.xlsx", "customer_id"),
+        ("products.csv", "product_id", "orders.xlsx", "product_id"),
+        ("customers.csv", "customer_id", "support_tickets.xlsx", "customer_id"),
+        ("orders.xlsx", "order_id", "support_tickets.xlsx", "order_id"),
+        ("customers.csv", "customer_id", "web_events.csv", "customer_id"),
+        ("products.csv", "product_id", "web_events.csv", "product_id"),
+    ],
+    columns=["Source file", "Source key", "Related file", "Related key"],
+)
 
 
 def make_sample_data():
@@ -375,8 +395,11 @@ def clean_data(data, numeric_columns=None):
 
 
 def read_uploaded_file(uploaded_file):
-    content = uploaded_file.getvalue()
-    if uploaded_file.name.lower().endswith(".csv"):
+    return read_data_file(uploaded_file.name, uploaded_file.getvalue())
+
+
+def read_data_file(filename, content):
+    if filename.lower().endswith(".csv"):
         return pd.read_csv(StringIO(content.decode("utf-8-sig")))
     return pd.read_excel(BytesIO(content), engine="openpyxl")
 
@@ -396,6 +419,30 @@ def load_sample_data():
     }
     st.session_state["inspector_upload_signature"] = signatures
     st.session_state["active_dataset"] = "Sample messy dataset"
+
+
+def load_connected_sample_data():
+    signatures = tuple(
+        upload_signature(uploaded_file)
+        for uploaded_file in st.session_state.get("data_upload", [])
+    )
+    datasets = {}
+    for filename in CONNECTED_SAMPLE_FILES:
+        file_path = SAMPLE_DATA_DIR / filename
+        with file_path.open("rb") as file_handle:
+            content = file_handle.read()
+        datasets[filename] = read_data_file(filename, content)
+    st.session_state["inspector_datasets"] = datasets
+    st.session_state["inspector_upload_signature"] = signatures
+    st.session_state["active_dataset"] = CONNECTED_SAMPLE_FILES[0]
+
+
+def connected_sample_archive():
+    archive = BytesIO()
+    with ZipFile(archive, mode="w") as zip_file:
+        for filename in CONNECTED_SAMPLE_FILES:
+            zip_file.write(SAMPLE_DATA_DIR / filename, arcname=filename)
+    return archive.getvalue()
 
 
 st.markdown(
@@ -577,12 +624,26 @@ with st.sidebar:
         key="data_upload",
     )
     st.button(
-        "Explore with sample data",
+        "Explore with 50-row quick sample",
         width="stretch",
         on_click=load_sample_data,
         type="secondary",
     )
-    st.caption("CSV and Excel · Multi-file batches · Session-only processing")
+    st.button(
+        "Load connected big-data sample",
+        width="stretch",
+        on_click=load_connected_sample_data,
+        type="primary",
+        help="Load five related CSV/XLSX demo tables with over 50,000 synthetic rows.",
+    )
+    st.download_button(
+        "Download 5-file sample pack",
+        data=connected_sample_archive(),
+        file_name="smart_data_quality_sample_pack.zip",
+        mime="application/zip",
+        width="stretch",
+    )
+    st.caption("Synthetic test data · CSV and Excel · Session-only processing")
 
 uploaded_files = uploaded_files or []
 upload_signatures = tuple(upload_signature(file) for file in uploaded_files)
@@ -754,6 +815,13 @@ st.caption(
     f"Analyzing **{active_dataset}** · {data.shape[0]:,} rows · "
     f"{data.shape[1]:,} columns · {int(data.memory_usage(deep=True).sum() / 1024):,} KB in memory"
 )
+if set(CONNECTED_SAMPLE_FILES).issubset(datasets):
+    with st.expander("How the sample files connect"):
+        st.caption(
+            "The synthetic tables share customer, product, and order IDs, so you can "
+            "test related datasets together or inspect each file independently."
+        )
+        st.dataframe(SAMPLE_RELATIONSHIPS, width="stretch", hide_index=True)
 
 metric_cards = [
     ("health", "Data Health Score", f"{health_score}%", "How the quality score is calculated"),

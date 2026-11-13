@@ -5,7 +5,8 @@ A standalone Streamlit workspace for reviewing and cleaning common data-quality 
 ## Features
 
 - Drag and drop multiple CSV and XLSX files together, with per-file analysis and a batch workspace summary.
-- Load a deterministic 50-row sample with intentional missing values, duplicates, malformed emails, inconsistent dates, and numeric outliers.
+- Load a deterministic 50-row quick sample, or a connected five-file synthetic dataset pack with 57,200 rows across customers, orders, products, support tickets, and web events.
+- Download the five-file CSV/XLSX demo pack directly from the sidebar. Its tables share customer, order, and product keys for join and relationship testing.
 - Scan for missing values, exact duplicate rows, invalid email addresses, inconsistent/invalid dates, and numeric outliers.
 - Adjust Email, Date, and Numeric column rules and tune the IQR outlier multiplier from 1.5 to 3.0.
 - Explore clickable KPI details, issue and completeness charts, numeric distributions, column profiles, issue filters, and recommendations.
@@ -13,6 +14,20 @@ A standalone Streamlit workspace for reviewing and cleaning common data-quality 
 - Keep uploaded data in the current app session only. The app does not use a database, authentication, or an AI/LLM API.
 
 See [APP_PROMPT.md](./APP_PROMPT.md) for the complete application prompt and acceptance criteria.
+
+## Large synthetic test data
+
+The five generated sample files are available individually:
+
+| File | Format | Rows | Relationships |
+|---|---:|---:|---|
+| [customers.csv](./sample_data/customers.csv) | CSV | 5,000 | Customer keys used by orders, support tickets, and web events |
+| [orders.xlsx](./sample_data/orders.xlsx) | Excel | 20,000 | References customers and products; order keys used by tickets |
+| [products.csv](./sample_data/products.csv) | CSV | 1,200 | Product keys used by orders and web events |
+| [support_tickets.xlsx](./sample_data/support_tickets.xlsx) | Excel | 6,000 | References customers and orders |
+| [web_events.csv](./sample_data/web_events.csv) | CSV | 25,000 | References customers and products |
+
+All records are deterministic synthetic test data. The files include a small number of intentional missing values, duplicates, malformed emails/dates, whitespace-only fields, and numeric outliers so the inspector has issues to find. In the app, select **Load connected big-data sample** to load all five related files together, or **Download 5-file sample pack** to download a ZIP.
 
 ## Run locally
 

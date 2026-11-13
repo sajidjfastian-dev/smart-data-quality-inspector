@@ -10,8 +10,10 @@ Create a wide, responsive data-quality workspace that lets a user load one or mo
 
 - Allow users to drag and drop or browse multiple CSV and `.xlsx` files from the sidebar. Read CSV files with UTF-8 BOM support and Excel files with `openpyxl`. Show file-batch loading progress and a clear, actionable error for every file that cannot be read; continue processing other valid files in the batch.
 - Add a **Load Sample Messy Dataset** button. Generate a deterministic, 50-row sample dataframe with numeric identifiers and measurements, text fields, and email/date fields. Intentionally include missing values, blank/whitespace-only strings, an exact duplicate row, malformed email addresses, valid dates in inconsistent formats, an invalid date, and an obvious numeric outlier.
+- Also include a deterministic, downloadable multi-file demo pack of around five sizeable CSV/XLSX tables with synthetic records. Make the tables relationally connected with shared customer, order, and product keys; describe the relationships and offer both a ZIP download and a one-click option to load all files as a workspace.
 - Retain the selected dataset across Streamlit reruns. If the sample is loaded while an upload is still selected, keep the sample selected instead of immediately replacing it with the previously uploaded file.
 - Let users select which file in the loaded batch to analyze. Re-run checks independently for each selected file, show a batch overview of file count and total rows, and clearly show the active dataset name, row count, and column count. Gracefully handle empty datasets and files that cannot be parsed.
+- Keep the quick sample available alongside the connected multi-file sample so users can try either a fast walkthrough or larger batch analysis.
 
 ## Automated quality scanner
 
@@ -99,4 +101,5 @@ In Data Preview & Export:
 5. Verify that all four KPI buttons open the correct details, including actual duplicate rows.
 6. Verify that issue filtering works and that cleaned CSV removes duplicates, trims text, and fills missing numeric values with the median without modifying source data.
 7. Verify that all three named tabs render and that multiple CSV and XLSX uploads are handled gracefully, including mixed valid and invalid files.
-8. Build and run the Docker image, then check the Streamlit health endpoint.
+8. Verify that the connected sample pack contains five CSV/XLSX files, has shared relational keys without broken references, can be downloaded as a ZIP, and loads all files into the workspace.
+9. Build and run the Docker image, then check the Streamlit health endpoint.
