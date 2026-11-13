@@ -235,6 +235,220 @@ def build_column_profile(data, email_columns, date_columns, numeric_columns):
     return pd.DataFrame(profile)
 
 
+def answer_data_quality_question(
+    question,
+    data,
+    issues,
+    duplicate_count,
+    health_score,
+    column_profile,
+    active_dataset,
+):
+    normalized = re.sub(r"\s+", " ", question.strip().lower())
+    if not normalized:
+        return "Ask me about duplicates, missing values, invalid formats, outliers, a column, or the overall quality score."
+
+    issue_counts = (
+        issues["Issue Type"].value_counts().to_dict()
+        if not issues.empty
+        else {}
+    )
+    duplicate_rows = (
+        issues.loc[issues["Issue Type"] == "Duplicate Row", "Row Number"]
+        .astype(int)
+        .tolist()
+        if not issues.empty
+        else []
+    )
+
+    if "duplicate" in normalized or "duplicated" in normalized or "repeated row" in normalized:
+        if duplicate_count:
+            row_list = ", ".join(str(row) for row in duplicate_rows[:20])
+            if len(duplicate_rows) > 20:
+                row_list += f", and {len(duplicate_rows) - 20} more"
+            percentage = duplicate_count / max(len(data), 1) * 100
+            return (
+                f"**{duplicate_count:,} duplicate row(s)** were found in **{active_dataset}** "
+                f"({percentage:.2f}% of {len(data):,} rows). These are repeated occurrences "
+                "after the first copy. Row numbers: "
+                f"**{row_list}**. You can remove them in the **Data Quality Review** tab."
+            )
+        return f"No exact duplicate rows were found in **{active_dataset}**."
+
+    if any(token in normalized for token in ("health", "quality score", "score", "healthy")):
+        return (
+            f"**{active_dataset}** has a data health score of **{health_score}%**, "
+            f"with **{len(issues):,} finding(s)** across "
+            f"{len(data):,} rows and {len(data.columns):,} columns. "
+            "The score is `max(0, round(100 × (1 − findings ÷ cells)))`."
+        )
+
+    if "column" in normalized and any(
+        token in normalized for token in ("how many", "number", "count", "total")
+    ):
+        return (
+            f"**{active_dataset}** contains **{len(data.columns):,} columns**: "
+            + ", ".join(f"`{column}`" for column in data.columns)
+            + "."
+        )
+
+    matched_column = next(
+        (
+            column
+            for column in data.columns
+            if re.search(
+                rf"(?<![\w]){re.escape(str(column).strip().lower())}(?![\w])",
+                normalized,
+            )
+        ),
+        None,
+    )
+    if matched_column is not None:
+        profile_row = column_profile.loc[
+            column_profile["Column"] == str(matched_column)
+        ].iloc[0]
+        column_issues = (
+            issues[issues["Column Name"].astype(str) == str(matched_column)]
+            if not issues.empty
+            else issues
+        )
+        issue_breakdown = column_issues["Issue Type"].value_counts().to_dict()
+        description = (
+            f"**{matched_column}** is treated as **{profile_row['Detected type']}** "
+            f"({profile_row['Storage type']}). It has "
+            f"**{int(profile_row['Missing']):,} missing value(s)** "
+            f"({profile_row['Missing %']:.1f}%) and "
+            f"**{int(profile_row['Unique']):,} unique value(s)**."
+        )
+        if issue_breakdown:
+            description += (
+                " Findings in this column: "
+                + ", ".join(f"{count:,} {kind}" for kind, count in issue_breakdown.items())
+                + "."
+            )
+            matching_rows = column_issues["Row Number"].astype(int).tolist()
+            description += " Affected row numbers: " + ", ".join(
+                str(row) for row in matching_rows[:15]
+            )
+            if len(matching_rows) > 15:
+                description += f", and {len(matching_rows) - 15} more"
+            description += "."
+        else:
+            description += " No findings are currently detected in this column."
+        return description
+
+    if any(token in normalized for token in ("missing", "null", "blank", "empty")):
+        count = int(issue_counts.get("Missing Value", 0))
+        if not count:
+            return f"No missing, null, or whitespace-only values were detected in **{active_dataset}**."
+        missing_issues = issues[issues["Issue Type"] == "Missing Value"]
+        rows_with_missing = sorted(missing_issues["Row Number"].astype(int).unique().tolist())
+        missing_by_column = (
+            missing_issues["Column Name"].value_counts().head(5)
+        )
+        details = ", ".join(
+            f"{column} ({amount:,})" for column, amount in missing_by_column.items()
+        )
+        response = (
+            f"Found **{count:,} missing cell(s)** across "
+            f"**{len(rows_with_missing):,} row(s)**. Columns with the most: {details}."
+        )
+        if any(token in normalized for token in ("which row", "which rows", "where", "row number")):
+            row_list = ", ".join(str(row) for row in rows_with_missing[:20])
+            if len(rows_with_missing) > 20:
+                row_list += f", and {len(rows_with_missing) - 20} more"
+            response += f" Affected row numbers: **{row_list}**."
+        return response
+
+    if any(token in normalized for token in ("which column", "most issues", "worst column", "highest issues")):
+        if issues.empty:
+            return f"No findings were detected in **{active_dataset}**, so no column currently stands out."
+        counts = issues.groupby("Column Name").size().sort_values(ascending=False)
+        if "Entire row" in counts.index:
+            counts = counts.drop("Entire row")
+        if counts.empty:
+            return f"No column-level findings were detected in **{active_dataset}**."
+        details = ", ".join(
+            f"**{column}** ({int(amount):,})"
+            for column, amount in counts.head(5).items()
+        )
+        return f"Columns with the most findings: {details}."
+
+    requested_issue_types = []
+    if "email" in normalized:
+        requested_issue_types.append("Invalid Email")
+    if "date" in normalized or "format" in normalized:
+        requested_issue_types.extend(["Invalid Date", "Inconsistent Date Format"])
+    if "outlier" in normalized or "outlying" in normalized:
+        requested_issue_types.append("Numeric Outlier")
+    if "duplicate" in normalized:
+        requested_issue_types.append("Duplicate Row")
+    if "invalid" in normalized and not requested_issue_types:
+        requested_issue_types.extend(["Invalid Email", "Invalid Date"])
+    if any(token in normalized for token in ("issue", "finding", "problem", "error", "quality", "invalid")) or requested_issue_types:
+        selected_counts = {
+            issue_type: issue_counts.get(issue_type, 0)
+            for issue_type in requested_issue_types
+        } if requested_issue_types else issue_counts
+        if not selected_counts or not any(selected_counts.values()):
+            if requested_issue_types:
+                labels = ", ".join(kind.lower() for kind in requested_issue_types)
+                return f"No {labels} findings were detected in **{active_dataset}**."
+            return f"No issues are currently detected in **{active_dataset}**."
+        breakdown = ", ".join(
+            f"**{amount:,} {kind}**"
+            for kind, amount in sorted(
+                selected_counts.items(),
+                key=lambda item: (-item[1], item[0]),
+            )
+            if amount
+        )
+        return (
+            f"**{len(issues):,} total finding(s)** are recorded for **{active_dataset}**. "
+            f"Breakdown: {breakdown}. Invalid values and outliers are review candidates, "
+            "not automatic corrections."
+        )
+
+    if any(token in normalized for token in ("row", "record", "size")):
+        return (
+            f"**{active_dataset}** contains **{len(data):,} row(s)** and "
+            f"**{len(data.columns):,} column(s)**. "
+            f"{duplicate_count:,} row(s) are exact duplicate occurrences."
+        )
+
+    if any(token in normalized for token in ("fix", "recommend", "recommendation", "clean", "improve")):
+        suggestions = []
+        if duplicate_count:
+            suggestions.append(f"remove {duplicate_count:,} exact duplicate row(s)")
+        if issue_counts.get("Missing Value"):
+            suggestions.append(
+                f"review {issue_counts['Missing Value']:,} missing value(s) and fill numeric blanks with the median"
+            )
+        if issue_counts.get("Inconsistent Date Format"):
+            suggestions.append("standardize valid date formats")
+        if issue_counts.get("Invalid Email") or issue_counts.get("Invalid Date"):
+            suggestions.append("manually verify invalid email/date values")
+        if issue_counts.get("Numeric Outlier"):
+            suggestions.append("review numeric outliers against the source")
+        if not suggestions:
+            return f"No cleaning actions are currently needed for **{active_dataset}**."
+        return "Recommended next steps: " + "; ".join(suggestions) + ". Open **Data Quality Review** to apply safe fixes."
+
+    if any(token in normalized for token in ("help", "what can", "ask", "support")):
+        return (
+            "I can answer questions about duplicate rows, missing values, emails, dates, "
+            "outliers, health score, total rows, and any column in the active file. "
+            "I use the current scan results and column rules, so changing the active file "
+            "or rules updates my answers."
+        )
+
+    return (
+        f"I can answer that using **{active_dataset}** quality results. Try asking about "
+        "duplicate rows, missing values, invalid emails, dates, outliers, the health score, "
+        "or a specific column name."
+    )
+
+
 def scan_data(
     data,
     email_columns=None,
@@ -1035,12 +1249,13 @@ if selected_metric:
                 )
                 st.dataframe(duplicate_rows, width="stretch", hide_index=True)
 
-overview_tab, issues_tab, review_tab, preview_tab = st.tabs(
+overview_tab, issues_tab, review_tab, preview_tab, assistant_tab = st.tabs(
     [
         "Overview Dashboard",
         "Issue Logs",
         "Data Quality Review",
         "Data Preview & Export",
+        "Data Quality Assistant",
     ]
 )
 
@@ -1533,3 +1748,96 @@ with preview_tab:
         "Quality reports are calculated independently for each file. "
         "Uploaded files stay in the current app session and are not saved to a database."
     )
+
+with assistant_tab:
+    st.subheader("Data Quality Copilot")
+    st.caption(
+        f"Ask questions about **{active_dataset}**. I use its live scan, column profile, "
+        "and current Column Rules to answer."
+    )
+    st.info(
+        "Private by design: answers come from the active dataset and this app’s analysis "
+        "functions. No data is sent to an external AI service."
+    )
+
+    assistant_history_key = f"quality_assistant_history_{column_signature}"
+    if assistant_history_key not in st.session_state:
+        st.session_state[assistant_history_key] = [
+            {
+                "role": "assistant",
+                "content": (
+                    f"Hi! I’m ready to help with **{active_dataset}**. "
+                    "Ask about duplicates, missing values, invalid emails or dates, "
+                    "outliers, the health score, or a specific column."
+                ),
+            }
+        ]
+
+    quick_prompts = (
+        "How many rows are duplicates?",
+        "Summarize quality issues",
+        "Which columns have missing values?",
+        "What should I fix first?",
+    )
+    quick_prompt_columns = st.columns(4)
+    selected_prompt = None
+    for prompt_index, (prompt_column, suggested_prompt) in enumerate(
+        zip(quick_prompt_columns, quick_prompts)
+    ):
+        with prompt_column:
+            if st.button(
+                suggested_prompt,
+                key=f"assistant_prompt_{column_signature}_{prompt_index}",
+                width="stretch",
+            ):
+                selected_prompt = suggested_prompt
+
+    context_column, clear_column = st.columns([3, 1])
+    with context_column:
+        st.caption(
+            f"Current context · {len(data):,} rows · {len(data.columns):,} columns · "
+            f"{len(issues):,} findings · {duplicate_count:,} duplicate rows"
+        )
+    with clear_column:
+        clear_chat = st.button(
+            "Clear conversation",
+            key=f"clear_assistant_{column_signature}",
+            width="stretch",
+        )
+    if clear_chat:
+        st.session_state[assistant_history_key] = []
+
+    user_question = st.chat_input(
+        f"Ask about {active_dataset}…",
+        key=f"quality_assistant_input_{column_signature}",
+        max_chars=500,
+    )
+    user_question = user_question or selected_prompt
+    if user_question:
+        history = st.session_state[assistant_history_key]
+        history.append({"role": "user", "content": user_question})
+        with st.spinner("Checking the active file’s quality results…"):
+            answer = answer_data_quality_question(
+                user_question,
+                data,
+                issues,
+                duplicate_count,
+                health_score,
+                column_profile,
+                active_dataset,
+            )
+        history.append({"role": "assistant", "content": answer})
+
+    if not st.session_state[assistant_history_key]:
+        st.session_state[assistant_history_key].append(
+            {
+                "role": "assistant",
+                "content": (
+                    f"Conversation cleared. Ask me about **{active_dataset}**—for example, "
+                    "“How many rows are duplicates?”"
+                ),
+            }
+        )
+    for message in st.session_state[assistant_history_key]:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])

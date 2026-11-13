@@ -68,6 +68,7 @@ Use these tabs:
 2. `Issue Logs`
 3. `Data Quality Review`
 4. `Data Preview & Export`
+5. `Data Quality Assistant`
 
 In the Issue Logs tab, provide a dropdown filter for Issue Type, a useful showing/total count, and a readable table with exactly these issue columns:
 
@@ -78,6 +79,8 @@ In the Issue Logs tab, provide a dropdown filter for Issue Type, a useful showin
 - `Suggested Fix`
 
 Handle the empty-issue state cleanly.
+
+In the Data Quality Assistant tab, provide a conversational interface grounded in the active file's live findings, profile, and current rules. Include quick prompts for duplicate counts, issue summaries, missing values, and recommendations; retain conversation history per active schema and allow users to clear it. Answer using computed results, including the duplicate row numbers, and clearly state when a question is unsupported. Do not send user data or questions to an external AI/LLM service.
 
 ## Cleaning and export
 
@@ -106,7 +109,7 @@ In Data Preview & Export:
 4. Verify that changing the Email/Date/Numeric selections or IQR multiplier updates KPIs, chart, recommendations, and issue log.
 5. Verify that all four KPI buttons open the correct details, including actual duplicate rows.
 6. Verify that issue filtering works and that cleaned CSV removes duplicates, trims text, and fills missing numeric values with the median without modifying source data.
-7. Verify that all four named tabs render and that multiple CSV and XLSX uploads are handled gracefully, including mixed valid and invalid files.
+7. Verify that all five named tabs render, the assistant correctly answers duplicate counts and common quality questions from the active dataset, and multiple CSV and XLSX uploads are handled gracefully, including mixed valid and invalid files.
 8. Verify that the connected sample pack contains five CSV/XLSX files, has shared relational keys without broken references, can be downloaded as a ZIP, and loads all files into the workspace.
 9. Verify that the Active file dropdown switches among all loaded files, the review screen shows all rows with issue styling, selected fixes update a copy, and fixed CSV/XLSX downloads open correctly without modifying source data.
 10. Build and run the Docker image, then check the Streamlit health endpoint.

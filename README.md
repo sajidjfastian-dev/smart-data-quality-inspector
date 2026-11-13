@@ -10,6 +10,7 @@ A standalone Streamlit workspace for reviewing and cleaning common data-quality 
 - Scan for missing values, exact duplicate rows, invalid email addresses, inconsistent/invalid dates, and numeric outliers.
 - Adjust Email, Date, and Numeric column rules and tune the IQR outlier multiplier from 1.5 to 3.0.
 - Explore clickable KPI details, issue and completeness charts, numeric distributions, column profiles, issue filters, and recommendations.
+- Ask the built-in Data Quality Copilot about duplicate counts, missing values, findings, the health score, and individual columns. It answers from the live scan without an external AI service.
 - Select any loaded file from the **Active file** workspace dropdown.
 - Review every row in a dedicated screen with issue cells and duplicate rows highlighted; search across values or show only affected rows.
 - Apply selected safe fixes, inspect resolved and remaining issue counts, and download the corrected CSV or XLSX. Invalid emails, dates, and statistical outliers remain for manual review.
