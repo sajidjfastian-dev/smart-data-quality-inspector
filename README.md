@@ -21,6 +21,7 @@ A standalone Streamlit workspace for reviewing and cleaning common data-quality 
 - Keep uploaded data in the current app session only. The app does not use a database, authentication, or an AI/LLM API.
 
 See [APP_PROMPT.md](./APP_PROMPT.md) for the complete application prompt and acceptance criteria.
+For a credit-conscious, two-day Replit build plan, use [REPLIT_PHASED_PROMPT.md](./REPLIT_PHASED_PROMPT.md) and submit one phase at a time.
 
 ## Technical demo presentation
 
