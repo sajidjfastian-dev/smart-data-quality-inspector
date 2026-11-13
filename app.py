@@ -416,9 +416,19 @@ def clean_data(
 def standardize_date_value(value):
     if not isinstance(value, str) or not value.strip():
         return value
+    candidate = value.strip()
+    for separator in ("/", "-"):
+        ambiguous_date = re.fullmatch(
+            rf"(\d{{1,2}}){re.escape(separator)}(\d{{1,2}}){re.escape(separator)}(\d{{4}})",
+            candidate,
+        )
+        if ambiguous_date:
+            first, second = int(ambiguous_date.group(1)), int(ambiguous_date.group(2))
+            if first <= 12 and second <= 12 and first != second:
+                return value
     for date_format in DATE_FORMATS:
         try:
-            parsed = datetime.strptime(value.strip(), date_format)
+            parsed = datetime.strptime(candidate, date_format)
         except ValueError:
             continue
         if "%H" in date_format:
@@ -589,6 +599,30 @@ st.markdown(
     }
     .section-heading h2 {margin: 0; font-size: 1.35rem; letter-spacing: -.025em;}
     .section-caption {color: var(--muted); font-size: .88rem; margin-top: .25rem;}
+    .workflow-strip {
+        display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+        margin: 0 0 1.15rem; padding: 12px 16px;
+        background: #f0f7f6; border: 1px solid #dcebe8; border-radius: 14px;
+    }
+    .workflow-step {
+        display: inline-flex; align-items: center; gap: 8px;
+        color: #536b75; font-size: .8rem; font-weight: 650;
+    }
+    .workflow-step strong {
+        display: grid; place-items: center; width: 23px; height: 23px;
+        border-radius: 50%; background: #dcebe8; color: #355d61;
+        font-size: .72rem;
+    }
+    .workflow-step-active {color: var(--teal-dark);}
+    .workflow-step-active strong {background: var(--teal); color: #fff;}
+    .workflow-step-complete strong {background: #d3eee2; color: #246548;}
+    .workflow-divider {color: #9aadb3; font-size: .82rem;}
+    .st-key-active_dataset [data-baseweb="select"] {
+        border-radius: 11px; background: #fff;
+    }
+    [data-testid="stDataFrame"] {background: #fff;}
+    [data-testid="stDataFrame"] [role="grid"] {font-variant-numeric: tabular-nums;}
+    [data-testid="stAlert"] {border-radius: 12px;}
     .st-key-batch_overview [data-testid="stMetric"] {
         background: linear-gradient(140deg, #fff, #f0f8f6);
     }
@@ -670,7 +704,6 @@ st.markdown(
     f'</div></div>',
     unsafe_allow_html=True,
 )
-
 with st.sidebar:
     st.markdown(
         f'<div class="sidebar-brand">{brand_logo("sidebar")}<div>'
@@ -778,15 +811,35 @@ if not datasets:
     )
     st.stop()
 
-with st.sidebar:
-    st.divider()
-    st.markdown("#### Current workspace")
-    active_dataset = st.selectbox(
-        "Active file",
-        options=list(datasets),
-        key="active_dataset",
-        help="Choose a file in the workspace to inspect its data quality.",
-    )
+st.markdown(
+    '<div class="workflow-strip" aria-label="Workspace workflow">'
+    '<span class="workflow-step workflow-step-complete"><strong>✓</strong> Load data</span>'
+    '<span class="workflow-divider">›</span>'
+    '<span class="workflow-step workflow-step-active"><strong>2</strong> Inspect quality</span>'
+    '<span class="workflow-divider">›</span>'
+    '<span class="workflow-step"><strong>3</strong> Review &amp; fix</span>'
+    '<span class="workflow-divider">›</span>'
+    '<span class="workflow-step"><strong>4</strong> Export</span>'
+    '</div>',
+    unsafe_allow_html=True,
+)
+
+with st.container(border=True):
+    workspace_file_col, workspace_guidance_col = st.columns([1.1, 2])
+    with workspace_file_col:
+        st.markdown("**Current workspace**")
+        active_dataset = st.selectbox(
+            "Active file",
+            options=list(datasets),
+            key="active_dataset",
+            help="Choose a file in the workspace to inspect its data quality.",
+        )
+    with workspace_guidance_col:
+        st.markdown("**Inspect one file at a time**")
+        st.caption(
+            "Choose a file to refresh its quality score, issue log, row review, "
+            "and exports. Workspace files remain available in this list."
+        )
 
 data = datasets[active_dataset]
 columns = list(data.columns)
@@ -1204,8 +1257,52 @@ with issues_tab:
                 f"**{issue_count:,}** total findings · "
                 f"**{issues['Column Name'].nunique():,}** affected columns"
             )
-        st.caption(f"Showing {len(filtered_issues):,} of {len(issues):,} detected issues")
-        st.dataframe(filtered_issues, width="stretch", hide_index=True)
+        search_col, column_filter_col = st.columns([1.5, 1])
+        with search_col:
+            issue_search = st.text_input(
+                "Search findings",
+                placeholder="Search values, columns, or suggested fixes",
+                key=f"issue_search_{column_signature}",
+            )
+        with column_filter_col:
+            issue_column_options = ["All columns"] + sorted(
+                filtered_issues["Column Name"].astype(str).unique().tolist()
+            )
+            selected_issue_column = st.selectbox(
+                "Filter by column",
+                issue_column_options,
+                key=f"issue_column_filter_{column_signature}",
+            )
+        if selected_issue_column != "All columns":
+            filtered_issues = filtered_issues[
+                filtered_issues["Column Name"].astype(str) == selected_issue_column
+            ]
+        if issue_search.strip():
+            search_mask = filtered_issues.astype(str).apply(
+                lambda column: column.str.contains(
+                    issue_search.strip(),
+                    case=False,
+                    regex=False,
+                    na=False,
+                )
+            ).any(axis=1)
+            filtered_issues = filtered_issues[search_mask]
+        st.caption(
+            f"Showing {len(filtered_issues):,} of {len(issues):,} detected findings"
+        )
+        if filtered_issues.empty:
+            st.info("No findings match these search and filter choices.")
+        else:
+            st.dataframe(filtered_issues, width="stretch", hide_index=True)
+        st.download_button(
+            "Download issue report",
+            data=filtered_issues.to_csv(index=False).encode("utf-8-sig"),
+            file_name=f"{Path(active_dataset).stem}_issue_report.csv",
+            mime="text/csv",
+            width="content",
+            key=f"download_issues_{column_signature}",
+            disabled=filtered_issues.empty,
+        )
 
 with review_tab:
     st.subheader("Review and fix the active file")
@@ -1240,7 +1337,7 @@ with review_tab:
         )
         st.caption(
             "Invalid emails, invalid dates, and statistical outliers need human review "
-            "and are not changed automatically."
+            "and are not changed automatically. Ambiguous dates are also left unchanged."
         )
         if st.button(
             "Apply selected fixes",
@@ -1293,6 +1390,16 @@ with review_tab:
             f"Fixed copy: {len(review_data):,} rows · "
             f"{len(review_issues):,} remaining finding(s)."
         )
+        result_metrics = st.columns(3)
+        result_metrics[0].metric(
+            "Rows removed",
+            f"{max(len(data) - len(review_data), 0):,}",
+        )
+        result_metrics[1].metric(
+            "Findings resolved",
+            f"{max(issue_count - len(review_issues), 0):,}",
+        )
+        result_metrics[2].metric("Needs manual review", f"{len(review_issues):,}")
         st.caption(
             "The original file remains available in the workspace; only the exported copy is fixed."
         )
@@ -1318,12 +1425,49 @@ with review_tab:
 
     review_display = review_data.copy()
     review_display.insert(0, "Row Number", np.arange(1, len(review_display) + 1))
-    st.dataframe(
-        dataframe_styles(review_display, review_issues),
-        width="stretch",
-        height=650,
-        hide_index=True,
+    review_search_col, review_filter_col = st.columns([1.5, 1])
+    with review_search_col:
+        review_search = st.text_input(
+            "Search rows",
+            placeholder="Search across values in this file",
+            key=f"review_search_{column_signature}_{int(show_fixed)}",
+        )
+    with review_filter_col:
+        issue_rows_only = st.toggle(
+            "Show rows with findings only",
+            value=False,
+            key=f"issue_rows_only_{column_signature}_{int(show_fixed)}",
+        )
+    if issue_rows_only:
+        if review_issues.empty:
+            review_display = review_display.iloc[0:0]
+        else:
+            review_display = review_display[
+                review_display["Row Number"].isin(review_issues["Row Number"])
+            ]
+    if review_search.strip():
+        search_mask = review_display.astype(str).apply(
+            lambda column: column.str.contains(
+                review_search.strip(),
+                case=False,
+                regex=False,
+                na=False,
+            )
+        ).any(axis=1)
+        review_display = review_display[search_mask]
+    st.caption(
+        f"Showing {len(review_display):,} of {len(review_data):,} rows"
+        + (" with findings" if issue_rows_only else "")
     )
+    if review_display.empty:
+        st.info("No rows match these search and filter choices.")
+    else:
+        st.dataframe(
+            dataframe_styles(review_display, review_issues),
+            width="stretch",
+            height=650,
+            hide_index=True,
+        )
 
     if has_fixed_data and show_fixed:
         fixed_payload, fixed_mime, fixed_extension = serialize_data_file(

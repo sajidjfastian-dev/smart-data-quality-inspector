@@ -11,7 +11,9 @@ A standalone Streamlit workspace for reviewing and cleaning common data-quality 
 - Adjust Email, Date, and Numeric column rules and tune the IQR outlier multiplier from 1.5 to 3.0.
 - Explore clickable KPI details, issue and completeness charts, numeric distributions, column profiles, issue filters, and recommendations.
 - Select any loaded file from the **Active file** workspace dropdown.
-- Review every row in a dedicated screen with issue cells and duplicate rows highlighted. Apply selected safe fixes, inspect remaining issues, and download the corrected CSV or XLSX.
+- Review every row in a dedicated screen with issue cells and duplicate rows highlighted; search across values or show only affected rows.
+- Apply selected safe fixes, inspect resolved and remaining issue counts, and download the corrected CSV or XLSX. Invalid emails, dates, and statistical outliers remain for manual review.
+- Search/filter issue logs by text and column, then download the matching issue report as CSV.
 - Download a cleaned CSV for the active file or a ZIP containing cleaned CSVs for the batch.
 - Keep uploaded data in the current app session only. The app does not use a database, authentication, or an AI/LLM API.
 

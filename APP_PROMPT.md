@@ -58,6 +58,8 @@ Add a Plotly issue-type chart and missing-value completeness chart, a column pro
 
 Add a dedicated data-quality review screen that displays every row in the active file and visually highlights cells with detected issues and exact duplicate rows. Provide selectable safe fixes for exact duplicates, whitespace trimming, missing numeric values (column median), and valid date-format standardization. Apply fixes to a copy, show remaining findings in the fixed preview, preserve the original dataset, and let users download a fixed CSV or XLSX matching the active file type. Keep malformed emails, invalid dates, and statistical outliers highlighted for manual review rather than inventing corrections.
 
+Make review convenient for larger files with a cross-column text search and an opt-in **Show rows with findings only** filter while keeping all rows visible by default. Show rows removed, findings resolved, and findings needing manual review after applying fixes. In Issue Logs, support text search and column filtering, and allow downloading the currently filtered issue report as CSV.
+
 ## Navigation and issue log
 
 Use these tabs:
