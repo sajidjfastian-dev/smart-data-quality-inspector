@@ -15,6 +15,9 @@ Use the latest Python version already available in Replit. Keep the application 
 - Reuse installed packages. Install only packages needed for this phase.
 - Keep code clear and put app behavior in `app.py`.
 - Run the app and fix errors before finishing.
+- Loading indicators must only be visible while work is running. Remove animated loader markup and mark/collapse status when work completes; never leave a spinner running on the finished screen.
+- Do not create cleaned files or batch ZIPs automatically during normal page rendering. Prepare larger exports only after the user requests them, show progress while preparing, then stop the loader.
+- Cache completed scan/export results in the current session when practical so changing tabs does not repeat expensive work. Recalculate when the active file or its rules change.
 - Report briefly what changed, how it was tested, and any remaining problem.
 - Stop after the phase is complete and wait for me to request the next phase.
 
@@ -95,6 +98,7 @@ Only add this phase after Phases 1–4 work reliably.
 - Allow multiple CSV and Excel uploads, processed as separate files.
 - Add an **Active file** dropdown. Changing it updates the dashboard, rules, issue log, review, and downloads.
 - Show file-loading progress and a simple journey: file loaded → inspection complete → findings → review → export.
+- Keep each loading indicator scoped to its operation; when file loading ends, collapse its status and remove its animation before starting inspection.
 - Keep a quick 50-row messy sample.
 - If time allows, generate five related synthetic CSV/XLSX demo files with shared IDs and offer a ZIP download and a button to load the sample workspace.
 - Let users download cleaned versions of all loaded files as one ZIP.
@@ -110,12 +114,14 @@ Avoid huge data generation that makes Replit slow. Keep sample data synthetic; n
 Do this only if the core app is complete and tested.
 
 - Improve the theme, spacing, typography, labels, and mobile layout. Use a simple professional analytics style.
-- Show a clear animated inspection loader with progress during file loading, scanning, applying fixes, and preparing downloads. Do not load animation files from external websites. Respect reduced-motion settings where possible.
+- Show one clear animated inspection loader with progress during file loading, scanning, applying fixes, and user-requested export preparation. Do not load animation files from external websites. Respect reduced-motion settings where possible.
+- At completion, remove the loader and collapse/complete the status panel. Test that there are no active spinners after each operation, including sample loading, scans, fixes, and exports.
+- Do not prepare cleaned single-file exports or batch ZIPs during ordinary page loads or tab changes. Prepare them only after an explicit user action; cache the result so it is not rebuilt unnecessarily.
 - Add an optional **Data Quality Assistant** tab with quick questions about duplicates, missing values, findings, health score, and recommendations. Answer from the current scan results using local Python logic. Do not connect an external AI service; do not pretend it is a general AI chatbot.
 - Add a short privacy note explaining that uploaded data is held in the running session and goes to the server hosting Replit.
 - If a container is useful, add a simple Dockerfile. Do not spend time on Docker unless the main app already works.
 
-**Done when:** the interface is understandable without instructions, the loader and assistant do not break file switching, and the app still runs successfully.
+**Done when:** the interface is understandable without instructions, loaders stop and disappear after work completes, downloads are prepared only on demand, the loader and assistant do not break file switching, and the app still runs successfully.
 
 ---
 
