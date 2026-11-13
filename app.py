@@ -807,8 +807,9 @@ def build_cleaned_batch_archive(datasets, progress_callback=None):
     return archive.getvalue()
 
 
-def render_inspection_loader(title, detail):
-    st.markdown(
+def render_inspection_loader(title, detail, container=None):
+    target = container if container is not None else st
+    target.markdown(
         '<div class="inspection-loader" role="status" aria-live="polite">'
         '<span class="inspection-loader-spinner" aria-hidden="true"></span>'
         f'<span class="inspection-loader-copy"><strong>{html.escape(title)}</strong>'
@@ -1085,19 +1086,41 @@ with st.sidebar:
     st.caption("Synthetic test data · CSV and Excel · Session-only processing")
 
 if load_sample_clicked:
-    with st.status("Preparing the 50-row sample...", expanded=True):
+    with st.status(
+        "Preparing the 50-row sample...",
+        expanded=True,
+    ) as sample_status:
+        sample_loader = st.empty()
         render_inspection_loader(
             "Preparing your sample",
             "Building a test workspace with intentional data-quality examples.",
+            sample_loader,
         )
         load_sample_data()
+        sample_loader.empty()
+        sample_status.update(
+            label="50-row sample loaded",
+            state="complete",
+            expanded=False,
+        )
 if load_connected_clicked:
-    with st.status("Loading the connected sample workspace...", expanded=True):
+    with st.status(
+        "Loading the connected sample workspace...",
+        expanded=True,
+    ) as sample_status:
+        sample_loader = st.empty()
         render_inspection_loader(
             "Loading the connected sample workspace",
             "Reading five related CSV and Excel datasets.",
+            sample_loader,
         )
         load_connected_sample_data()
+        sample_loader.empty()
+        sample_status.update(
+            label="Connected sample workspace loaded",
+            state="complete",
+            expanded=False,
+        )
 
 uploaded_files = uploaded_files or []
 upload_signatures = tuple(upload_signature(file) for file in uploaded_files)
@@ -1112,9 +1135,11 @@ if uploaded_files and upload_signatures != st.session_state.get(
         f"Loading {len(uploaded_files)} uploaded file(s)...",
         expanded=True,
     ) as upload_status:
+        upload_loader = st.empty()
         render_inspection_loader(
             "Loading your files",
             "Reading CSV and Excel content into the current inspection session.",
+            upload_loader,
         )
         progress = st.progress(0.0, text="Preparing file batch...")
         for index, uploaded_file in enumerate(uploaded_files):
@@ -1155,6 +1180,7 @@ if uploaded_files and upload_signatures != st.session_state.get(
                 )
         progress.progress(1.0, text="File batch ready.")
         progress.empty()
+        upload_loader.empty()
         upload_status.update(
             label=f"Loaded {len(loaded_datasets):,} of {len(uploaded_files):,} file(s)",
             state="complete" if loaded_datasets else "error",
@@ -1268,9 +1294,11 @@ else:
         f"Inspecting {len(data):,} rows across {len(columns):,} columns...",
         expanded=True,
     ) as inspection_status:
+        inspection_loader = st.empty()
         render_inspection_loader(
             "Inspecting your active file",
             "Checking missing values, duplicates, formats, and numeric outliers.",
+            inspection_loader,
         )
         inspection_progress = st.progress(0.0, text="Preparing quality checks...")
 
@@ -1291,6 +1319,7 @@ else:
             progress_callback=update_inspection_progress,
         )
         inspection_progress.empty()
+        inspection_loader.empty()
         inspection_status.update(
             label=f"Inspection complete · {len(issues):,} finding(s)",
             state="complete",
@@ -1311,43 +1340,6 @@ else:
 issue_count = len(issues)
 health_score = max(0, round(100 * (1 - issue_count / max(data.shape[0] * data.shape[1], 1))))
 batch_row_count = sum(len(frame) for frame in datasets.values())
-
-clean_export_cache = st.session_state.setdefault("clean_export_cache", {})
-clean_export_key = (
-    active_dataset,
-    column_signature,
-    tuple(sorted(repr(column) for column in numeric_columns)),
-)
-if clean_export_key not in clean_export_cache:
-    with st.status("Preparing the cleaned file export...", expanded=True):
-        render_inspection_loader(
-            "Preparing the cleaned file export",
-            "Applying selected numeric rules to an in-memory copy; the source stays unchanged.",
-        )
-        clean_export_cache[clean_export_key] = clean_data(
-            data,
-            numeric_columns=numeric_columns,
-        )
-cleaned_data = clean_export_cache[clean_export_key]
-
-batch_export_archive = st.session_state.get("batch_export_cache")
-if len(datasets) > 1 and batch_export_archive is None:
-    with st.status("Preparing the cleaned batch export...", expanded=True):
-        render_inspection_loader(
-            "Preparing the cleaned batch export",
-            f"Cleaning {len(datasets):,} files into a downloadable ZIP.",
-        )
-        batch_progress = st.progress(0.0, text="Preparing cleaned files...")
-
-        def update_batch_export_progress(fraction, message):
-            batch_progress.progress(fraction, text=message)
-
-        batch_export_archive = build_cleaned_batch_archive(
-            datasets,
-            progress_callback=update_batch_export_progress,
-        )
-        st.session_state["batch_export_cache"] = batch_export_archive
-        batch_progress.empty()
 
 findings_step = (
     f"{issue_count:,} finding{'s' if issue_count != 1 else ''} · "
@@ -1795,10 +1787,15 @@ with review_tab:
                 ]
             ),
         ):
-            with st.status("Applying selected fixes...", expanded=True):
+            with st.status(
+                "Applying selected fixes...",
+                expanded=True,
+            ) as fix_status:
+                fix_loader = st.empty()
                 render_inspection_loader(
                     "Applying safe fixes",
                     "Updating a copy while preserving the original file.",
+                    fix_loader,
                 )
                 fixed_datasets[active_dataset] = clean_data(
                     data,
@@ -1808,6 +1805,12 @@ with review_tab:
                     trim_whitespace=fix_whitespace,
                     fill_numeric_missing=fix_missing_numeric,
                     standardize_dates=fix_date_formats,
+                )
+                fix_loader.empty()
+                fix_status.update(
+                    label="Safe fixes applied to a copy",
+                    state="complete",
+                    expanded=False,
                 )
             st.session_state.setdefault("review_scan_cache", {}).pop(
                 active_dataset,
@@ -1838,9 +1841,11 @@ with review_tab:
             review_issues = cached_review["issues"]
         else:
             with st.status("Validating the review preview...", expanded=True) as review_status:
+                review_loader = st.empty()
                 render_inspection_loader(
                     "Validating the review preview",
                     "Rechecking remaining issues in the fixed copy.",
+                    review_loader,
                 )
                 review_progress = st.progress(0.0, text="Preparing preview checks...")
 
@@ -1861,6 +1866,7 @@ with review_tab:
                     progress_callback=update_review_progress,
                 )
                 review_progress.empty()
+                review_loader.empty()
                 review_status.update(
                     label=f"Preview check complete · {len(review_issues):,} finding(s)",
                     state="complete",
@@ -1976,30 +1982,121 @@ with preview_tab:
         f"Previewing **{active_dataset}**. The original data remains unchanged by export cleaning."
     )
     st.dataframe(data.head(100), width="stretch", hide_index=True)
-    st.caption(
-        f"One-click cleaning removes exact duplicates, trims text whitespace, "
-        f"and fills missing numeric values with their column median. "
-        f"Preview: {len(cleaned_data):,} rows after cleaning."
+    export_clean_cache = st.session_state.setdefault("clean_export_cache", {})
+    export_clean_key = (
+        active_dataset,
+        column_signature,
+        tuple(sorted(repr(column) for column in numeric_columns)),
     )
-    download_col, batch_col = st.columns([1, 1])
-    with download_col:
-        st.download_button(
-            "Download this cleaned CSV",
-            data=cleaned_data.to_csv(index=False).encode("utf-8"),
-            file_name=f"{active_dataset.rsplit('.', 1)[0]}_cleaned.csv",
-            mime="text/csv",
+    if export_clean_key not in export_clean_cache:
+        if st.button(
+            "Prepare cleaned CSV",
             type="primary",
             width="stretch",
+            key=f"prepare_clean_export_{column_signature}",
+        ):
+            with st.status(
+                "Preparing the cleaned file export...",
+                expanded=True,
+            ) as export_status:
+                export_loader = st.empty()
+                render_inspection_loader(
+                    "Preparing the cleaned file export",
+                    "Applying safe fixes to a copy; the source stays unchanged.",
+                    export_loader,
+                )
+                export_clean_cache[export_clean_key] = clean_data(
+                    data,
+                    numeric_columns=numeric_columns,
+                )
+                export_loader.empty()
+                export_status.update(
+                    label="Cleaned file is ready",
+                    state="complete",
+                    expanded=False,
+                )
+        st.caption(
+            "Preparing a cleaned copy is on demand. It removes exact duplicates, "
+            "trims whitespace, and fills missing selected numeric values with the median."
         )
-    with batch_col:
-        if len(datasets) > 1:
+    else:
+        cleaned_data = export_clean_cache[export_clean_key]
+        st.caption(
+            f"Cleaned copy ready · {len(cleaned_data):,} rows after removing duplicates. "
+            "The original file remains unchanged."
+        )
+
+    download_col, batch_col = st.columns([1, 1])
+    with download_col:
+        if export_clean_key in export_clean_cache:
             st.download_button(
-                "Download all cleaned files",
-                data=batch_export_archive,
-                file_name="cleaned_data_batch.zip",
-                mime="application/zip",
+                "Download this cleaned CSV",
+                data=export_clean_cache[export_clean_key].to_csv(index=False).encode("utf-8"),
+                file_name=f"{active_dataset.rsplit('.', 1)[0]}_cleaned.csv",
+                mime="text/csv",
+                type="primary",
                 width="stretch",
             )
+        else:
+            st.button(
+                "Download this cleaned CSV",
+                disabled=True,
+                width="stretch",
+                help="Prepare the cleaned copy first.",
+                key=f"disabled_clean_download_{column_signature}",
+            )
+    with batch_col:
+        if len(datasets) > 1:
+            batch_archive = st.session_state.get("batch_export_cache")
+            if batch_archive is None and st.button(
+                "Prepare cleaned batch ZIP",
+                width="stretch",
+                key=f"prepare_batch_export_{column_signature}",
+            ):
+                with st.status(
+                    "Preparing the cleaned batch export...",
+                    expanded=True,
+                ) as batch_status:
+                    batch_loader = st.empty()
+                    render_inspection_loader(
+                        "Preparing the cleaned batch export",
+                        f"Cleaning {len(datasets):,} files into a downloadable ZIP.",
+                        batch_loader,
+                    )
+                    batch_progress = st.progress(
+                        0.0,
+                        text="Preparing cleaned files...",
+                    )
+
+                    def update_batch_export_progress(fraction, message):
+                        batch_progress.progress(fraction, text=message)
+                        batch_status.update(
+                            label="Preparing the cleaned batch export...",
+                            state="running",
+                            expanded=True,
+                        )
+
+                    batch_archive = build_cleaned_batch_archive(
+                        datasets,
+                        progress_callback=update_batch_export_progress,
+                    )
+                    st.session_state["batch_export_cache"] = batch_archive
+                    batch_progress.empty()
+                    batch_loader.empty()
+                    batch_status.update(
+                        label="Cleaned batch export is ready",
+                        state="complete",
+                        expanded=False,
+                    )
+                batch_archive = st.session_state["batch_export_cache"]
+            if batch_archive is not None:
+                st.download_button(
+                    "Download all cleaned files",
+                    data=batch_archive,
+                    file_name="cleaned_data_batch.zip",
+                    mime="application/zip",
+                    width="stretch",
+                )
         else:
             st.info("Upload multiple files to export the full batch as one ZIP.")
     st.caption(
@@ -2074,10 +2171,15 @@ with assistant_tab:
     if user_question:
         history = st.session_state[assistant_history_key]
         history.append({"role": "user", "content": user_question})
-        with st.status("Preparing your data-quality answer...", expanded=True):
+        with st.status(
+            "Preparing your data-quality answer...",
+            expanded=True,
+        ) as assistant_status:
+            assistant_loader = st.empty()
             render_inspection_loader(
                 "Checking the active file’s quality results",
                 "Using the current scan, column profile, and rules.",
+                assistant_loader,
             )
             answer = answer_data_quality_question(
                 user_question,
@@ -2087,6 +2189,12 @@ with assistant_tab:
                 health_score,
                 column_profile,
                 active_dataset,
+            )
+            assistant_loader.empty()
+            assistant_status.update(
+                label="Answer ready",
+                state="complete",
+                expanded=False,
             )
         history.append({"role": "assistant", "content": answer})
 
