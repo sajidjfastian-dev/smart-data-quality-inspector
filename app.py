@@ -49,8 +49,13 @@ ISSUE_COLUMNS = [
     "Current Value",
     "Suggested Fix",
 ]
-CHART_COLORS = ["#087e83", "#41a69b", "#94c9ae", "#f0b565", "#eb8b71", "#917ac6"]
+CHART_COLORS = ["#00796f", "#00a993", "#8bded0", "#daaa00", "#f87c56", "#738ec4"]
 SAMPLE_DATA_DIR = Path(__file__).resolve().parent / "sample_data"
+DEMO_VIDEO_PATH = (
+    Path(__file__).resolve().parent
+    / "demo_media"
+    / "smart_data_quality_demo.mp4"
+)
 CONNECTED_SAMPLE_FILES = (
     "customers.csv",
     "orders.xlsx",
@@ -727,7 +732,6 @@ def upload_signature(uploaded_file):
 def reset_quality_caches():
     st.session_state["quality_scan_cache"] = {}
     st.session_state["review_scan_cache"] = {}
-    st.session_state["clean_export_cache"] = {}
     st.session_state["batch_export_cache"] = None
 
 
@@ -822,39 +826,42 @@ st.markdown(
     """
     <style>
     :root {
-        --ink: #1b2940;
-        --muted: #697890;
-        --line: #e4e9f1;
-        --teal: #365bd6;
-        --teal-dark: #2848b5;
-        --canvas: #f4f6fb;
+        --ink: #17343a;
+        --muted: #657b7a;
+        --line: #e4e9e5;
+        --brand-gold: #daaa00;
+        --brand-turquoise: #00c7b1;
+        --brand-coral: #f87c56;
+        --teal: #00796f;
+        --teal-dark: #005c55;
+        --canvas: #f6f8f6;
         --panel: #ffffff;
     }
     html, body, [class*="css"] {font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;}
     .stApp, [data-testid="stAppViewContainer"] {background: var(--canvas);}
-    [data-testid="stHeader"] {background: rgba(244, 246, 251, .9);}
+    [data-testid="stHeader"] {background: rgba(246, 248, 246, .94);}
     .block-container {padding-top: 1.35rem; padding-bottom: 3rem; max-width: 1540px;}
     h1, h2, h3, [data-testid="stMarkdownContainer"] p {color: var(--ink);}
     h2 {font-size: 1.28rem; letter-spacing: -.025em;}
     h3 {font-size: 1.08rem; letter-spacing: -.015em;}
     .brand-header {
         display: flex; align-items: center; gap: 17px; margin-bottom: 1.1rem;
-        padding: 19px 24px; border: 1px solid #243b5d; border-radius: 18px;
+        padding: 19px 24px; border: 1px solid #17474a; border-bottom: 3px solid var(--brand-gold); border-radius: 18px;
         background:
-            radial-gradient(ellipse at 88% 4%, rgba(74, 112, 221, .28), transparent 35%),
-            linear-gradient(112deg, #17263d 0%, #1d3150 64%, #243f67 100%);
-        box-shadow: 0 12px 30px rgba(24, 39, 67, .13);
+            radial-gradient(ellipse at 88% 4%, rgba(0, 199, 177, .24), transparent 35%),
+            linear-gradient(112deg, #102d35 0%, #16474a 64%, #174e4a 100%);
+        box-shadow: 0 12px 30px rgba(16, 45, 53, .15);
     }
     .brand-logo {width: 52px; height: 52px; flex: 0 0 52px;}
     .brand-eyebrow {
-        color: #a9c1ff; font-size: .67rem; font-weight: 750;
+        color: var(--brand-gold); font-size: .67rem; font-weight: 750;
         letter-spacing: .16em; text-transform: uppercase; margin-bottom: 5px;
     }
     .brand-title {
         color: #fff; font-size: clamp(1.45rem, 2.6vw, 1.9rem);
         line-height: 1.15; font-weight: 740; letter-spacing: -.04em;
     }
-    .brand-subtitle {color: #c4cfdf; font-size: .9rem; margin-top: 5px;}
+    .brand-subtitle {color: #d0dfdc; font-size: .9rem; margin-top: 5px;}
     .sidebar-brand {
         display: flex; align-items: center; gap: 12px;
         padding: 4px 0 14px; margin-bottom: 7px;
@@ -891,8 +898,8 @@ st.markdown(
         color: var(--ink); text-align: left; line-height: 1.42; font-size: .88rem;
     }
     .st-key-metric_cards [data-testid="stButton"] button:hover {
-        color: var(--teal-dark); background: #f8faff; border-color: var(--teal);
-        box-shadow: 0 8px 22px rgba(54, 91, 214, .12); transform: translateY(-2px);
+        color: var(--teal-dark); background: #f2faf8; border-color: var(--teal);
+        box-shadow: 0 8px 22px rgba(0, 121, 111, .13); transform: translateY(-2px);
     }
     .st-key-metric_cards [data-testid="stButton"] button:focus:not(:active) {
         border-color: var(--teal); color: var(--teal-dark);
@@ -923,8 +930,8 @@ st.markdown(
     }
     .workflow-step-active {color: var(--teal-dark);}
     .workflow-step-active strong {background: var(--teal); color: #fff;}
-    .workflow-step-complete strong {background: #e7efff; color: #365bd6;}
-    .workflow-step-findings strong {background: #fff0da; color: #a45b08;}
+    .workflow-step-complete strong {background: #d9f4ef; color: #005c55;}
+    .workflow-step-findings strong {background: #fff3cf; color: #795e00;}
     .workflow-step-clear strong {background: #e5f5ec; color: #21784a;}
     .workflow-step-ready strong {background: #edf0f6; color: #758198;}
     .st-key-active_dataset [data-baseweb="select"] {
@@ -934,24 +941,24 @@ st.markdown(
     [data-testid="stDataFrame"] [role="grid"] {font-variant-numeric: tabular-nums;}
     [data-testid="stAlert"] {border-radius: 11px; border: 1px solid rgba(37, 54, 83, .08);}
     [data-testid="stFileUploaderDropzone"] {
-        min-height: 7.5rem; border: 1.5px dashed #aab8d4 !important;
+        min-height: 7.5rem; border: 1.5px dashed #a8c9c1 !important;
         border-radius: 13px !important; background: #fff !important;
     }
     [data-testid="stFileUploaderDropzone"]:hover {
-        border-color: var(--teal) !important; background: #f8faff !important;
+        border-color: var(--teal) !important; background: #f2faf8 !important;
     }
     [data-testid="stProgressBar"] > div > div {background: var(--teal);}
     [data-testid="stStatusWidget"] {
-        border: 1px solid #dfe5f0; border-radius: 12px; background: #fff;
+        border: 1px solid #e4e9e5; border-radius: 12px; background: #fff;
     }
     .inspection-loader {
         display: flex; align-items: center; gap: 14px; padding: 14px 16px;
-        margin: 4px 0 10px; border: 1px solid #e0e7f2; border-radius: 12px;
-        background: linear-gradient(110deg, #f8faff, #fff 58%, #f5f8ff);
+        margin: 4px 0 10px; border: 1px solid #d8ebe6; border-radius: 12px;
+        background: linear-gradient(110deg, #f1f8f6, #fff 58%, #f4faf8);
     }
     .inspection-loader-spinner {
         width: 30px; height: 30px; flex: 0 0 30px; border-radius: 50%;
-        border: 3px solid #dfe7fb; border-top-color: #365bd6;
+        border: 3px solid #d4eee9; border-top-color: var(--teal);
         animation: inspection-spin .8s linear infinite;
     }
     .inspection-loader-copy strong {display:block; color:var(--ink); font-size:.88rem;}
@@ -970,24 +977,35 @@ st.markdown(
     }
     [data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
         color: var(--teal-dark); border-bottom-color: var(--teal);
-        background: #f0f4ff;
+        background: #eaf7f4;
     }
     .stButton button, .stDownloadButton button {
         min-height: 2.55rem; border-radius: 10px; font-weight: 640;
-        border-color: #d7deea; transition: all .16s ease;
+        border-color: #d5e3dc; transition: all .16s ease;
     }
     .stButton button[kind="primary"],
     .stDownloadButton button[kind="primary"],
     .stButton button[data-testid="stBaseButton-primary"],
     .stDownloadButton button[data-testid="stBaseButton-primary"] {
-        color: white !important; background: var(--teal) !important; border-color: var(--teal) !important;
+        color: #fff !important;
+        -webkit-text-fill-color: #fff !important;
+        background: var(--teal) !important;
+        border-color: var(--teal) !important;
+    }
+    .stButton button[data-testid="stBaseButton-primary"] *,
+    .stDownloadButton button[data-testid="stBaseButton-primary"] *,
+    .stButton button[kind="primary"] *,
+    .stDownloadButton button[kind="primary"] * {
+        color: #fff !important;
+        -webkit-text-fill-color: #fff !important;
+        fill: currentColor;
     }
     .stButton button:hover, .stDownloadButton button:hover {
         color: var(--teal-dark); border-color: var(--teal);
         transform: translateY(-1px);
     }
     [data-testid="stFileUploader"] section {
-        border-radius: 11px; border-color: #d7deea; background: rgba(255,255,255,.8);
+        border-radius: 11px; border-color: #d5e3dc; background: rgba(255,255,255,.85);
     }
     [data-testid="stExpander"] {
         border-color: var(--line); border-radius: 11px; background: rgba(255,255,255,.8);
@@ -1028,27 +1046,51 @@ def brand_logo(variant):
         f'<svg class="brand-logo" viewBox="0 0 64 64" fill="none" '
         f'xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'
         f'<defs><linearGradient id="{gradient_id}" x1="7" y1="5" x2="58" y2="59" '
-        f'gradientUnits="userSpaceOnUse"><stop stop-color="#5F84F1"/>'
-        f'<stop offset="1" stop-color="#294BB6"/></linearGradient></defs>'
+        f'gradientUnits="userSpaceOnUse"><stop stop-color="#00C7B1"/>'
+        f'<stop offset="1" stop-color="#00796f"/></linearGradient></defs>'
         f'<rect x="2" y="2" width="60" height="60" rx="19" fill="url(#{gradient_id})"/>'
         f'<path d="M17 43V33.5C17 32.67 17.67 32 18.5 32H23.5C24.33 32 25 32.67 '
         f'25 33.5V43" stroke="white" stroke-width="3.5" stroke-linecap="round"/>'
         f'<path d="M29.5 43V25.5C29.5 24.67 30.17 24 31 24H36C36.83 24 37.5 24.67 '
         f'37.5 25.5V43" stroke="white" stroke-width="3.5" stroke-linecap="round"/>'
         f'<path d="M17 48H37.5" stroke="white" stroke-width="3.5" stroke-linecap="round"/>'
-        f'<circle cx="45" cy="42" r="10" fill="#DCE8FF" stroke="white" stroke-width="2.5"/>'
-        f'<path d="M40.5 42L43.5 45L49.5 38.5" stroke="#294BB6" stroke-width="2.8" '
+        f'<circle cx="45" cy="42" r="10" fill="#e2f6f2" stroke="white" stroke-width="2.5"/>'
+        f'<path d="M40.5 42L43.5 45L49.5 38.5" stroke="#00796f" stroke-width="2.8" '
         f'stroke-linecap="round" stroke-linejoin="round"/></svg>'
     )
 
-st.markdown(
-    f'<div class="brand-header">{brand_logo("header")}<div>'
-    f'<div class="brand-eyebrow">Data quality workspace</div>'
-    f'<div class="brand-title">Smart Data Quality Inspector</div>'
-    f'<div class="brand-subtitle">Bring your data. Find the signal. Make every row count.</div>'
-    f'</div></div>',
-    unsafe_allow_html=True,
-)
+header_col, demo_button_col = st.columns([4, 1.05], vertical_alignment="center")
+with header_col:
+    st.markdown(
+        f'<div class="brand-header">{brand_logo("header")}<div>'
+        f'<div class="brand-eyebrow">Data quality workspace</div>'
+        f'<div class="brand-title">Smart Data Quality Inspector</div>'
+        f'<div class="brand-subtitle">Bring your data. Find the signal. Make every row count.</div>'
+        f'</div></div>',
+        unsafe_allow_html=True,
+    )
+
+
+@st.dialog("A quick tour of the inspector", width="large")
+def show_product_demo():
+    if not DEMO_VIDEO_PATH.is_file():
+        st.error(f"The demo video file is missing: {DEMO_VIDEO_PATH.name}")
+        return
+    st.video(str(DEMO_VIDEO_PATH))
+    st.caption(
+        "A short, silent walkthrough with player controls: load → inspect → understand → review → export."
+    )
+
+
+with demo_button_col:
+    if st.button(
+        "Watch demo",
+        type="primary",
+        width="stretch",
+        icon=":material/play_circle:",
+        help="Play the short visual tour for your presentation.",
+    ):
+        show_product_demo()
 with st.sidebar:
     st.markdown(
         f'<div class="sidebar-brand">{brand_logo("sidebar")}<div>'
@@ -1069,11 +1111,13 @@ with st.sidebar:
         "Explore with 50-row quick sample",
         width="stretch",
         type="secondary",
+        icon=":material/science:",
     )
     load_connected_clicked = st.button(
         "Load connected big-data sample",
         width="stretch",
         type="primary",
+        icon=":material/table_view:",
         help="Load five related CSV/XLSX demo tables with over 50,000 synthetic rows.",
     )
     st.download_button(
@@ -1082,6 +1126,7 @@ with st.sidebar:
         file_name="smart_data_quality_sample_pack.zip",
         mime="application/zip",
         width="stretch",
+        icon=":material/folder_zip:",
     )
     st.caption("Synthetic test data · CSV and Excel · Session-only processing")
 
@@ -1354,7 +1399,7 @@ st.markdown(
     '<span class="workflow-step workflow-step-complete"><strong>✓</strong><span><b>Inspection complete</b><small>Active quality rules applied</small></span></span>'
     f'<span class="workflow-step {findings_status}"><strong>!</strong><span><b>Findings</b><small>{findings_step}</small></span></span>'
     '<span class="workflow-step workflow-step-ready"><strong>4</strong><span><b>Review &amp; fix</b><small>Ready when you are</small></span></span>'
-    '<span class="workflow-step workflow-step-ready"><strong>5</strong><span><b>Export</b><small>Download a clean copy</small></span></span>'
+    '<span class="workflow-step workflow-step-ready"><strong>5</strong><span><b>Export</b><small>Use the Export tab</small></span></span>'
     '</div>',
     unsafe_allow_html=True,
 )
@@ -1371,10 +1416,10 @@ if set(CONNECTED_SAMPLE_FILES).issubset(datasets):
         st.dataframe(SAMPLE_RELATIONSHIPS, width="stretch", hide_index=True)
 
 metric_cards = [
-    ("health", "Data Health Score", f"{health_score}%", "How the quality score is calculated"),
-    ("rows", "Total Rows", f"{len(data):,}", "Dataset size and duplicate-row summary"),
-    ("issues", "Total Issues Found", f"{issue_count:,}", "Breakdown of detected issues"),
-    ("duplicates", "Duplicate Rows", f"{duplicate_count:,}", "Exact duplicate row details"),
+    ("health", "📈 Data Health Score", f"{health_score}%", "How the quality score is calculated"),
+    ("rows", "📋 Total Rows", f"{len(data):,}", "Dataset size and duplicate-row summary"),
+    ("issues", "⚠️ Total Issues Found", f"{issue_count:,}", "Breakdown of detected issues"),
+    ("duplicates", "⧉ Duplicate Rows", f"{duplicate_count:,}", "Exact duplicate row details"),
 ]
 with st.container(key="metric_cards"):
     metric_columns = st.columns(4)
@@ -1470,18 +1515,18 @@ if selected_metric:
 
 overview_tab, issues_tab, review_tab, preview_tab, assistant_tab = st.tabs(
     [
-        "Overview Dashboard",
-        "Issue Logs",
-        "Data Quality Review",
-        "Data Preview & Export",
-        "Data Quality Assistant",
+        "📊 Overview Dashboard",
+        "🧾 Issue Logs",
+        "🛠️ Data Quality Review",
+        "📥 Data Preview & Export",
+        "🤖 Data Quality Assistant",
     ]
 )
 
 with overview_tab:
     chart_col, type_col = st.columns([1.35, 1])
     with chart_col:
-        st.subheader("Where should you look first?")
+        st.subheader("🔎 Where should you look first?")
         if issues.empty:
             st.success("This dataset is looking healthy. No issues were found by the active checks.")
         else:
@@ -1496,7 +1541,7 @@ with overview_tab:
                 x="Column Name",
                 y="Issue Count",
                 color="Issue Count",
-                color_continuous_scale=["#d9e3ff", "#6f8de8", "#365bd6"],
+                color_continuous_scale=["#e2f6f2", "#00a993", "#00796f"],
                 text="Issue Count",
             )
             chart.update_layout(
@@ -1507,12 +1552,12 @@ with overview_tab:
                 margin=dict(l=12, r=12, t=15, b=20),
                 plot_bgcolor="rgba(0,0,0,0)",
                 paper_bgcolor="rgba(0,0,0,0)",
-                font=dict(color="#43516a"),
+                font=dict(color="#526c68"),
             )
             st.plotly_chart(chart, width="stretch", config={"displayModeBar": False})
 
     with type_col:
-        st.subheader("Quality findings")
+        st.subheader("🧭 Quality findings")
         issue_types = set(issues["Issue Type"]) if not issues.empty else set()
         if issues.empty:
             st.caption("Findings will appear here after a check detects an issue.")
@@ -1528,7 +1573,7 @@ with overview_tab:
                 names="Issue Type",
                 values="Findings",
                 hole=0.66,
-                color_discrete_sequence=["#365bd6", "#6f8de8", "#4b8c81", "#d9a441", "#d86e62", "#7d6ac7"],
+                color_discrete_sequence=["#00796f", "#00a993", "#8bded0", "#daaa00", "#f87c56", "#738ec4"],
             )
             type_chart.update_traces(
                 textposition="inside",
@@ -1542,7 +1587,7 @@ with overview_tab:
                 margin=dict(l=8, r=8, t=12, b=38),
                 plot_bgcolor="rgba(0,0,0,0)",
                 paper_bgcolor="rgba(0,0,0,0)",
-                font=dict(color="#43516a"),
+                font=dict(color="#526c68"),
             )
             st.plotly_chart(type_chart, width="stretch", config={"displayModeBar": False})
             type_counts = type_counts.rename(columns={"Findings": "Issue Count"})
@@ -1551,7 +1596,7 @@ with overview_tab:
     st.divider()
     missing_col, recommendations_col = st.columns([1.3, 1])
     with missing_col:
-        st.subheader("Completeness by column")
+        st.subheader("🧩 Completeness by column")
         missing_profile = column_profile.sort_values("Missing %", ascending=False)
         if int(missing_profile["Missing"].sum()) == 0:
             st.success("Every column is complete under the current missing-value check.")
@@ -1562,7 +1607,7 @@ with overview_tab:
                 y="Column",
                 orientation="h",
                 color="Missing %",
-                color_continuous_scale=["#d9e3ff", "#e7b565", "#dc755c"],
+                color_continuous_scale=["#e2f6f2", "#daaa00", "#f87c56"],
                 text="Missing %",
                 hover_data={"Missing": True, "Unique": True},
             )
@@ -1575,12 +1620,12 @@ with overview_tab:
                 margin=dict(l=8, r=34, t=12, b=18),
                 plot_bgcolor="rgba(0,0,0,0)",
                 paper_bgcolor="rgba(0,0,0,0)",
-                font=dict(color="#43516a"),
+                font=dict(color="#526c68"),
             )
             st.plotly_chart(missing_chart, width="stretch", config={"displayModeBar": False})
 
     with recommendations_col:
-        st.subheader("Recommended next steps")
+        st.subheader("✨ Recommended next steps")
         recommendations = []
         if duplicate_count:
             recommendations.append(
@@ -1621,7 +1666,7 @@ with overview_tab:
             )
 
     st.divider()
-    st.subheader("Explore a numeric distribution")
+    st.subheader("📊 Explore a numeric distribution")
     if numeric_columns:
         numeric_col, distribution_col = st.columns([1, 2])
         with numeric_col:
@@ -1660,7 +1705,7 @@ with overview_tab:
                     margin=dict(l=12, r=12, t=20, b=20),
                     plot_bgcolor="rgba(0,0,0,0)",
                     paper_bgcolor="rgba(0,0,0,0)",
-                    font=dict(color="#344b5a"),
+                    font=dict(color="#345d56"),
                 )
                 st.plotly_chart(
                     distribution, width="stretch", config={"displayModeBar": False}
@@ -1673,7 +1718,7 @@ with overview_tab:
         st.dataframe(column_profile, width="stretch", hide_index=True)
 
 with issues_tab:
-    st.subheader("Issue explorer")
+    st.subheader("🧾 Issue explorer")
     st.caption(f"Detailed findings for **{active_dataset}**.")
     if issues.empty:
         st.success("No issues found. Your dataset passed all checks enabled by the current rules.")
@@ -1734,12 +1779,13 @@ with issues_tab:
             file_name=f"{Path(active_dataset).stem}_issue_report.csv",
             mime="text/csv",
             width="content",
+            icon=":material/summarize:",
             key=f"download_issues_{column_signature}",
             disabled=filtered_issues.empty,
         )
 
 with review_tab:
-    st.subheader("Review and fix the active file")
+    st.subheader("🛠️ Review and fix the active file")
     st.caption(
         f"All rows in **{active_dataset}** are shown below. Highlighted cells match "
         "the current quality findings; exact duplicate rows are highlighted across the row."
@@ -1777,6 +1823,7 @@ with review_tab:
             "Apply selected fixes",
             type="primary",
             width="stretch",
+            icon=":material/auto_fix_high:",
             key=f"apply_fixes_{column_signature}",
             disabled=not any(
                 [
@@ -1973,6 +2020,7 @@ with review_tab:
             mime=fixed_mime,
             type="primary",
             width="stretch",
+            icon=":material/download:",
             key=f"download_fixed_{column_signature}",
         )
 
@@ -1982,75 +2030,39 @@ with preview_tab:
         f"Previewing **{active_dataset}**. The original data remains unchanged by export cleaning."
     )
     st.dataframe(data.head(100), width="stretch", hide_index=True)
-    export_clean_cache = st.session_state.setdefault("clean_export_cache", {})
-    export_clean_key = (
-        active_dataset,
-        column_signature,
-        tuple(sorted(repr(column) for column in numeric_columns)),
+    st.caption(
+        "Click once to remove exact duplicates, trim whitespace, and fill missing "
+        "selected numeric values with the median. A cleaned copy is created only "
+        "when you request the download; the original stays unchanged."
     )
-    if export_clean_key not in export_clean_cache:
-        if st.button(
-            "Prepare cleaned CSV",
-            type="primary",
-            width="stretch",
-            key=f"prepare_clean_export_{column_signature}",
-        ):
-            with st.status(
-                "Preparing the cleaned file export...",
-                expanded=True,
-            ) as export_status:
-                export_loader = st.empty()
-                render_inspection_loader(
-                    "Preparing the cleaned file export",
-                    "Applying safe fixes to a copy; the source stays unchanged.",
-                    export_loader,
-                )
-                export_clean_cache[export_clean_key] = clean_data(
-                    data,
-                    numeric_columns=numeric_columns,
-                )
-                export_loader.empty()
-                export_status.update(
-                    label="Cleaned file is ready",
-                    state="complete",
-                    expanded=False,
-                )
-        st.caption(
-            "Preparing a cleaned copy is on demand. It removes exact duplicates, "
-            "trims whitespace, and fills missing selected numeric values with the median."
-        )
-    else:
-        cleaned_data = export_clean_cache[export_clean_key]
-        st.caption(
-            f"Cleaned copy ready · {len(cleaned_data):,} rows after removing duplicates. "
-            "The original file remains unchanged."
-        )
 
     download_col, batch_col = st.columns([1, 1])
     with download_col:
-        if export_clean_key in export_clean_cache:
-            st.download_button(
-                "Download this cleaned CSV",
-                data=export_clean_cache[export_clean_key].to_csv(index=False).encode("utf-8"),
-                file_name=f"{active_dataset.rsplit('.', 1)[0]}_cleaned.csv",
-                mime="text/csv",
-                type="primary",
-                width="stretch",
+        def build_cleaned_csv_download():
+            cleaned = clean_data(
+                data,
+                numeric_columns=numeric_columns,
             )
-        else:
-            st.button(
-                "Download this cleaned CSV",
-                disabled=True,
-                width="stretch",
-                help="Prepare the cleaned copy first.",
-                key=f"disabled_clean_download_{column_signature}",
-            )
+            return cleaned.to_csv(index=False).encode("utf-8-sig")
+
+        st.download_button(
+            "Download a clean copy",
+            data=build_cleaned_csv_download,
+            file_name=f"{Path(active_dataset).stem}_cleaned.csv",
+            mime="text/csv",
+            type="primary",
+            width="stretch",
+            icon=":material/download:",
+            on_click="ignore",
+            key=f"download_clean_csv_{column_signature}",
+        )
     with batch_col:
         if len(datasets) > 1:
             batch_archive = st.session_state.get("batch_export_cache")
             if batch_archive is None and st.button(
                 "Prepare cleaned batch ZIP",
                 width="stretch",
+                icon=":material/folder_zip:",
                 key=f"prepare_batch_export_{column_signature}",
             ):
                 with st.status(
@@ -2096,6 +2108,7 @@ with preview_tab:
                     file_name="cleaned_data_batch.zip",
                     mime="application/zip",
                     width="stretch",
+                    icon=":material/folder_zip:",
                 )
         else:
             st.info("Upload multiple files to export the full batch as one ZIP.")
@@ -2105,7 +2118,7 @@ with preview_tab:
     )
 
 with assistant_tab:
-    st.subheader("Data Quality Copilot")
+    st.subheader("🤖 Data Quality Copilot")
     st.caption(
         f"Ask questions about **{active_dataset}**. I use its live scan, column profile, "
         "and current Column Rules to answer."
@@ -2129,10 +2142,10 @@ with assistant_tab:
         ]
 
     quick_prompts = (
-        "How many rows are duplicates?",
-        "Summarize quality issues",
-        "Which columns have missing values?",
-        "What should I fix first?",
+        "🔁 How many rows are duplicates?",
+        "🧾 Summarize quality issues",
+        "⬚ Which columns have missing values?",
+        "✨ What should I fix first?",
     )
     quick_prompt_columns = st.columns(4)
     selected_prompt = None
@@ -2158,6 +2171,7 @@ with assistant_tab:
             "Clear conversation",
             key=f"clear_assistant_{column_signature}",
             width="stretch",
+            icon=":material/delete_sweep:",
         )
     if clear_chat:
         st.session_state[assistant_history_key] = []

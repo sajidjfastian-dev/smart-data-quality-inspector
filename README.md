@@ -2,6 +2,8 @@
 
 A standalone Streamlit workspace for reviewing and cleaning common data-quality issues in CSV and XLSX files.
 
+The visual theme uses accent colors offered by the [Central Bank of the UAE's official website](https://centralbank.ae/en/)—gold `#DAAA00`, turquoise `#00C7B1`, and coral `#F87C56`—with a darker teal for readable controls. The app keeps its own product logo and does not reproduce the CBUAE logo.
+
 ## Features
 
 - Drag and drop multiple CSV and XLSX files together, with per-file analysis and a batch workspace summary.
@@ -10,6 +12,7 @@ A standalone Streamlit workspace for reviewing and cleaning common data-quality 
 - Scan for missing values, exact duplicate rows, invalid email addresses, inconsistent/invalid dates, and numeric outliers.
 - Adjust Email, Date, and Numeric column rules and tune the IQR outlier multiplier from 1.5 to 3.0.
 - Explore clickable KPI details, issue and completeness charts, numeric distributions, column profiles, issue filters, and recommendations.
+- Launch a built-in 12-second video demo from the **Watch demo** button; it works offline and needs no external video link.
 - Ask the built-in Data Quality Copilot about duplicate counts, missing values, findings, the health score, and individual columns. It answers from the live scan without an external AI service.
 - Select any loaded file from the **Active file** workspace dropdown.
 - Follow a live file journey that confirms loading, scan completion, detected findings, and the next review/export steps, with progress indicators during file loading, scanning, and fixes.
@@ -22,12 +25,15 @@ A standalone Streamlit workspace for reviewing and cleaning common data-quality 
 
 See [APP_PROMPT.md](./APP_PROMPT.md) for the complete application prompt and acceptance criteria.
 For a credit-conscious, two-day Replit build plan, use [REPLIT_PHASED_PROMPT.md](./REPLIT_PHASED_PROMPT.md) and submit one phase at a time.
+For implementation details, scan and cleaning behavior, data handling, deployment, and verification guidance, see the [Technical Documentation](./TECHNICAL_DOCUMENTATION.md).
 
 ## Technical demo presentation
 
 The concise presentation covers the user workflow, quality checks, dashboards, safe fixes, architecture, technology stack, session-only data handling, privacy notes, and Docker/GitHub deployment:
 
 - [Smart Data Quality Inspector technical demo (PowerPoint)](./Smart_Data_Quality_Inspector_Technical_Demo.pptx)
+- The web app also includes a short, silent MP4 walkthrough with play/pause controls for judge demonstrations.
+- [Open the web demo video directly](./demo_media/smart_data_quality_demo.mp4)
 
 ## Large synthetic test data
 

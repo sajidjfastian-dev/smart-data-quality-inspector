@@ -6,7 +6,14 @@ Use the prompts below **one phase at a time**. Do not paste all phases into Repl
 
 Build a simple, polished Python web app called **Smart Data Quality Inspector** using Streamlit. Users should be able to upload CSV or Excel files, find data-quality problems, understand them, safely clean a copy, and download the result.
 
-Use the latest Python version already available in Replit. Keep the application code in `app.py`. Use Streamlit, pandas, NumPy, openpyxl, and Plotly. Keep the app simple and avoid unnecessary packages. Do not add a database, user login, external AI service, or paid API. Keep uploaded data in the current app session and explain that the hosting service receives files users upload.
+## Runtime and package versions — important
+
+- Use the **latest stable Python version supported by the current Replit runtime**.
+- Use the **latest stable, mutually compatible releases** of every direct project dependency: Streamlit, pandas, NumPy, openpyxl, and Plotly. Check the versions currently available in Replit before installing; do not copy old version numbers from another environment.
+- Do not pin dependencies to old versions. If a dependency conflict requires a version constraint, choose the newest compatible stable release and briefly explain why.
+- Avoid prerelease/nightly packages. Keep the dependency list limited to tools the app actually uses.
+
+Keep the application code in `app.py`. Do not add a database, user login, external AI service, or paid API. Keep uploaded data in the current app session and explain that the hosting service receives files users upload.
 
 ## Instructions for every phase
 
@@ -114,6 +121,8 @@ Avoid huge data generation that makes Replit slow. Keep sample data synthetic; n
 Do this only if the core app is complete and tested.
 
 - Improve the theme, spacing, typography, labels, and mobile layout. Use a simple professional analytics style.
+- Use the official CBUAE website's theme-color accents—gold `#DAAA00`, turquoise `#00C7B1`, and coral `#F87C56`—with darker text/button colors for accessible contrast. Keep the app's own product logo; do not copy the CBUAE logo or imply an endorsement.
+- Add a **Watch demo** button that opens a short, local video walkthrough of upload, inspection, dashboard, review, and export. Bundle the video with the app so the demo works without an external video host. Native play/pause controls are preferred.
 - Show one clear animated inspection loader with progress during file loading, scanning, applying fixes, and user-requested export preparation. Do not load animation files from external websites. Respect reduced-motion settings where possible.
 - At completion, remove the loader and collapse/complete the status panel. Test that there are no active spinners after each operation, including sample loading, scans, fixes, and exports.
 - Do not prepare cleaned single-file exports or batch ZIPs during ordinary page loads or tab changes. Prepare them only after an explicit user action; cache the result so it is not rebuilt unnecessarily.

@@ -13,6 +13,7 @@ RUN python -m pip install --no-cache-dir -r requirements.txt \
 
 COPY app.py ./app.py
 COPY sample_data ./sample_data
+COPY demo_media ./demo_media
 
 USER 10001
 
