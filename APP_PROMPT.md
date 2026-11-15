@@ -1,6 +1,6 @@
 # Smart Data Quality Inspector — Complete Application Prompt
 
-Build a polished, single-file Python web application called **Smart Data Quality Inspector** using Streamlit. Keep all application logic in `app.py`. Use `pandas`, `numpy`, `openpyxl`, and `plotly`. Do not add a database, user authentication, third-party analytics, or an AI/LLM API.
+Build a polished, single-file Python web application called **Smart Data Quality Inspector** using Streamlit. Keep all application logic in `app.py`. Use `pandas`, `numpy`, `openpyxl`, and `plotly`. Do not add a database, user authentication, or third-party analytics. An external AI/LLM is optional and must be disabled unless the user configures one and explicitly opts in to dataset sharing.
 
 ## Purpose and visual design
 
@@ -84,7 +84,9 @@ In the Issue Logs tab, provide a dropdown filter for Issue Type, a useful showin
 
 Handle the empty-issue state cleanly.
 
-In the Data Quality Assistant tab, provide a conversational interface grounded in the active file's live findings, profile, and current rules. Include quick prompts for duplicate counts, issue summaries, missing values, and recommendations; retain conversation history per active schema and allow users to clear it. Answer using computed results, including the duplicate row numbers, and clearly state when a question is unsupported. Do not send user data or questions to an external AI/LLM service.
+In the Data Quality Assistant tab, provide a conversational interface grounded in the active file's live findings, profile, and current rules. Include quick prompts for duplicate counts, issue summaries, missing values, and recommendations; retain conversation history per active schema and allow users to clear it. Answer using computed results, including the duplicate row numbers, and clearly state when a question is unsupported.
+
+Add **LLM assistant settings** to the sidebar for an optional OpenAI-compatible Chat Completions URL, model ID, and password-masked API key. Keep these values in the current Streamlit session only and never write them to files or logs. Add a separate, unchecked-by-default consent control before sending data. Without explicit consent, use only the local assistant and do not send the question or dataset to an external endpoint. When enabled, explain clearly that each request sends the complete active dataset and recent conversation to the configured provider. Reject requests larger than 10 MB instead of silently truncating the dataset. Validate the HTTP(S) endpoint, use a timeout, never reveal the API key, treat dataset cells as untrusted instructions, and show actionable endpoint/network/response errors. Document that provider privacy and retention are outside the app's control.
 
 ## Cleaning and export
 
@@ -113,7 +115,7 @@ In Data Preview & Export:
 4. Verify that changing the Email/Date/Numeric selections or IQR multiplier updates KPIs, chart, recommendations, and issue log.
 5. Verify that all four KPI buttons open the correct details, including actual duplicate rows.
 6. Verify that issue filtering works and that cleaned CSV removes duplicates, trims text, and fills missing numeric values with the median without modifying source data.
-7. Verify that all five named tabs render, the assistant correctly answers duplicate counts and common quality questions from the active dataset, and multiple CSV and XLSX uploads are handled gracefully, including mixed valid and invalid files.
+7. Verify that all five named tabs render, the local assistant correctly answers supported quality questions, optional LLM settings remain session-only and password-masked, dataset sharing requires explicit opt-in, endpoint errors are visible, and oversized requests are rejected. Verify multiple CSV and XLSX uploads are handled gracefully, including mixed valid and invalid files.
 8. Verify that the file journey accurately reflects active-file row/column counts, scan completion, issue and duplicate counts, and review/export readiness; file, scan, fix, preview, sample, and assistant loading states remain visible and use no external assets.
 9. Verify that the connected sample pack contains five CSV/XLSX files, has shared relational keys without broken references, can be downloaded as a ZIP, and loads all files into the workspace.
 10. Verify that the Active file dropdown switches among all loaded files, the review screen shows all rows with issue styling, selected fixes update a copy, and fixed CSV/XLSX downloads open correctly without modifying source data.

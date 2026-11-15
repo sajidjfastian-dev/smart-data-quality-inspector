@@ -27,7 +27,7 @@ invalid dates, or statistical outliers.
 | State | Streamlit session state |
 | Persistence | No application database or intentional upload-file persistence |
 | Authentication | None |
-| External AI | None; the assistant uses local rule-based logic |
+| External AI | Optional user-configured OpenAI-compatible endpoint; disabled by default |
 | Inputs | CSV and XLSX |
 | Outputs | CSV, XLSX, issue-report CSV, and ZIP archives |
 
@@ -314,15 +314,29 @@ The Issue Logs tab supports issue-type selection, text search, and column
 filtering. The download contains the visible, filtered rows of the issue table
 as CSV.
 
-### Local Data Quality Assistant
+### Data Quality Assistant
 
-The assistant is deterministic Python logic in `app.py`; it does not call an
-LLM, third-party model, or paid API. It responds to supported questions using
-the active DataFrame, issue table, duplicate count, health score, and column
-profile. Supported topics include duplicates, missing values, findings by
-type, columns, row/column counts, a named column's profile, score, and
-recommendations. It is not a general-purpose chatbot and does not infer facts
-outside the current in-memory scan.
+The assistant uses deterministic local Python logic by default. Users may
+optionally configure an OpenAI-compatible Chat Completions endpoint, model ID,
+and password-masked API key in the sidebar's **LLM assistant settings**. The
+endpoint and key are held in Streamlit session state only and are not written
+to files.
+
+Dataset sharing is a separate, explicit opt-in and defaults off. When enabled,
+each request sends the complete active dataset, column profile, current
+quality-finding counts, recent conversation, and question to the configured
+endpoint. This allows broader natural-language analysis, but the provider
+receives the uploaded data and applies its own privacy and retention terms. The
+app limits the serialized request to 10 MB and rejects oversized requests
+rather than silently truncating data. Use only a trusted endpoint and avoid
+sending sensitive data without approval. Local mode remains available when
+sharing is off or no endpoint is configured.
+
+The app sends a non-streaming OpenAI-compatible Chat Completions request with
+a 60-second timeout and does not expose the API key in the UI or assistant
+conversation. Provider/network/response errors are surfaced to the user. The
+model is instructed to treat dataset cell contents as untrusted data and not
+as instructions; its answers are informational and do not alter the dataset.
 
 ## 10. State, caching, and loader lifecycle
 
@@ -331,6 +345,7 @@ The app stores its working state in `st.session_state`, including:
 - Loaded DataFrames and the active filename.
 - Upload signatures used to detect a changed upload batch.
 - User-selected rule settings through Streamlit widget state.
+- Optional LLM endpoint, model, key, and dataset-sharing consent for the current session.
 - Scan results and column profiles for the active file and rule signature.
 - Fixed-copy DataFrames and their validation scan results.
 - Cleaned single-file and batch export payloads after preparation.
@@ -351,9 +366,13 @@ generated files.
 
 ## 11. Data handling, privacy, and deployment considerations
 
-The application does not intentionally write uploaded data to disk, a database,
-or an external AI service. It reads uploaded bytes into memory and works with
+The application does not intentionally write uploaded data or model credentials
+to disk or a database. It reads uploaded bytes into memory and works with
 in-memory DataFrames and buffers. Download artifacts are generated in memory.
+No external model is contacted unless a user configures an endpoint and opts in
+to dataset sharing. In that case, the complete active dataset and recent
+conversation are sent to the configured provider for each assistant request;
+review that provider's data-handling terms before enabling the option.
 
 An upload is nevertheless sent to the server hosting Streamlit. Hosting
 providers may have their own infrastructure, logging, backups, retention, or
@@ -382,12 +401,14 @@ Open `http://localhost:8501`.
 
 ```powershell
 docker build -t smart-data-quality-inspector .
-docker run --rm -p 8501:8501 smart-data-quality-inspector
+docker run --rm -p 127.0.0.1:8501:8501 smart-data-quality-inspector
 ```
 
 The Docker image uses `python:3.12-slim`, installs pinned requirements, copies
 the app, synthetic sample data, and local demo media, runs as a non-root
-user, exposes port 8501, and defines a Streamlit health check.
+user, exposes port 8501, and defines a Streamlit health check. The example
+binds the host port to localhost; add authentication and HTTPS before sharing
+the app over a network.
 
 ### Streamlit Community Cloud or Replit
 

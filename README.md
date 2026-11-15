@@ -13,7 +13,9 @@ The visual theme uses accent colors offered by the [Central Bank of the UAE's of
 - Adjust Email, Date, and Numeric column rules and tune the IQR outlier multiplier from 1.5 to 3.0.
 - Explore clickable KPI details, issue and completeness charts, numeric distributions, column profiles, issue filters, and recommendations.
 - Launch a built-in 12-second video demo from the **Watch demo** button; it works offline and needs no external video link.
-- Ask the built-in Data Quality Copilot about duplicate counts, missing values, findings, the health score, and individual columns. It answers from the live scan without an external AI service.
+- Ask the built-in Data Quality Copilot about findings locally, or optionally connect an OpenAI-compatible Chat Completions endpoint for broader natural-language analysis.
+- Configure the endpoint URL, model ID, and password-masked API key in sidebar settings. Credentials stay in the current app session and are not written to configuration files.
+- Dataset sharing with the configured model is off by default. When explicitly enabled, each assistant request sends the complete active dataset and recent conversation to that endpoint; requests larger than 10 MB are rejected rather than truncated.
 - Select any loaded file from the **Active file** workspace dropdown.
 - Follow a live file journey that confirms loading, scan completion, detected findings, and the next review/export steps, with progress indicators during file loading, scanning, and fixes.
 - See a branded animated inspection loader with row-level progress while quality checks run; safe fixes, preview validation, file loading, assistant responses, and explicitly requested exports also show activity states. Loaders are removed when work completes, and cleaned exports are prepared only when requested.
@@ -21,7 +23,7 @@ The visual theme uses accent colors offered by the [Central Bank of the UAE's of
 - Apply selected safe fixes, inspect resolved and remaining issue counts, and download the corrected CSV or XLSX. Invalid emails, dates, and statistical outliers remain for manual review.
 - Search/filter issue logs by text and column, then download the matching issue report as CSV.
 - Download a cleaned CSV for the active file or a ZIP containing cleaned CSVs for the batch.
-- Keep uploaded data in the current app session only. The app does not use a database, authentication, or an AI/LLM API.
+- Keep uploaded data in the current app session only. The app does not use a database or authentication, and does not contact an LLM unless a user configures an endpoint and explicitly enables dataset sharing.
 
 See [APP_PROMPT.md](./APP_PROMPT.md) for the complete application prompt and acceptance criteria.
 For a credit-conscious, two-day Replit build plan, use [REPLIT_PHASED_PROMPT.md](./REPLIT_PHASED_PROMPT.md) and submit one phase at a time.
@@ -66,10 +68,10 @@ Open `http://localhost:8501`.
 
 ```powershell
 docker build -t smart-data-quality-inspector .
-docker run --rm -p 8501:8501 smart-data-quality-inspector
+docker run --rm -p 127.0.0.1:8501:8501 smart-data-quality-inspector
 ```
 
-Open `http://localhost:8501`. The application binds to port 8501 in the container. For a public server, use an HTTPS reverse proxy and review access controls before sharing the app.
+Open `http://localhost:8501`. The application binds to port 8501 in the container. The host port is restricted to localhost by default; before sharing the app over a network, add authentication and an HTTPS reverse proxy.
 
 ## Deploy from GitHub to Streamlit Community Cloud
 
@@ -86,4 +88,6 @@ https://share.streamlit.io/deploy?repository=sajidjfastian-dev/smart-data-qualit
 
 ## Data and privacy
 
-This application does not intentionally save uploaded files to disk or a database. Files are processed by the running Streamlit session, which means uploads are sent to the server hosting the app. Anyone who can access a public deployment may use the app and submit data to its hosting provider. Do not upload sensitive or regulated data to a public app; keep the repository and deployment private if the hosting plan supports private apps.
+This application does not intentionally save uploaded files or model credentials to disk or a database. Files are processed by the running Streamlit session, which means uploads are sent to the server hosting the app. Anyone who can access a public deployment may use the app and submit data to its hosting provider.
+
+The assistant uses local rules by default. If you enter an OpenAI-compatible Chat Completions URL, model ID, and API key under **LLM assistant settings**, the key remains in that app session and is sent only to the configured endpoint. The active dataset is not sent until you explicitly enable **Allow sending the active dataset to this endpoint**. Once enabled, each model request includes every row of the active file and recent conversation; the provider receives that data under its own processing and retention terms. Requests above 10 MB are rejected. Only use a trusted endpoint, and do not send sensitive or regulated data unless you have approval. Keep public deployments access-controlled.
