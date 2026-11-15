@@ -55,7 +55,7 @@ All records are deterministic synthetic test data. The files include a small num
 
 ## Run locally
 
-Python 3.12 or later is recommended.
+Python 3.15.2 or later in the 3.15 series is recommended for local development.
 
 ```powershell
 python -m venv .venv

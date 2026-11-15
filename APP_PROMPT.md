@@ -2,6 +2,10 @@
 
 Build a polished, single-file Python web application called **Smart Data Quality Inspector** using Streamlit. Keep all application logic in `app.py`. Use `pandas`, `numpy`, `openpyxl`, and `plotly`. Do not add a database, user authentication, or third-party analytics. An external AI/LLM is optional and must be disabled unless the user configures one and explicitly opts in to dataset sharing.
 
+Use the latest stable Python runtime supported by all pinned dependencies. For
+the current release baseline, target Python 3.15.2 and the official
+`python:3.15-slim` Docker image; do not use prerelease or free-threaded builds.
+
 ## Purpose and visual design
 
 Create a wide, responsive data-quality workspace that lets a user load one or more tabular files, inspect common quality problems, explore issue details and analytics, and download cleaned copies. Use a crisp enterprise analytics theme with a cool-neutral canvas, white cards, a deep teal hero with a contrasting pale-teal band behind its exposed top edge, and restrained gold (`#DAAA00`), turquoise (`#00C7B1`), and coral (`#F87C56`) accents. Use legible typography, subtle borders and shadows, and an original custom brand mark with rising chart bars and a gold quality-check badge. Show the product mark in the page header and sidebar. Keep the sidebar's Streamlit header compact and neutral, preserve its collapse control, and do not add a separate dark banner. Hide Streamlit's Deploy control because deployment is managed locally. Make the interface keyboard-accessible and provide descriptive labels and button help text. Do not reproduce the CBUAE logo or imply endorsement.

@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.15-slim
 
 ENV HOME=/home/appuser \
     STREAMLIT_BROWSER_GATHER_USAGE_STATS=false \

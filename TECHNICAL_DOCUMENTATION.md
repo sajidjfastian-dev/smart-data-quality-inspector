@@ -18,7 +18,7 @@ invalid dates, or statistical outliers.
 | Area | Implementation |
 |---|---|
 | Application | One Streamlit application module: `app.py` |
-| Runtime | Python 3.12 recommended |
+| Runtime | Python 3.15.2 recommended |
 | Data handling | pandas DataFrames and in-memory byte buffers |
 | Numeric and sample calculations | NumPy |
 | CSV handling | pandas CSV reader/writer |
@@ -411,7 +411,7 @@ docker build -t smart-data-quality-inspector .
 docker run --rm -p 127.0.0.1:8501:8501 smart-data-quality-inspector
 ```
 
-The Docker image uses `python:3.12-slim`, installs pinned requirements, copies
+The Docker image uses `python:3.15-slim`, installs pinned requirements, copies
 the app, synthetic sample data, and local demo media, runs as a non-root
 user, exposes port 8501, and defines a Streamlit health check. The example
 binds the host port to localhost; add authentication and HTTPS before sharing
