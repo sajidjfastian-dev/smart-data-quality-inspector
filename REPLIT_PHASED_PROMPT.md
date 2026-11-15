@@ -5,9 +5,9 @@
 Build **Smart Data Quality Inspector**, a polished Streamlit app for inspecting and safely cleaning CSV/XLSX data.
 
 - Keep app logic in `app.py`; use Python, Streamlit, pandas, NumPy, openpyxl, and Plotly. Use the latest stable Python and mutually compatible stable releases available in Replit. Avoid stale pins, prereleases, and unnecessary packages.
-- Use a responsive, cool-neutral canvas with a deep-teal branded header, a contrasting pale-teal band behind its exposed top edge, and restrained gold, turquoise, and coral accents. Keep the existing custom logo; don't use the CBUAE logo or imply endorsement.
+- Use a responsive, cool-neutral canvas with a deep-teal branded header, a contrasting pale-teal band behind its exposed top edge, and restrained gold, turquoise, and coral accents. Use the original product mark: rising chart bars with a gold quality-check badge. Keep Streamlit's sidebar collapse control, but use a compact neutral header area rather than a separate dark banner. Hide Streamlit's Deploy control; deployment is local/Docker-managed. Don't use the CBUAE logo or imply endorsement.
 - No database, login, mandatory paid API, or default external AI service. Keep uploads and optional model credentials in session memory. If adding a user-configured OpenAI-compatible model endpoint, require explicit opt-in before sending the full active dataset, disclose provider data handling, and retain the local assistant when sharing is off.
-- Implement only the requested phase. Inspect and preserve existing work; don't rewrite working features or start later phases. Run the app, fix errors, briefly report changes/tests, then stop.
+- Implement only the requested phase. Inspect and preserve existing work; don't rewrite working features or start later phases. Run the app, fix errors, briefly report changes/tests, then stop. Keep the bundled demo and project documentation consistent with material UI, privacy, and deployment changes.
 - Use clear errors. Loaders must end when work ends; don't build exports during ordinary reruns. Prepare downloads only on request. Cache scans where practical and refresh when file/rules change. Never alter the original when cleaning.
 
 ## Send one follow-up at a time

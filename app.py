@@ -996,6 +996,8 @@ st.markdown(
     html, body, [class*="css"] {font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;}
     .stApp, [data-testid="stAppViewContainer"] {background: var(--canvas);}
     [data-testid="stHeader"] {background: rgba(246, 248, 246, .94);}
+    [data-testid="stAppDeployButton"],
+    [data-testid="stDeployButton"] {display: none;}
     .block-container {padding-top: 1.35rem; padding-bottom: 3rem; max-width: 1540px;}
     h1, h2, h3, [data-testid="stMarkdownContainer"] p {color: var(--ink);}
     h2 {font-size: 1.28rem; letter-spacing: -.025em;}
@@ -1012,7 +1014,10 @@ st.markdown(
         border-radius: 20px;
         background: #e6f2ef;
     }
-    .brand-logo {width: 52px; height: 52px; flex: 0 0 52px;}
+    .brand-logo {
+        width: 52px; height: 52px; flex: 0 0 52px;
+        filter: drop-shadow(0 4px 6px rgba(0, 94, 86, .18));
+    }
     .brand-eyebrow {
         color: var(--brand-gold); font-size: .67rem; font-weight: 750;
         letter-spacing: .16em; text-transform: uppercase; margin-bottom: 5px;
@@ -1119,7 +1124,16 @@ st.markdown(
     section[data-testid="stSidebar"] {
         background: #f8f9fc; border-right: 1px solid var(--line);
     }
-    section[data-testid="stSidebar"] > div {padding-top: 1rem;}
+    section[data-testid="stSidebar"] > div {padding-top: 0;}
+    [data-testid="stSidebarHeader"] {
+        height: 44px; min-height: 44px; margin: 0 10px 2px;
+        padding: 0 8px; border: 0; border-radius: 0;
+        background: transparent; box-shadow: none;
+    }
+    [data-testid="stSidebarHeader"] [data-testid="stSidebarCollapseButton"] {
+        position: relative; z-index: 1;
+    }
+    .sidebar-brand {margin-top: 0;}
     section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
         color: var(--muted);
     }
@@ -1317,17 +1331,17 @@ def brand_logo(variant):
     return (
         f'<svg class="brand-logo" viewBox="0 0 64 64" fill="none" '
         f'xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'
-        f'<defs><linearGradient id="{gradient_id}" x1="7" y1="5" x2="58" y2="59" '
-        f'gradientUnits="userSpaceOnUse"><stop stop-color="#00C7B1"/>'
-        f'<stop offset="1" stop-color="#00796f"/></linearGradient></defs>'
-        f'<rect x="2" y="2" width="60" height="60" rx="19" fill="url(#{gradient_id})"/>'
-        f'<path d="M17 43V33.5C17 32.67 17.67 32 18.5 32H23.5C24.33 32 25 32.67 '
-        f'25 33.5V43" stroke="white" stroke-width="3.5" stroke-linecap="round"/>'
-        f'<path d="M29.5 43V25.5C29.5 24.67 30.17 24 31 24H36C36.83 24 37.5 24.67 '
-        f'37.5 25.5V43" stroke="white" stroke-width="3.5" stroke-linecap="round"/>'
-        f'<path d="M17 48H37.5" stroke="white" stroke-width="3.5" stroke-linecap="round"/>'
-        f'<circle cx="45" cy="42" r="10" fill="#e2f6f2" stroke="white" stroke-width="2.5"/>'
-        f'<path d="M40.5 42L43.5 45L49.5 38.5" stroke="#00796f" stroke-width="2.8" '
+        f'<defs><linearGradient id="{gradient_id}" x1="9" y1="7" x2="55" y2="58" '
+        f'gradientUnits="userSpaceOnUse"><stop stop-color="#10BFA9"/>'
+        f'<stop offset="1" stop-color="#006B62"/></linearGradient></defs>'
+        f'<rect x="2" y="2" width="60" height="60" rx="18" fill="url(#{gradient_id})"/>'
+        f'<path d="M11 49H35" stroke="white" stroke-opacity=".8" stroke-width="3" '
+        f'stroke-linecap="round"/>'
+        f'<rect x="13" y="36" width="6" height="10" rx="2" fill="white" fill-opacity=".82"/>'
+        f'<rect x="22" y="29" width="6" height="17" rx="2" fill="white" fill-opacity=".92"/>'
+        f'<rect x="31" y="21" width="6" height="25" rx="2" fill="white"/>'
+        f'<circle cx="47" cy="44" r="10.5" fill="#FFD66B" stroke="white" stroke-width="2.5"/>'
+        f'<path d="M42.5 44.5L46 48L52 40.5" stroke="#075B53" stroke-width="2.8" '
         f'stroke-linecap="round" stroke-linejoin="round"/></svg>'
     )
 

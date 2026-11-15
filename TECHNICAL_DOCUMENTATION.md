@@ -43,6 +43,12 @@ adaptation, not a reproduction of CBUAE's full identity system; the app retains
 its own product logo and should not be treated as carrying an official CBUAE
 logo or endorsement mark.
 
+The original product mark is a rising three-bar chart with a gold quality-check
+badge. It appears in the main header and sidebar; the sidebar keeps Streamlit's
+collapse control in a compact, neutral header area rather than adding a second
+colored banner. The app hides Streamlit's Deploy control because deployment is
+managed through the local server/container workflow.
+
 ## 3. Repository layout
 
 ```text
@@ -143,8 +149,9 @@ not perform cross-file referential-integrity checks or joins.
 
 The **Watch demo** button in the page header opens a locally bundled, silent
 12-second MP4 walkthrough of the upload, scan, dashboard, review, and export
-flow. It includes native playback controls and does not require an internet
-connection. The source GIF is also included for direct preview.
+flow. The walkthrough's product mark matches the current rising-chart and
+gold-check logo. It includes native playback controls and does not require an
+internet connection. The source GIF is also included for direct preview.
 
 ## 6. Input handling and type inference
 
@@ -410,13 +417,13 @@ user, exposes port 8501, and defines a Streamlit health check. The example
 binds the host port to localhost; add authentication and HTTPS before sharing
 the app over a network.
 
-### Streamlit Community Cloud or Replit
+### Replit development
 
-Deploy `app.py` from the standalone repository and install dependencies from
-`requirements.txt`. Keep sample data files available at the relative
-`sample_data/` directory for the bundled connected sample. Configure deployment
-privacy and access outside the application; the app itself does not provide
-authentication.
+For Replit-based development, use the phased instructions in
+[`REPLIT_PHASED_PROMPT.md`](./REPLIT_PHASED_PROMPT.md) and keep the sample data
+files available at the relative `sample_data/` directory. Production
+deployment is managed on the local server with Docker; the Streamlit Deploy
+control is hidden and GitHub is used for source control, not cloud deployment.
 
 ## 12. Performance and operational limits
 
@@ -473,7 +480,10 @@ deployment, perform these smoke checks:
 - Fixed XLSX output is a data export, not a fidelity-preserving workbook edit.
 - There is no authentication, durable storage, audit log, or multi-user
   collaboration feature.
-- The assistant only answers supported questions using current scan results.
+- The local assistant answers supported questions using current scan results.
+  An optional configured OpenAI-compatible endpoint can answer broader
+  questions only when dataset sharing is explicitly enabled; that request sends
+  the complete active dataset and recent conversation to the chosen provider.
 
 ## 15. Related project documentation
 

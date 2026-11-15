@@ -4,7 +4,7 @@ Build a polished, single-file Python web application called **Smart Data Quality
 
 ## Purpose and visual design
 
-Create a wide, responsive data-quality workspace that lets a user load one or more tabular files, inspect common quality problems, explore issue details and analytics, and download cleaned copies. Use a crisp enterprise analytics theme with a cool-neutral canvas, white cards, a deep teal hero with a contrasting pale-teal band behind its exposed top edge, and restrained gold (`#DAAA00`), turquoise (`#00C7B1`), and coral (`#F87C56`) accents. Use legible typography, subtle borders and shadows, and an original custom brand mark combining a small chart with a quality-check symbol. Show the brand in the page header and sidebar. Make the interface keyboard-accessible and provide descriptive labels and button help text. Do not reproduce the CBUAE logo or imply endorsement.
+Create a wide, responsive data-quality workspace that lets a user load one or more tabular files, inspect common quality problems, explore issue details and analytics, and download cleaned copies. Use a crisp enterprise analytics theme with a cool-neutral canvas, white cards, a deep teal hero with a contrasting pale-teal band behind its exposed top edge, and restrained gold (`#DAAA00`), turquoise (`#00C7B1`), and coral (`#F87C56`) accents. Use legible typography, subtle borders and shadows, and an original custom brand mark with rising chart bars and a gold quality-check badge. Show the product mark in the page header and sidebar. Keep the sidebar's Streamlit header compact and neutral, preserve its collapse control, and do not add a separate dark banner. Hide Streamlit's Deploy control because deployment is managed locally. Make the interface keyboard-accessible and provide descriptive labels and button help text. Do not reproduce the CBUAE logo or imply endorsement.
 
 When no files are loaded, make the landing page feel complete rather than empty: pair a concise welcome and upload explanation with a compact preview of the workflow and the quality checks users can explore. Keep the sidebar upload and sample actions easy to find, and stack the welcome content cleanly on narrow screens.
 
@@ -102,9 +102,9 @@ In Data Preview & Export:
 ## Implementation and delivery constraints
 
 - Keep all app behavior and UI code inside `app.py`; keep only dependency declarations and project/deployment documentation in their respective files.
-- Pin dependencies in `requirements.txt` for a reproducible Streamlit Community Cloud or container deployment.
+- Pin dependencies in `requirements.txt` for reproducible local Docker deployment; keep the Docker host binding restricted to localhost by default.
 - Include a Dockerfile that installs dependencies, runs as a non-root user, binds Streamlit to `0.0.0.0:8501`, and exposes a health check.
-- Include a README with local run instructions, Docker build/run instructions, GitHub repository setup steps, and Streamlit Community Cloud deployment steps. Explain that public hosting exposes data uploaded to the app to the hosting provider and that this app intentionally does not retain files in a database.
+- Include a README with local run instructions, Docker build/run instructions, and GitHub source-repository setup steps. Explain that deployment is managed on the local server, GitHub pushes do not deploy the app, and the app intentionally does not retain uploads in a database. If the app is exposed over a network, explain that uploads reach the hosting server and recommend separate authentication and HTTPS controls.
 - Do not include credentials, secrets, sample customer data files, or unrelated monorepo contents in the standalone deployment repository.
 
 ## Validation checklist
@@ -120,4 +120,4 @@ In Data Preview & Export:
 9. Verify that the connected sample pack contains five CSV/XLSX files, has shared relational keys without broken references, can be downloaded as a ZIP, and loads all files into the workspace.
 10. Verify that the Active file dropdown switches among all loaded files, the review screen shows all rows with issue styling, selected fixes update a copy, and fixed CSV/XLSX downloads open correctly without modifying source data.
 11. Build and run the Docker image, then check the Streamlit health endpoint.
-12. Provide a concise PowerPoint technical-demo presentation that explains application features, technology stack, quality methods, architecture, deployment, and where uploaded data is held.
+12. Keep the bundled MP4/GIF demo and PowerPoint technical-demo presentation aligned with the current UI, brand mark, optional assistant behavior, data-sharing consent, and local deployment guidance.
