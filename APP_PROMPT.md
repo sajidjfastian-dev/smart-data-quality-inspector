@@ -4,7 +4,9 @@ Build a polished, single-file Python web application called **Smart Data Quality
 
 ## Purpose and visual design
 
-Create a wide, responsive data-quality workspace that lets a user load one or more tabular files, inspect common quality problems, explore issue details and analytics, and download cleaned copies. Use a crisp enterprise analytics theme with a cool-neutral canvas, white cards, a deep navy hero, restrained royal-blue accents, legible typography, subtle borders and shadows, and an original custom brand mark combining a small chart with a quality-check symbol. Show the brand in the page header and sidebar. Make the interface keyboard-accessible and provide descriptive labels and button help text.
+Create a wide, responsive data-quality workspace that lets a user load one or more tabular files, inspect common quality problems, explore issue details and analytics, and download cleaned copies. Use a crisp enterprise analytics theme with a cool-neutral canvas, white cards, a deep teal hero with a contrasting pale-teal band behind its exposed top edge, and restrained gold (`#DAAA00`), turquoise (`#00C7B1`), and coral (`#F87C56`) accents. Use legible typography, subtle borders and shadows, and an original custom brand mark combining a small chart with a quality-check symbol. Show the brand in the page header and sidebar. Make the interface keyboard-accessible and provide descriptive labels and button help text. Do not reproduce the CBUAE logo or imply endorsement.
+
+When no files are loaded, make the landing page feel complete rather than empty: pair a concise welcome and upload explanation with a compact preview of the workflow and the quality checks users can explore. Keep the sidebar upload and sample actions easy to find, and stack the welcome content cleanly on narrow screens.
 
 Show a persistent, data-driven file journey that clearly confirms when the active file has loaded, when its scan is complete, how many findings and duplicate rows were detected (or that no issues were found), and that review and export actions are ready. Keep the progress layout readable at narrow widths. Show a branded animated inspection loader, accessible loading indicators, and useful progress updates during file loading, sample loading, scans, safe fixes, fixed-preview validation, assistant responses, and user-requested export preparation. Remove the animated loader and collapse/complete status panels when work finishes. Do not prepare cleaned export files before the user requests them. Do not fetch external animation assets.
 
@@ -105,7 +107,7 @@ In Data Preview & Export:
 
 ## Validation checklist
 
-1. Compile `app.py` and run the Streamlit app in a test harness without exceptions; verify the enterprise styling and guided progress flow fit desktop and narrow layouts.
+1. Compile `app.py` and run the Streamlit app in a test harness without exceptions; verify the branded header, populated no-data landing page, enterprise styling, and guided progress flow fit desktop and narrow layouts.
 2. Verify that the sample contains exactly 50 rows and the expected intentional data defects.
 3. Verify that missing values, malformed emails, inconsistent and invalid dates, numeric outliers, and exact duplicates appear with correct row numbers.
 4. Verify that changing the Email/Date/Numeric selections or IQR multiplier updates KPIs, chart, recommendations, and issue log.

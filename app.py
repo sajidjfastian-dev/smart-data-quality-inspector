@@ -852,6 +852,10 @@ st.markdown(
             linear-gradient(112deg, #102d35 0%, #16474a 64%, #174e4a 100%);
         box-shadow: 0 12px 30px rgba(16, 45, 53, .15);
     }
+    [data-testid="stHorizontalBlock"]:has(.brand-header) > [data-testid="column"]:first-child {
+        border-radius: 20px;
+        background: #e6f2ef;
+    }
     .brand-logo {width: 52px; height: 52px; flex: 0 0 52px;}
     .brand-eyebrow {
         color: var(--brand-gold); font-size: .67rem; font-weight: 750;
@@ -862,6 +866,89 @@ st.markdown(
         line-height: 1.15; font-weight: 740; letter-spacing: -.04em;
     }
     .brand-subtitle {color: #d0dfdc; font-size: .9rem; margin-top: 5px;}
+    .welcome-panel {
+        display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(300px, .95fr);
+        align-items: center; gap: clamp(26px, 5vw, 68px);
+        min-height: 350px; margin-top: 1.35rem; padding: clamp(26px, 4vw, 46px);
+        overflow: hidden; border: 1px solid #dce9e4; border-radius: 24px;
+        background:
+            radial-gradient(ellipse at 4% 100%, rgba(0, 199, 177, .12), transparent 38%),
+            linear-gradient(120deg, #eff7f4 0%, #fff 54%, #f0f7f4 100%);
+        box-shadow: 0 14px 36px rgba(23, 52, 58, .06);
+    }
+    .welcome-eyebrow {
+        color: var(--teal); font-size: .68rem; font-weight: 760;
+        letter-spacing: .16em; text-transform: uppercase;
+    }
+    .welcome-title {
+        max-width: 520px; margin: 12px 0 10px; color: var(--ink);
+        font-size: clamp(1.75rem, 3.2vw, 2.55rem); line-height: 1.08;
+        font-weight: 760; letter-spacing: -.045em;
+    }
+    .welcome-description {
+        max-width: 510px; margin: 0; color: #526b69;
+        font-size: .98rem; line-height: 1.65;
+    }
+    .welcome-steps {
+        display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px; margin-top: 27px;
+    }
+    .welcome-step {
+        display: flex; align-items: flex-start; gap: 9px; min-width: 0;
+        color: var(--ink); font-size: .76rem; font-weight: 680; line-height: 1.35;
+    }
+    .welcome-step-number {
+        display: grid; place-items: center; flex: 0 0 25px; height: 25px;
+        border-radius: 8px; color: var(--teal-dark); background: #d9efea;
+        font-size: .68rem; font-weight: 760;
+    }
+    .welcome-step small {
+        display: block; margin-top: 4px; color: var(--muted);
+        font-size: .68rem; font-weight: 450; line-height: 1.4;
+    }
+    .welcome-preview {
+        position: relative; padding: 24px; overflow: hidden;
+        border: 1px solid rgba(255,255,255,.13); border-radius: 19px;
+        color: #fff;
+        background:
+            radial-gradient(ellipse at 100% 0%, rgba(0, 199, 177, .25), transparent 42%),
+            linear-gradient(145deg, #102d35, #16474a 70%, #14504b);
+        box-shadow: 0 16px 32px rgba(16, 45, 53, .15);
+    }
+    .welcome-preview-top {
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 12px; margin-bottom: 18px;
+    }
+    .welcome-preview-title {
+        color: #d3e6e1; font-size: .67rem; font-weight: 720;
+        letter-spacing: .13em; text-transform: uppercase;
+    }
+    .welcome-preview-badge {
+        padding: 5px 8px; border: 1px solid rgba(141, 222, 208, .25);
+        border-radius: 999px; color: #b6e9df; background: rgba(0, 199, 177, .1);
+        font-size: .61rem; font-weight: 700; letter-spacing: .06em;
+        white-space: nowrap;
+    }
+    .welcome-signal {
+        display: flex; align-items: center; gap: 12px; padding: 12px 13px;
+        border: 1px solid rgba(255,255,255,.09); border-radius: 12px;
+        background: rgba(255,255,255,.055);
+    }
+    .welcome-signal + .welcome-signal {margin-top: 8px;}
+    .welcome-signal-icon {
+        display: grid; place-items: center; flex: 0 0 31px; height: 31px;
+        border-radius: 10px; color: #d4f5ee; background: rgba(0, 199, 177, .17);
+        font-size: .78rem; font-weight: 760;
+    }
+    .welcome-signal-copy {min-width: 0; flex: 1;}
+    .welcome-signal-copy strong {display: block; color: #fff; font-size: .79rem;}
+    .welcome-signal-copy small {
+        display: block; margin-top: 3px; color: #b4cbc6;
+        font-size: .67rem; line-height: 1.35;
+    }
+    .welcome-signal-check {
+        color: #8bded0; font-size: .92rem; font-weight: 750;
+    }
     .sidebar-brand {
         display: flex; align-items: center; gap: 12px;
         padding: 4px 0 14px; margin-bottom: 7px;
@@ -1022,6 +1109,9 @@ st.markdown(
         .brand-header {padding: 16px 14px; gap: 11px; border-radius: 14px;}
         .brand-logo {width: 42px; height: 42px; flex-basis: 42px;}
         .brand-subtitle {font-size: .82rem;}
+        .welcome-panel {grid-template-columns: 1fr; gap: 24px; min-height: 0; padding: 24px 20px;}
+        .welcome-steps {grid-template-columns: 1fr; gap: 12px; margin-top: 20px;}
+        .welcome-preview {padding: 19px;}
         .workflow-strip {grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 9px;}
         .workflow-step {font-size: .69rem; gap: 6px;}
         .workflow-step strong {width: 20px; height: 20px;}
@@ -1246,14 +1336,73 @@ if uploaded_files and upload_signatures != st.session_state.get(
         st.stop()
 
 if not datasets:
-    st.markdown("### Your data deserves a closer look.")
     st.markdown(
-        "Drag and drop **one or more CSV or Excel files** in the sidebar, "
-        "or load the sample to explore the inspector."
-    )
-    st.info(
-        "Profile missingness, duplicates, contact and date formats, numeric distributions, "
-        "and statistical outliers. Your files stay in this browser session."
+        """
+        <section class="welcome-panel" aria-labelledby="welcome-title">
+          <div class="welcome-copy">
+            <div class="welcome-eyebrow">A better view of your data</div>
+            <h1 class="welcome-title" id="welcome-title">Find the signal in every row.</h1>
+            <p class="welcome-description">
+              Bring in a CSV or Excel file to uncover missing values, duplicates,
+              inconsistent formats, and unusual numbers. Your files stay in this
+              browser session.
+            </p>
+            <div class="welcome-steps">
+              <div class="welcome-step">
+                <span class="welcome-step-number">01</span>
+                <span>Bring your data<small>Upload a file or try a sample.</small></span>
+              </div>
+              <div class="welcome-step">
+                <span class="welcome-step-number">02</span>
+                <span>See what stands out<small>Review clear quality signals.</small></span>
+              </div>
+              <div class="welcome-step">
+                <span class="welcome-step-number">03</span>
+                <span>Make it better<small>Apply safe fixes and export.</small></span>
+              </div>
+            </div>
+          </div>
+          <div class="welcome-preview" aria-label="Data quality checks included">
+            <div class="welcome-preview-top">
+              <div class="welcome-preview-title">Your inspection toolkit</div>
+              <div class="welcome-preview-badge">4 QUALITY CHECKS</div>
+            </div>
+            <div class="welcome-signal">
+              <span class="welcome-signal-icon" aria-hidden="true">01</span>
+              <span class="welcome-signal-copy">
+                <strong>Missing values</strong>
+                <small>Spot gaps and incomplete fields.</small>
+              </span>
+              <span class="welcome-signal-check" aria-hidden="true">+</span>
+            </div>
+            <div class="welcome-signal">
+              <span class="welcome-signal-icon" aria-hidden="true">02</span>
+              <span class="welcome-signal-copy">
+                <strong>Duplicates</strong>
+                <small>Find repeated rows in your data.</small>
+              </span>
+              <span class="welcome-signal-check" aria-hidden="true">+</span>
+            </div>
+            <div class="welcome-signal">
+              <span class="welcome-signal-icon" aria-hidden="true">03</span>
+              <span class="welcome-signal-copy">
+                <strong>Format consistency</strong>
+                <small>Check date and contact fields.</small>
+              </span>
+              <span class="welcome-signal-check" aria-hidden="true">+</span>
+            </div>
+            <div class="welcome-signal">
+              <span class="welcome-signal-icon" aria-hidden="true">04</span>
+              <span class="welcome-signal-copy">
+                <strong>Numeric outliers</strong>
+                <small>Surface unusual values and distributions.</small>
+              </span>
+              <span class="welcome-signal-check" aria-hidden="true">+</span>
+            </div>
+          </div>
+        </section>
+        """,
+        unsafe_allow_html=True,
     )
     st.stop()
 
