@@ -4,6 +4,7 @@
 
 - Runtime: Python 3.12 (the existing app and pinned dependencies work with it).
 - Dependencies: `requirements.txt`, installed into Replit's managed Python environment.
+- Explicit transitive security pins in `requirements.txt` keep fresh installs on patched versions. Run `python -m unittest discover -s tests -v` and `python -m pip check` after dependency changes, then rerun the dependency audit.
 - Use the **Run** button to start the **Start application** workflow.
 - Command: `python -m streamlit run app.py --server.corsAllowedOrigins "https://${REPLIT_DEV_DOMAIN}"`
 - Streamlit binds to `0.0.0.0:5000` through `.streamlit/config.toml`.
