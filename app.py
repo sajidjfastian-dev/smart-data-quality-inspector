@@ -801,6 +801,8 @@ def clean_data(
             if pd.isna(median):
                 continue
             missing_mask = cleaned[column].map(is_missing)
+            if not missing_mask.any():
+                continue
             if pd.api.types.is_numeric_dtype(cleaned[column]):
                 if pd.api.types.is_integer_dtype(cleaned[column]) and median % 1:
                     cleaned[column] = cleaned[column].astype("float64")

@@ -66,6 +66,21 @@ streamlit run app.py
 
 Open `http://localhost:8501`.
 
+## Regression tests
+
+With the dependencies in `requirements.txt` installed, run:
+
+```sh
+python -m unittest discover -s tests -v
+```
+
+The Streamlit AppTest tests run `app.py` directly without a browser or running
+server. They cover the empty workspace, deterministic 50-row sample findings,
+default and individually selected safe fixes, original-data integrity, reruns,
+sample reloads, and isolation between sessions. Each test uses a fresh session;
+no database, credentials, external assistant, or new test dependency is required.
+CSV/Excel export contents are outside this sample-flow suite.
+
 ## Run with Docker
 
 ```powershell
