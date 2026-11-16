@@ -36,13 +36,8 @@ localPort = 5000
 externalPort = 80
 
 [deployment]
-deploymentTarget = "cloudrun"
-
-[deployment.run]
-args = ["sh", "-c", "/nix/store/mnjsfz2lyr84m1d51pygk55i4wa1lbc3-python3-wrapper/bin/python3 $file"]
-
-[deployment.run.env]
-file = "app.py"
+deploymentTarget = "autoscale"
+run = ["python", "-m", "streamlit", "run", "app.py", "--server.address=0.0.0.0", "--server.port=5000", "--server.headless=true"]
 
 [postMerge]
 path = "scripts/post-merge.sh"

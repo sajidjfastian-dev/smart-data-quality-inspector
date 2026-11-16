@@ -23,3 +23,9 @@
 - Open Preview and confirm the upload workspace renders.
 - Select **Explore with 50-row quick sample** to exercise analysis without uploading data.
 - The Streamlit health endpoint is `/_stcore/health`.
+
+## Publishing
+
+- Production command: `python -m streamlit run app.py --server.address=0.0.0.0 --server.port=5000 --server.headless=true`.
+- Do not use `python app.py`: it executes outside the Streamlit server and fails publishing health checks.
+- Publishing command changes take effect only when the user republishes.
