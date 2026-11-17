@@ -1128,46 +1128,67 @@ st.markdown(
     }
     html, body, [class*="css"] {font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;}
     .stApp, [data-testid="stAppViewContainer"] {background: var(--canvas);}
-    [data-testid="stHeader"] {background: rgba(246, 248, 246, .94);}
+    [data-testid="stHeader"] {
+        position: fixed; top: 0; left: 0; width: 100%; height: 68px;
+        background: transparent; z-index: 1000002; pointer-events: none;
+    }
+    [data-testid="stHeader"] * {pointer-events: none;}
+    [data-testid="stHeader"] button {color: #f3fbf9; pointer-events: auto;}
+    [data-testid="stHeader"] [data-testid="stExpandSidebarButton"] span {color: #f3fbf9;}
+    html[dir="rtl"] [data-testid="stHeader"] button[aria-label="Main menu"] {
+        position: fixed; top: 20px; left: 10px; right: auto;
+    }
     [data-testid="stAppDeployButton"],
     [data-testid="stDeployButton"] {display: none;}
     /* Streamlit's collapsed sidebar can leak its contents over RTL mobile pages. */
     html[dir="rtl"] [data-testid="stSidebar"][data-collapsed="true"] {
         visibility: hidden; overflow: hidden; pointer-events: none;
     }
-    .block-container {padding-top: 1.35rem; padding-bottom: 3rem; max-width: 1540px;}
+    .block-container {padding-top: 5.5rem; padding-bottom: 3rem; max-width: 1540px;}
     h1, h2, h3, [data-testid="stMarkdownContainer"] p {color: var(--ink);}
     h2 {font-size: 1.28rem; letter-spacing: -.025em;}
     h3 {font-size: 1.08rem; letter-spacing: -.015em;}
-    .brand-header {
-        display: flex; align-items: center; gap: 14px; margin-bottom: .35rem;
-        padding: 14px 20px; border: 1px solid #17474a; border-bottom: 3px solid var(--brand-gold); border-radius: 16px;
-        background:
-            radial-gradient(ellipse at 88% 4%, rgba(0, 199, 177, .24), transparent 35%),
-            linear-gradient(112deg, #102d35 0%, #16474a 64%, #174e4a 100%);
-        box-shadow: 0 12px 30px rgba(16, 45, 53, .15);
+    .st-key-app_header {
+        position: fixed; top: 0; left: 0; width: 100%; z-index: 1000001;
+        padding: 9px 60px; border-bottom: 2px solid #d6ae38;
+        background: linear-gradient(105deg, #102d35, #164c4d 72%, #185269);
+        box-shadow: 0 4px 18px rgba(16, 45, 53, .16);
     }
-    [data-testid="stHorizontalBlock"]:has(.brand-header) > [data-testid="column"]:first-child {
-        border-radius: 20px;
-        background: #e6f2ef;
+    .st-key-app_header > [data-testid="stVerticalBlock"] {gap: 0;}
+    .st-key-app_header [data-testid="stHorizontalBlock"] {
+        align-items: center; flex-wrap: nowrap; gap: 12px;
     }
+    .st-key-app_header [data-testid="stColumn"]:nth-child(1) {flex: 1 1 auto; width: auto !important; min-width: 0;}
+    .st-key-app_header [data-testid="stColumn"]:nth-child(2) {flex: 0 0 42px; width: 42px !important; min-width: 42px;}
+    .st-key-app_header [data-testid="stColumn"]:nth-child(3) {flex: 0 0 140px; width: 140px !important; min-width: 140px;}
+    .brand-header {display: flex; align-items: center; gap: 12px; margin: 0; padding: 0; min-width: 0;}
     .brand-logo {
-        width: 46px; height: 46px; flex: 0 0 46px;
+        width: 38px; height: 38px; flex: 0 0 38px;
         filter: drop-shadow(0 4px 6px rgba(0, 94, 86, .18));
     }
     .brand-eyebrow {
-        color: var(--brand-gold); font-size: .67rem; font-weight: 750;
-        letter-spacing: .16em; text-transform: uppercase; margin-bottom: 5px;
+        display: none;
     }
     .brand-title {
-        color: #fff; font-size: clamp(1.25rem, 2.1vw, 1.6rem);
-        line-height: 1.15; font-weight: 740; letter-spacing: -.04em;
+        color: #fff; font-size: clamp(1rem, 1.4vw, 1.3rem);
+        line-height: 1.15; font-weight: 740; letter-spacing: -.025em;
     }
-    .brand-subtitle {color: #d0dfdc; font-size: .9rem; margin-top: 5px;}
-[data-testid="stHorizontalBlock"]:has(.brand-header) > [data-testid="column"]:last-child button p {
-    white-space: normal;
-    text-align: center;
-}
+    .brand-subtitle {color: #d0dfdc; font-size: .75rem; margin-top: 3px;}
+    .st-key-language_toggle button, .st-key-header_demo button {
+        min-height: 40px; border: 1px solid rgba(218, 239, 234, .3);
+        border-radius: 10px; color: #fff; background: rgba(255,255,255,.1);
+    }
+    .st-key-language_toggle button:hover, .st-key-header_demo button:hover {
+        color: #fff; border-color: #b8e7dc; background: rgba(255,255,255,.18);
+    }
+    .st-key-header_demo button p {color: #fff !important; white-space: normal; line-height: 1.2;}
+    .st-key-language_toggle button:focus-visible, .st-key-header_demo button:focus-visible {
+        outline: 3px solid #efcf71; outline-offset: 2px;
+    }
+    .st-key-language_toggle button p {
+        position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+        overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+    }
     .welcome-panel {
         position: relative; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(320px, .95fr);
         align-items: center; gap: 42px clamp(28px, 4vw, 64px);
@@ -1458,6 +1479,7 @@ st.markdown(
         to {opacity: 1; transform: translateY(0);}
     }
     section[data-testid="stSidebar"] {
+        top: 68px; height: calc(100vh - 68px) !important;
         background: #f8f9fc; border-right: 1px solid var(--line);
     }
     section[data-testid="stSidebar"] > div {padding-top: 0;}
@@ -1688,10 +1710,18 @@ st.markdown(
         background: #fff; border: 1px solid var(--line); border-radius: 13px;
     }
     @media (max-width: 760px) {
-        .block-container {padding: .9rem .8rem 2rem;}
-        .brand-header {padding: 16px 14px; gap: 11px; border-radius: 14px;}
-        .brand-logo {width: 42px; height: 42px; flex-basis: 42px;}
-        .brand-subtitle {font-size: .82rem;}
+        .block-container {padding: 5.25rem .8rem 2rem;}
+        .st-key-app_header {padding: 9px 48px;}
+        .st-key-app_header [data-testid="stHorizontalBlock"] {gap: 8px;}
+        .st-key-app_header [data-testid="stColumn"]:nth-child(3) {flex-basis: 42px; width: 42px !important; min-width: 42px;}
+        .st-key-header_demo button p {
+            position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+            overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+        }
+        .brand-header {gap: 8px;}
+        .brand-logo {width: 34px; height: 34px; flex-basis: 34px;}
+        .brand-title {font-size: .9rem;}
+        .brand-eyebrow, .brand-subtitle {display: none;}
         .welcome-panel {display: flex; flex-direction: column; align-items: stretch; gap: 24px; padding: 26px 21px;}
         .welcome-title {font-size: clamp(2.2rem, 9vw, 2.75rem);}
         .welcome-preview {padding: 20px;}
@@ -1911,13 +1941,14 @@ def render_app_footer():
     st.markdown(
         f"""
         <style>
-        .app-footer {{ border-top: 1px solid #dce7e3; margin-top: 3rem; padding: 1.35rem .15rem 1.5rem;
+        .app-footer {{ border-top: 3px solid #d6ae38; border-radius: 15px; margin-top: 3rem; padding: 1.4rem 1.5rem;
           display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
-          color: #526965; font-size: .83rem; }}
-        .app-footer strong {{ display: block; color: #193b39; font-size: .9rem; margin-bottom: .3rem; }}
+          color: #d3e9e3; background: linear-gradient(105deg, #102d35, #164c4d 75%, #185269);
+          font-size: .83rem; }}
+        .app-footer strong {{ display: block; color: #fff; font-size: .9rem; margin-bottom: .3rem; }}
         .app-footer-links {{ display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }}
-        .app-footer a {{ color: #006e63; text-decoration: underline; text-underline-offset: 3px; }}
-        .app-footer a:focus-visible {{ outline: 3px solid #126a9a; outline-offset: 3px; }}
+        .app-footer a {{ color: #c1f0e7; text-decoration: underline; text-underline-offset: 3px; }}
+        .app-footer a:focus-visible {{ outline: 3px solid #efcf71; outline-offset: 3px; }}
         </style>
         <footer class="app-footer">
           <div><strong>{product}</strong><span>{session}</span></div>
@@ -1926,25 +1957,6 @@ def render_app_footer():
           </div>
         </footer>
         """,
-        unsafe_allow_html=True,
-    )
-
-
-_rtl = native.session_state.get("interface_language", "English") == "العربية"
-native.html(
-    '<script>document.documentElement.lang="ar";document.documentElement.dir="rtl";</script>'
-    if _rtl else
-    '<script>document.documentElement.lang="en";document.documentElement.dir="ltr";</script>',
-    unsafe_allow_javascript=True,
-)
-header_col, demo_button_col = st.columns([4, 1.45], vertical_alignment="center")
-with header_col:
-    st.markdown(
-        f'<header class="brand-header">{brand_logo("header")}<div>'
-        f'<div class="brand-eyebrow">Data quality workspace</div>'
-        f'<div class="brand-title">Smart Data Quality Inspector</div>'
-        f'<div class="brand-subtitle">Bring your data. Find the signal. Make every row count.</div>'
-        f'</div></header>',
         unsafe_allow_html=True,
     )
 
@@ -1960,19 +1972,45 @@ def show_product_demo():
     )
 
 
-with demo_button_col:
-    native.selectbox(
-        "Language / اللغة", ("English", "العربية"), key="interface_language",
-        label_visibility="visible",
-    )
-    if st.button(
-        "Watch demo",
-        type="primary",
-        width="stretch",
-        icon=":material/play_circle:",
-        help="Play the short visual tour for your presentation.",
-    ):
-        show_product_demo()
+def toggle_interface_language():
+    current = native.session_state.get("interface_language", "English")
+    native.session_state["interface_language"] = "English" if current == "العربية" else "العربية"
+
+
+_rtl = native.session_state.get("interface_language", "English") == "العربية"
+native.html(
+    '<script>document.documentElement.lang="ar";document.documentElement.dir="rtl";</script>'
+    if _rtl else
+    '<script>document.documentElement.lang="en";document.documentElement.dir="ltr";</script>',
+    unsafe_allow_javascript=True,
+)
+with st.container(key="app_header"):
+    header_col, language_col, demo_button_col = st.columns([6, 1, 2], vertical_alignment="center")
+    with header_col:
+        st.markdown(
+            f'<header class="brand-header">{brand_logo("header")}<div>'
+            f'<div class="brand-eyebrow">Data quality workspace</div>'
+            f'<div class="brand-title">Smart Data Quality Inspector</div>'
+            f'<div class="brand-subtitle">Bring your data. Find the signal. Make every row count.</div>'
+            f'</div></header>',
+            unsafe_allow_html=True,
+        )
+    with language_col:
+        native.button(
+            "التبديل إلى الإنجليزية" if _rtl else "Switch to Arabic",
+            key="language_toggle", icon=":material/language:",
+            help="التبديل إلى الإنجليزية" if _rtl else "Switch to Arabic",
+            on_click=toggle_interface_language, width="stretch",
+        )
+    with demo_button_col:
+        if st.button(
+            "Watch demo",
+            key="header_demo",
+            width="stretch",
+            icon=":material/play_circle:",
+            help="Play the short visual tour for your presentation.",
+        ):
+            show_product_demo()
 
 # Keep one sidebar uploader and one widget key for both empty and active workspaces.
 landing_at_start = not bool(st.session_state.get("inspector_datasets", {}))

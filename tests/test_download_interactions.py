@@ -204,14 +204,31 @@ class DownloadInteractionTests(unittest.TestCase):
     def test_arabic_mobile_collapsed_sidebar_does_not_cover_landing(self):
         self.page.set_viewport_size({"width": 390, "height": 844})
         self.page.reload()
-        self.page.get_by_role("combobox", name="Language / اللغة").click()
-        self.page.get_by_role("option", name="العربية").click()
+        self.page.get_by_role("button", name="Switch to Arabic").click()
         self.page.get_by_role("heading", name="حوّل البيانات إلى قرارات.").wait_for()
         self.assertFalse(self.page.get_by_test_id("stSidebar").is_visible())
+        menu = self.page.get_by_role("button", name="Main menu").bounding_box()
+        demo = self.page.get_by_role("button", name="مشاهدة العرض التوضيحي").bounding_box()
+        self.assertLessEqual(menu["x"] + menu["width"], demo["x"])
         self.page.get_by_role("button", name="Expand sidebar").click()
         self.assertTrue(self.page.get_by_test_id("stSidebar").get_by_test_id("stFileUploader").is_visible())
         self.page.get_by_role("button", name="Collapse sidebar").click()
         self.assertFalse(self.page.get_by_test_id("stSidebar").is_visible())
+
+    def test_full_width_header_language_icon_and_footer(self):
+        header = self.page.locator(".st-key-app_header")
+        rect = header.bounding_box()
+        self.assertAlmostEqual(rect["x"], 0, delta=1)
+        self.assertAlmostEqual(rect["y"], 0, delta=1)
+        self.assertAlmostEqual(rect["width"], self.page.viewport_size["width"], delta=1)
+        self.assertEqual(self.page.get_by_role("combobox", name="Language / اللغة").count(), 0)
+        self.page.get_by_role("button", name="Switch to Arabic").click()
+        self.page.get_by_role("heading", name="حوّل البيانات إلى قرارات.").wait_for()
+        self.assertEqual(self.page.locator("html").get_attribute("dir"), "rtl")
+        self.page.get_by_role("button", name="التبديل إلى الإنجليزية").click()
+        self.page.get_by_role("heading", name="Turn data into decisions.").wait_for()
+        self.assertEqual(self.page.locator("html").get_attribute("dir"), "ltr")
+        self.assertEqual(self.page.locator("footer.app-footer").count(), 1)
 
     def test_fixed_csv_download_reflects_applied_fixes(self):
         self.upload([{"name": "customer records.csv", "mimeType": "text/csv", "buffer": CSV_INPUT}])
