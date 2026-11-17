@@ -18,6 +18,22 @@ class DashboardTests(unittest.TestCase):
     def clean(self, app):
         self.assertEqual([e.message for e in app.exception], [])
 
+    def test_login_and_request_upload_visibility(self):
+        app = AppTest.from_file(APP, default_timeout=45).run()
+        self.clean(app)
+        self.assertNotIn("nav_requests", [w.key for w in app.button])
+        self.assertEqual(len(app.get("file_uploader")), 0)
+        app.session_state["demo_user"] = "Sajid"
+        app.session_state["workspace_page"] = "requests"
+        app.run()
+        self.assertEqual(len(app.get("file_uploader")), 0)
+        app.button(key="nav_new_request").click().run()
+        self.clean(app)
+        self.assertEqual(len(app.get("file_uploader")), 1)
+        self.assertEqual(len(app.sidebar.get("file_uploader")), 0)
+        app.button(key="nav_requests").click().run()
+        self.assertEqual(len(app.get("file_uploader")), 0)
+
     def test_empty_new_and_view_draft(self):
         app = self.app()
         self.clean(app)
@@ -37,6 +53,7 @@ class DashboardTests(unittest.TestCase):
 
     def test_identical_reupload_in_new_request(self):
         app = self.app()
+        app.button(key="nav_new_request").click().run()
         uploaded = BytesIO(b"name,amount\nAda,1\nBob,2\n")
         uploaded.name = "repeat.csv"
         uploaded.size = len(uploaded.getvalue())

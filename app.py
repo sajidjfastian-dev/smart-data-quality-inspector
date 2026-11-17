@@ -1882,6 +1882,8 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                     active_dataset=None, active_data=None, fixed_data=None,
                     detected_sensitive=None, dataset_token=None):
     """Render model and active-file inspection controls in one sidebar menu."""
+    if not is_signed_in():
+        return None
     with anchor:
         with st.popover(
             "Settings",
@@ -2189,7 +2191,18 @@ with st.sidebar:
         if st.session_state.get("demo_role", "Submitter") == "Submitter":
             native.button(translate("New request"), key="nav_new_request", width="stretch",
                           icon=":material/add_circle:", on_click=start_new, args=(st.session_state,))
-    with st.container(key="source_panel"):
+    settings_anchor = render_account_panel()
+
+uploaded_files = None
+load_connected_clicked = False
+show_request_upload = (
+    is_signed_in()
+    and st.session_state.get("demo_role", "Submitter") == "Submitter"
+    and st.session_state.get("workspace_page") == "inspection"
+    and not st.session_state.get("request_view")
+)
+if show_request_upload:
+    with st.container(key="source_panel", border=True):
         st.markdown(
             '<div class="sidebar-source-heading"><span class="sidebar-source-kicker">Data sources</span>'
             '<strong>Add your data</strong><span>Upload files to begin your quality assessment.</span></div>',
@@ -2233,7 +2246,6 @@ with st.sidebar:
                 '<span>Log in to upload files or explore the sample workspace.</span></div>',
                 unsafe_allow_html=True,
             )
-    settings_anchor = render_account_panel()
 
 if load_connected_clicked:
     st.session_state["workspace_page"] = "inspection"
@@ -2389,6 +2401,9 @@ if is_signed_in() and (
 
 if not datasets:
     render_settings(settings_anchor)
+    if is_signed_in() and st.session_state.get("workspace_page") == "inspection":
+        native.info(translate("Upload CSV or Excel files above, or use sample data to start this request."))
+        st.stop()
     if is_signed_in():
         start_title = "Get started with your data"
         start_copy = "Use the sidebar to upload a file, or connect an API in settings."

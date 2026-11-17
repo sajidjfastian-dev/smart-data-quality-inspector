@@ -42,6 +42,8 @@ def run():
         settle()
         click("Login")
         click("Continue without signing in")
+        page.locator(".st-key-nav_new_request button").click()
+        settle()
         first = submit_file()
         click("New request")
         assert_empty()

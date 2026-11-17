@@ -1,4 +1,6 @@
 REQUEST_ARABIC = {
+    "Choose Continue draft to open the upload area.": "اختر متابعة المسودة لفتح منطقة رفع الملفات.",
+    "Upload CSV or Excel files above, or use sample data to start this request.": "ارفع ملفات CSV أو Excel أعلاه، أو استخدم البيانات التجريبية لبدء هذا الطلب.",
     "Submitted for approver review": "تم التقديم للمراجعة والاعتماد",
     "Approver": "المعتمد",
     "Demo Approver": "المعتمد التجريبي",

@@ -46,7 +46,7 @@ def render_request_details(state, reference):
             st.button(t("Create new draft revision"), key="revise_"+reference, on_click=edit_revision)
     snap = rev.get("snapshot") or rev.get("working")
     if not snap:
-        st.info(t("Upload a file in the sidebar to begin inspection."))
+        st.info(t("Choose Continue draft to open the upload area."))
         st.subheader(t("Request timeline"))
         st.dataframe(pd.DataFrame(rev["timeline"]).rename(columns=t), hide_index=True, width="stretch")
         return
