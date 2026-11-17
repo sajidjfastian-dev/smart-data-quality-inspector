@@ -21,3 +21,9 @@ Use only two demo roles: Submitter and Approver.
 **Why:** The user explicitly requested “only two roles. submitter/approver.”
 
 **How to apply:** Keep ticket and CAB approvals as separate workflow steps handled by the Approver, not separate role choices.
+
+The user approved database-backed synthetic demo data: at least 500 sample rows with correctable issues and about 20 requests across both statuses and demo sessions.
+
+**Why:** The user explicitly selected “Synthetic records stored in database” and “Both statuses and sessions.”
+
+**How to apply:** This changes the session-only rule for known synthetic demo records, not private uploads. Label synthetic provenance honestly; preserve the real-history SSO gate.
