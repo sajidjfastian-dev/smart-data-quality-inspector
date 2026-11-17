@@ -10,7 +10,7 @@ The product mark is a rising chart with a gold quality-check badge, shown in the
 
 - Drag and drop multiple CSV and XLSX files together, with per-file analysis and a batch workspace summary.
 - Load a deterministic 50-row quick sample, or a connected five-file synthetic dataset pack with 57,200 rows across customers, orders, products, support tickets, and web events.
-- Download the five-file CSV/XLSX demo pack directly from the sidebar. Its tables share customer, order, and product keys for join and relationship testing.
+- The five sample tables share customer, order, and product keys for join and relationship testing.
 - Scan for missing values, exact duplicate rows, invalid email addresses, inconsistent/invalid dates, and numeric outliers.
 - Use the settings icon at the bottom of the sidebar to turn built-in checks on or off, adjust Email, Date, and Numeric column rules, and tune the IQR outlier multiplier from 1.5 to 3.0.
 - Add, edit, or delete custom per-file rules: required text, allowed values, or minimum and maximum numeric limits. Custom findings are included in scans and issue logs for manual review; empty values are covered separately by the missing-values check. Rules remain in the current session.
@@ -55,7 +55,7 @@ The five generated sample files are available individually:
 | [support_tickets.xlsx](./sample_data/support_tickets.xlsx) | Excel | 6,000 | References customers and orders |
 | [web_events.csv](./sample_data/web_events.csv) | CSV | 25,000 | References customers and products |
 
-All records are deterministic synthetic test data. The files include a small number of intentional missing values, duplicates, malformed emails/dates, whitespace-only fields, and numeric outliers so the inspector has issues to find. In the app, select **Load connected big-data sample** to load all five related files together, or **Download 5-file sample pack** to download a ZIP.
+All records are deterministic synthetic test data. The files include a small number of intentional missing values, duplicates, malformed emails/dates, whitespace-only fields, and numeric outliers so the inspector has issues to find. In the app, select **Load connected big-data sample** to load all five related files together. The files can also be downloaded individually above.
 
 ## Run locally
 

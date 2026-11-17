@@ -1666,14 +1666,6 @@ with st.sidebar:
         icon=":material/table_view:",
         help="Load five related CSV/XLSX demo tables with over 50,000 synthetic rows.",
     )
-    st.download_button(
-        "Download 5-file sample pack",
-        data=connected_sample_archive(),
-        file_name="smart_data_quality_sample_pack.zip",
-        mime="application/zip",
-        width="stretch",
-        icon=":material/folder_zip:",
-    )
     st.caption("Synthetic test data · CSV and Excel · Session-only processing")
     settings_anchor = st.container(key="settings_anchor")
 

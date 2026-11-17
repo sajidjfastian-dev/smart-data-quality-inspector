@@ -66,6 +66,11 @@ class QuickSampleTests(unittest.TestCase):
     def test_initial_screen_and_sample_scan_survive_rerun(self):
         self.assertNotIn("inspector_datasets", self.app.session_state)
         self.assertFalse(self.widget("button", "Explore with 50-row quick sample").disabled)
+        self.assertFalse(self.widget("button", "Load connected big-data sample").disabled)
+        self.assertNotIn(
+            "Download 5-file sample pack",
+            [item.proto.label for item in self.app.sidebar.get("download_button")],
+        )
         original = self.load_sample().copy(deep=True)
         self.assertEqual(original.shape, (50, 8))
         self.assertEqual(list(original.columns), COLUMNS)
@@ -87,6 +92,22 @@ class QuickSampleTests(unittest.TestCase):
         assert_frame_equal(
             self.app.session_state["quality_scan_cache"][SAMPLE]["issues"], scan["issues"]
         )
+
+    def test_connected_sample_loads_all_files(self):
+        self.app.default_timeout = 120
+        self.click("Load connected big-data sample")
+        datasets = self.app.session_state["inspector_datasets"]
+        self.assertEqual(
+            {name: len(frame) for name, frame in datasets.items()},
+            {
+                "customers.csv": 5000,
+                "orders.xlsx": 20000,
+                "products.csv": 1200,
+                "support_tickets.xlsx": 6000,
+                "web_events.csv": 25000,
+            },
+        )
+        self.assertEqual(self.widget("selectbox", "Active file").value, "customers.csv")
 
     def test_model_settings_are_session_only_and_sharing_is_opt_in(self):
         self.assertFalse(self.widget("checkbox", "Allow sending the active dataset to this endpoint").value)
