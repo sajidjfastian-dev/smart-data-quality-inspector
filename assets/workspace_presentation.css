@@ -83,21 +83,29 @@
 .stElementContainer:has(> .stHtml :is(script, style)):not(:has(.stHtml :not(script, style))),
 .stElementContainer:has([data-testid="stMarkdownContainer"] > style):not(:has([data-testid="stMarkdownContainer"] :not(style))),
 [data-testid="stLayoutWrapper"]:has(> .st-key-app_header) {position: absolute !important;}
-.block-container {padding-top: 5.5rem !important; padding-bottom: 2.5rem !important; padding-inline: clamp(20px, 3vw, 48px) !important;}
-.st-key-app_header {padding: 10px 60px !important;}
+.block-container {padding-top: 6rem !important; padding-bottom: 2.5rem !important; padding-inline: clamp(20px, 3vw, 48px) !important;}
+.st-key-app_header {padding: 14px 60px !important; min-height: 76px;}
+.st-key-app_header [data-testid="stMarkdownContainer"] {margin-bottom: 0 !important;}
+section[data-testid="stSidebar"] {top: 76px !important; height: calc(100dvh - 76px) !important;}
+/* Keep the collapse button accessible without reserving an empty header row. */
+section[data-testid="stSidebar"] [data-testid="stSidebarHeader"] {
+    position: absolute; inset-block-start: 8px; inset-inline-end: 8px;
+    height: 32px; min-height: 32px; margin: 0; padding: 0; z-index: 6;
+}
 .welcome-panel {margin-top: 0 !important;}
 .welcome-panel .welcome-meta {margin-top: 20px;}
 .welcome-panel p.landing-privacy-note {margin: 20px 0 0; font-size: .86rem;}
 .welcome-panel .welcome-steps {margin-top: 6px;}
-section[data-testid="stSidebar"] [data-testid="stSidebarUserContent"] {padding-top: .5rem;}
+section[data-testid="stSidebar"] [data-testid="stSidebarUserContent"] {padding-top: 18px !important;}
+.sidebar-brand {padding-inline-end: 30px;}
 .sidebar-brand {padding-bottom: 14px;}
 .st-key-source_panel [data-testid="stVerticalBlock"] {gap: .75rem;}
 .sidebar-source-heading {padding-top: 4px;}
 .sidebar-divider {margin-block: 2px;}
 .sidebar-session-note {padding-top: 2px;}
 @media (max-width: 760px) {
-    .block-container {padding-top: 5rem !important; padding-inline: 14px !important;}
-    .st-key-app_header {padding: 9px 48px !important;}
+    .block-container {padding-top: 6rem !important; padding-inline: 14px !important;}
+    .st-key-app_header {padding: 14px 48px !important;}
 }
 
 /* Demo account control, pinned to the bottom of the sidebar. */
