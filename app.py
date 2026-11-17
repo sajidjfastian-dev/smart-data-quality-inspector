@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+from api_settings import render_api_settings
 
 
 st.set_page_config(
@@ -1163,6 +1164,26 @@ st.markdown(
     .welcome-signal-check {
         color: #8bded0; font-size: .92rem; font-weight: 750;
     }
+    .api-flow {
+        display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
+        margin-top: 18px; color: #55746d; font-size: .73rem; font-weight: 700;
+    }
+    .api-flow span {
+        padding: 6px 10px; border: 1px solid #dcebe6; border-radius: 20px;
+        background: #fff;
+    }
+    .api-flow i {
+        width: 20px; height: 2px; background: #a4d8ce; position: relative;
+        overflow: hidden;
+    }
+    .api-flow i::after {
+        content: ""; position: absolute; inset: 0; background: #00796f;
+        animation: api-flow-pulse 2s ease-in-out infinite;
+    }
+    @keyframes api-flow-pulse {
+        0% {transform: translateX(-100%);}
+        60%, 100% {transform: translateX(100%);}
+    }
     .sidebar-brand {
         display: flex; align-items: center; gap: 12px;
         padding: 4px 0 14px; margin-bottom: 7px;
@@ -1325,7 +1346,7 @@ st.markdown(
     .inspection-loader-copy span {display:block; color:var(--muted); font-size:.76rem; margin-top:3px;}
     @keyframes inspection-spin {to {transform: rotate(360deg);}}
     @media (prefers-reduced-motion: reduce) {
-        .inspection-loader-spinner, .welcome-panel, .dashboard-intro, .welcome-signal {animation: none;}
+        .inspection-loader-spinner, .welcome-panel, .dashboard-intro, .welcome-signal, .api-flow i::after {animation: none;}
         .stButton button, .stDownloadButton button {transition: none;}
     }
     [data-testid="stTabs"] [role="tablist"] {
@@ -1430,17 +1451,18 @@ def delete_custom_rule(rules_key, selector_key, index):
     st.session_state[selector_key] = 0
 
 
-def render_settings(anchor, columns=None, defaults=None, column_signature=None):
+def render_settings(anchor, columns=None, defaults=None, column_signature=None,
+                    active_dataset=None, active_data=None, fixed_data=None):
     """Render model and active-file inspection controls in one sidebar menu."""
     with anchor:
         with st.popover(
             "Settings",
             icon=":material/settings:",
-            help="LLM and inspection settings",
+            help="LLM, API, and inspection settings",
             key="settings_button",
         ):
             st.subheader("Settings")
-            model_tab, checks_tab = st.tabs(["LLM assistant", "Inspection checks"])
+            model_tab, api_tab, checks_tab = st.tabs(["LLM assistant", "Data APIs", "Inspection checks"])
             with model_tab:
                 st.markdown("**Connect your own LLM**")
                 st.caption(
@@ -1475,6 +1497,8 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None):
                     "Clear model settings", on_click=clear_assistant_settings,
                     width="stretch", key="clear_assistant_settings",
                 )
+            with api_tab:
+                render_api_settings(active_dataset, active_data, fixed_data)
             with checks_tab:
                 st.markdown("**Built-in checks**")
                 st.caption("Choose which checks run. Changes rescan the active file.")
@@ -1769,6 +1793,22 @@ if uploaded_files and upload_signatures != st.session_state.get(
         render_settings(settings_anchor)
         st.stop()
 
+pending_api_dataset = st.session_state.pop("pending_api_dataset", None)
+if pending_api_dataset is not None:
+    api_label, api_data = pending_api_dataset
+    base_label = api_label
+    suffix = 2
+    while api_label in datasets:
+        api_label = f"{base_label} ({suffix})"
+        suffix += 1
+    datasets = dict(datasets)
+    datasets[api_label] = api_data
+    st.session_state["inspector_datasets"] = datasets
+    st.session_state["active_dataset"] = api_label
+    st.session_state.setdefault("fixed_datasets", {})
+    st.session_state["batch_export_cache"] = None
+    st.success(f"Loaded {len(api_data):,} rows from the API into {api_label}.")
+
 if not datasets:
     render_settings(settings_anchor)
     st.markdown(
@@ -1778,7 +1818,7 @@ if not datasets:
             <div class="welcome-eyebrow">A better view of your data</div>
             <h1 class="welcome-title" id="welcome-title">Find the signal in every row.</h1>
             <p class="welcome-description">
-              Bring in a CSV or Excel file to uncover missing values, duplicates,
+              Bring in a CSV, Excel file, or API source to uncover missing values, duplicates,
               inconsistent formats, and unusual numbers. Files are processed by
               the server for your current session.
             </p>
@@ -1795,6 +1835,11 @@ if not datasets:
                 <span class="welcome-step-number">03</span>
                 <span>Make it better<small>Apply safe fixes and export.</small></span>
               </div>
+            </div>
+            <div class="api-flow" aria-label="Import, inspect, and send">
+              <span>File or API</span><i aria-hidden="true"></i>
+              <span>Inspect &amp; improve</span><i aria-hidden="true"></i>
+              <span>Export or API</span>
             </div>
           </div>
           <div class="welcome-preview" aria-label="Data quality checks included">
@@ -1876,7 +1921,8 @@ email_defaults, date_defaults, numeric_defaults = infer_column_rules(data)
     enabled_checks, custom_rules,
 ) = render_settings(
     settings_anchor, columns, (email_defaults, date_defaults, numeric_defaults),
-    column_signature,
+    column_signature, active_dataset, data,
+    st.session_state.get("fixed_datasets", {}).get(active_dataset),
 )
 
 rule_signature = column_rule_signature(
