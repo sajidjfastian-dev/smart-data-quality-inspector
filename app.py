@@ -17,7 +17,9 @@ from localization import language, native, st, translate, translate_issue_type, 
 from api_settings import render_api_settings
 from api_connections import ApiConnectionError, request_public_api
 from data_insights import render_data_insights
-from workspace_presentation import install_presentation_styles, render_motion_control, render_viewport_footer, render_workspace_menu
+from workspace_presentation import install_presentation_styles, landing_markup, render_motion_control, render_viewport_footer, render_workspace_menu, show_login_notice
+from history_ui import render_history, render_save_summary
+from inspection_history import build_summary
 from quality_large import scan_large_data
 from security_guardrails import MASK, detect_sensitive_columns, mask_dataframe, mask_findings, mask_text, mask_text_with_dataset
 
@@ -2012,7 +2014,7 @@ native.html(
     unsafe_allow_javascript=True,
 )
 with st.container(key="app_header"):
-    header_col, language_col, demo_button_col = st.columns([6, 1, 2], vertical_alignment="center")
+    header_col, language_col, demo_button_col, login_col = st.columns([6, 1, 2, 1.4], vertical_alignment="center")
     with header_col:
         st.markdown(
             f'<header class="brand-header">{brand_logo("header")}<div>'
@@ -2038,6 +2040,9 @@ with st.container(key="app_header"):
             help="Play the short visual tour for your presentation.",
         ):
             show_product_demo()
+    with login_col:
+        if native.button(translate("Login"), key="header_login", width="stretch"):
+            show_login_notice()
 
 # Keep one sidebar uploader and one widget key for both empty and active workspaces.
 landing_at_start = not bool(st.session_state.get("inspector_datasets", {}))
@@ -2086,6 +2091,7 @@ with st.sidebar:
         )
 
 if load_connected_clicked:
+    st.session_state["workspace_page"] = "inspection"
     with st.status(
         "Loading the connected sample workspace...",
         expanded=True,
@@ -2188,6 +2194,7 @@ if uploaded_files and upload_signatures != st.session_state.get(
         st.session_state["inspector_upload_signature"] = upload_signatures
         st.session_state["active_dataset"] = next(iter(datasets))
         st.session_state["fixed_datasets"] = {}
+        st.session_state["workspace_page"] = "inspection"
         reset_quality_caches()
         if landing_at_start:
             st.session_state["pending_upload_warnings"] = file_errors
@@ -2217,86 +2224,19 @@ if pending_api_dataset is not None:
     st.session_state.setdefault("fixed_datasets", {})
     st.session_state["batch_export_cache"] = None
     st.success(f"Loaded {len(api_data):,} rows from the API into {api_label}.")
+    st.session_state["workspace_page"] = "inspection"
+
+if st.session_state.get("workspace_page") == "history":
+    render_settings(settings_anchor)
+    render_history()
+    render_app_footer()
+    st.stop()
 
 if not datasets:
     render_settings(settings_anchor)
     render_motion_control()
     welcome_placeholder.markdown(
-        """
-        <section class="welcome-panel" aria-label="Data quality introduction">
-          <div class="welcome-copy">
-            <div class="welcome-eyebrow">Data quality, made clear</div>
-            <h1 class="welcome-title">Turn data into <span class="welcome-accent">decisions.</span></h1>
-            <p class="welcome-description">
-              Find missing values, duplicates, invalid formats and outliers in your data.
-              Review the results, apply safe fixes, and export with confidence.
-            </p>
-            <div class="welcome-start">
-              <span class="welcome-start-icon" aria-hidden="true">↗</span>
-              <div><strong>Get started with your data</strong>
-                <span class="welcome-start-copy">Use the sidebar to upload a file, or connect an API in settings.</span>
-              </div>
-            </div>
-            <div class="welcome-meta" aria-label="Supported capabilities">
-              <span>CSV &amp; Excel</span><span>API connections</span><span>Configurable checks</span><span>Export options</span>
-            </div>
-            <p class="landing-privacy-note">Your original stays unchanged. Review sensitive columns before sharing or exporting.</p>
-          </div>
-          <div class="welcome-preview" aria-label="Data quality checks included">
-            <div class="welcome-preview-top">
-              <div class="welcome-preview-title">Your workflow</div>
-              <div class="welcome-preview-badge">AT A GLANCE</div>
-            </div>
-            <h2 class="welcome-preview-heading">From data to insight</h2>
-            <p class="welcome-preview-description">A clear path from your source to a more reliable dataset.</p>
-            <div class="journey-visual" aria-label="Import, inspect, improve, and export data">
-              <div class="journey-stage">
-                <span class="journey-stage-label">Import</span>
-                <div class="journey-icon" aria-hidden="true"><span class="journey-grid"><i></i><i></i><i></i><i></i><i></i><i></i></span></div>
-                <small>Files or APIs</small>
-              </div>
-              <div class="journey-link" aria-hidden="true"></div>
-              <div class="journey-stage">
-                <span class="journey-stage-label">Inspect</span>
-                <div class="journey-icon" aria-hidden="true"><span class="journey-scan-mark">✓</span><span class="journey-scan-line"></span></div>
-                <small>Quality checks</small>
-              </div>
-              <div class="journey-link" aria-hidden="true"></div>
-              <div class="journey-stage">
-                <span class="journey-stage-label">Improve</span>
-                <div class="journey-icon" aria-hidden="true"><span class="journey-bars"><i></i><i></i><i></i></span></div>
-                <small>Review findings</small>
-              </div>
-              <div class="journey-link" aria-hidden="true"></div>
-              <div class="journey-stage">
-                <span class="journey-stage-label">Export</span>
-                <div class="journey-icon" aria-hidden="true"><span class="journey-export-arrow">↗</span></div>
-                <small>File or API</small>
-              </div>
-            </div>
-            <div class="journey-checks-label">Quality checks</div>
-            <div class="journey-checks"><span>Missing values</span><span>Duplicates</span><span>Invalid formats</span><span>Outliers</span></div>
-          </div>
-          <div class="welcome-steps" aria-label="How it works">
-            <div class="welcome-step">
-              <span class="welcome-step-number">01</span>
-              <span>Connect<small>Bring in files or connect an API.</small></span>
-            </div>
-            <div class="welcome-step">
-              <span class="welcome-step-number">02</span>
-              <span>Understand<small>Explore quality issues and insights.</small></span>
-            </div>
-            <div class="welcome-step">
-              <span class="welcome-step-number">03</span>
-              <span>Improve<small>Review findings and choose safe fixes.</small></span>
-            </div>
-            <div class="welcome-step">
-              <span class="welcome-step-number">04</span>
-              <span>Export<small>Download your data or send it by API.</small></span>
-            </div>
-          </div>
-        </section>
-        """,
+        landing_markup(),
         unsafe_allow_html=True,
     )
     render_app_footer()
@@ -2458,6 +2398,7 @@ else:
         )
     inspection_slot.empty()
     quality_scan_cache[active_dataset] = {
+        "run_key": str(uuid4()),
         "rules": rule_signature,
         "issues": issues,
         "duplicates": duplicate_count,
@@ -2465,6 +2406,12 @@ else:
     }
 issue_count = len(issues)
 health_score = max(0, round(100 * (1 - issue_count / max(data.shape[0] * data.shape[1], 1))))
+history_run_key = quality_scan_cache[active_dataset].setdefault("run_key", str(uuid4()))
+render_save_summary(
+    build_summary(len(data), len(columns), issues, duplicate_count, health_score,
+                  enabled_checks, bool(custom_rules)),
+    history_run_key,
+)
 batch_row_count = sum(len(frame) for frame in datasets.values())
 
 findings_step = (

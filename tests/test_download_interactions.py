@@ -120,6 +120,35 @@ class DownloadInteractionTests(unittest.TestCase):
     def click_tab(self, name):
         self.page.get_by_role("tab", name=name).click()
 
+    def test_login_notice_preserves_guest_mode_on_mobile_and_arabic(self):
+        for width in (1280, 390):
+            self.page.set_viewport_size({"width": width, "height": 844})
+            self.page.get_by_role("button", name="Login", exact=True).click()
+            dialog = self.page.get_by_role("dialog", name="Login", exact=True)
+            dialog.get_by_text("Organisation SSO setup pending", exact=True).wait_for()
+            self.assertEqual(dialog.locator("input").count(), 0)
+            self.assertIn("no credentials are collected", dialog.inner_text())
+            dialog.get_by_role("button", name="Continue without signing in").click()
+            dialog.wait_for(state="hidden")
+            self.assertTrue(self.page.evaluate("() => document.documentElement.scrollWidth <= innerWidth"))
+        self.page.get_by_role("button", name="Switch to Arabic").click()
+        self.page.get_by_role("button", name="تسجيل الدخول", exact=True).click()
+        dialog = self.page.get_by_role("dialog", name="تسجيل الدخول", exact=True)
+        dialog.get_by_text("إعداد تسجيل الدخول الموحد للمؤسسة قيد الانتظار", exact=True).wait_for()
+        self.assertEqual(dialog.locator("input").count(), 0)
+        dialog.get_by_role("button", name="المتابعة دون تسجيل الدخول").click()
+        dialog.wait_for(state="hidden")
+
+    def test_history_setup_is_disabled_and_bilingual(self):
+        self.page.get_by_role("button", name="Inspection history", exact=True).click()
+        self.page.get_by_role("heading", name="Organisation SSO setup pending").wait_for()
+        self.assertTrue(self.page.get_by_role("button", name="Sign in with organisation SSO").is_disabled())
+        self.page.get_by_role("button", name="Switch to Arabic").click()
+        self.page.get_by_role("heading", name="سجل الفحوصات", exact=True).wait_for()
+        self.assertTrue(self.page.get_by_role("button", name="تسجيل الدخول الموحد للمؤسسة").is_disabled())
+        self.page.get_by_role("button", name="العودة إلى الفحص").click()
+        self.page.get_by_role("heading", name="حوّل البيانات إلى قرارات.").wait_for()
+
     def test_watch_demo_loads_and_plays_local_video(self):
         self.page.get_by_role("button", name="Watch demo").click()
         dialog = self.page.get_by_role("dialog", name="A quick tour of the inspector")

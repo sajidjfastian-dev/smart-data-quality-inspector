@@ -73,8 +73,8 @@ class QuickSampleTests(unittest.TestCase):
         self.assertNotIn("inspector_datasets", self.app.session_state)
         landing = next(item.value for item in self.app.markdown if 'class="welcome-panel"' in item.value)
         self.assertIn("Turn data into", landing)
-        self.assertIn("Get started with your data", landing)
-        for check in ("Missing values", "Duplicates", "Invalid formats", "Outliers"):
+        self.assertIn("Start in the sidebar", landing)
+        for check in ("missing values", "duplicates", "formats", "outliers"):
             self.assertIn(check, landing)
         self.assertNotIn("Explore with 50-row quick sample", [button.label for button in self.app.button])
         self.assertFalse(self.widget("button", "Explore sample workspace").disabled)

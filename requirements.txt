@@ -10,3 +10,4 @@ anyio==4.16.0
 certifi==2026.10.23
 h11==0.16.0
 idna==3.20
+psycopg[binary]==3.3.9

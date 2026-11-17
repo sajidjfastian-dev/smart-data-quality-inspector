@@ -373,6 +373,13 @@ generated files.
 
 ## 11. Data handling, privacy, and deployment considerations
 
+A PostgreSQL aggregate-history foundation is prepared but disabled pending
+organisation SSO and scheduled retention cleanup. It stores no uploaded files,
+filenames, column names or raw values. The approved retention is 30 days;
+expiry filtering and cleanup are tested, but scheduled cleanup and the live
+SSO connection must be verified before activation. See
+[History activation](docs/history-activation.md).
+
 The application does not intentionally write uploaded data or model credentials
 to disk or a database. It reads uploaded bytes into memory and works with
 in-memory DataFrames and buffers. Download artifacts are generated in memory.

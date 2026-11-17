@@ -1,4 +1,123 @@
-/* Focused enhancements to the existing inspector, not a second application. */
+/* Mint Ledger: a light, product-first presentation over the existing workspace. */
+:root {
+    --ink: #113b35; --muted: #5b756d; --line: #dce9e1;
+    --teal: #00796f; --teal-dark: #005c55; --canvas: #f6f9f3; --panel: #fcfefa;
+    --presentation-mint: #d1fff0; --presentation-accent: #12e29d;
+}
+html, body, [class*="css"] {font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif;}
+html[dir="rtl"] body {font-family: Tahoma, "Segoe UI", sans-serif;}
+.st-key-app_header {
+    background: #f6faf4; border-bottom: 1px solid #d8e7df;
+    box-shadow: none;
+}
+.brand-title {color: #113b35; font-weight: 750;}
+.brand-subtitle {color: #58746b;}
+[data-testid="stHeader"] button,
+[data-testid="stHeader"] [data-testid="stExpandSidebarButton"] span {color: #18564a;}
+.st-key-language_toggle button, .st-key-header_demo button {
+    color: #164b40; background: transparent; border-color: #c9ddd1; border-radius: 999px;
+}
+.st-key-header_demo button p {color: #164b40 !important;}
+.st-key-language_toggle button:hover, .st-key-header_demo button:hover {background: #e4f5e9; color: #164b40;}
+.st-key-app_header [data-testid="stColumn"]:nth-child(4) {flex: 0 0 100px; width: 100px !important; min-width: 100px;}
+.st-key-header_login button {
+    width: 100%; border-radius: 999px; background: #12e29d; color: #113b35;
+    border: 1px solid #0bc88b; min-height: 40px;
+}
+.st-key-header_login button p {color: #113b35 !important; font-weight: 750;}
+.st-key-header_login button:hover {background: #a0f4d2; border-color: #00796f; transform: translateY(-2px);}
+.st-key-header_login button:focus-visible {outline: 3px solid #00796f; outline-offset: 3px;}
+section[data-testid="stSidebar"] {background: #eff5ed; border-inline-end: 1px solid #dce9df;}
+.st-key-sidebar_sample button {border-radius: 999px; background: #d1fff0; border-color: #92d8be;}
+.welcome-panel {
+    display: flex; flex-direction: column; align-items: stretch; gap: 0;
+    margin-top: .4rem; padding: clamp(26px, 4vw, 58px);
+    border: 1px solid #deeadf; border-radius: 28px; box-shadow: none;
+    background: radial-gradient(ellipse at 10% 12%, #d1fff0, transparent 56%),
+        radial-gradient(ellipse at 95% 40%, #f6ecd6, transparent 50%), #f7fbf4;
+}
+.welcome-copy {text-align: center; max-width: 780px; margin-inline: auto; position: relative;}
+.welcome-eyebrow {font-size: .66rem; letter-spacing: .15em; color: #27695b;}
+.welcome-title {
+    max-width: 780px; font-size: clamp(2.8rem, 5.9vw, 4.7rem);
+    font-weight: 760; letter-spacing: -.065em; line-height: 1.04; margin: 22px 0;
+}
+.welcome-title .welcome-accent {
+    display: block; color: #00796f; background: none; -webkit-text-fill-color: currentColor;
+}
+.welcome-panel p.welcome-description {max-width: 600px; margin-inline: auto; font-size: 1.02rem; line-height: 1.7;}
+.welcome-start {justify-content: center; border: 0; padding: 0; margin: 23px 0 0; background: none;}
+.welcome-start-copy {max-width: 480px; font-size: .81rem;}
+.welcome-meta {justify-content: center; margin-top: 23px; gap: 8px 18px;}
+.welcome-meta span {padding: 0; border: 0; background: none; font-size: .7rem; font-weight: 600;}
+.welcome-meta span::before {content: "✓"; margin-inline-end: 6px; color: #00796f;}
+.welcome-preview {
+    margin: 40px auto 0; width: 100%; max-width: 900px; box-sizing: border-box;
+    padding: 0; background: #fcfefa; color: #173f38; border: 1px solid #bcd7c9;
+    border-radius: 16px; box-shadow: 0 20px 50px -22px #48775c55;
+}
+.welcome-preview-top {padding: 15px 22px; border-bottom: 1px solid #dce9e1; margin: 0; background: #edf6ef;}
+.welcome-preview-title {color: #31594d; font-size: .66rem; letter-spacing: .04em;}
+.welcome-preview-badge {color: #31594d; background: #e0efe2; border-color: #c4dacb; font-size: .6rem; white-space: normal;}
+.welcome-preview-badge::before {background: #00846a;}
+.inspector-demo-body {display: grid; grid-template-columns: 1fr 205px; min-width: 0;}
+.inspector-demo-sheet {padding: 25px 24px 21px; min-width: 0;}
+.inspector-demo-sheet h2 {font-size: 1rem; margin: 0 0 5px; color: #173f38;}
+.inspector-demo-caption {font-size: .7rem; color: #60796f; margin-bottom: 19px;}
+.inspector-demo-table {width: 100%; border-collapse: collapse; text-align: start; font-size: .72rem;}
+.inspector-demo-table th {font-weight: 600; color: #60796f; background: #f1f6ee; font-size: .64rem;}
+.inspector-demo-table td, .inspector-demo-table th {padding: 12px 9px; border-bottom: 1px solid #e5ece2; text-align: start;}
+.inspector-demo-table td {color: #315349;}
+.demo-flag {color: #79501c !important; background: #fff1d9; border-radius: 4px;}
+.demo-ok {color: #14664f;}
+.inspector-demo-review {padding: 25px 20px; background: #f2f8ef; border-inline-start: 1px solid #deeadf;}
+.inspector-demo-review strong {display: block; font-size: .8rem; color: #173f38; margin: 8px 0 9px;}
+.inspector-demo-review p {font-size: .7rem; line-height: 1.7; color: #5b746a;}
+.demo-review-icon {display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: #d1fff0; color: #00796f;}
+.demo-review-status {font-size: .64rem; border-top: 1px solid #d5e5d5; padding-top: 13px; color: #446558;}
+.journey-visual {background: #f6faf2; border: 0; border-top: 1px solid #deeadf; border-radius: 0; padding: 20px 25px; gap: 12px; flex-wrap: nowrap;}
+.journey-stage {flex: 1; display: flex; align-items: center; gap: 8px; text-align: start;}
+.journey-icon {width: 28px; height: 28px; flex: 0 0 28px; margin: 0; border-radius: 50%; background: #e0efe1; border: 0; color: #00796f; font-size: .66rem;}
+.journey-icon::after {border-color: #00796f;}
+.journey-stage-label {margin: 0; color: #31594d; font-size: .63rem; letter-spacing: 0;}
+.journey-link {background: #c9ddd0; flex: 0 1 28px;}
+.journey-link::after {background: #00796f;}
+.landing-privacy-note {margin: 23px auto 0; max-width: 680px; border: 0; padding: 0; font-size: .72rem; text-align: center;}
+.welcome-steps {margin-top: 39px; padding-top: 25px; gap: 22px; border-top-color: #cfe2d4;}
+.welcome-step {display: block; font-size: .84rem; font-weight: 650;}
+.welcome-step-number {display: block; width: auto; height: auto; background: transparent; color: #4b8975; margin-bottom: 9px; font-size: .67rem;}
+.welcome-step small {font-size: .73rem; line-height: 1.65;}
+.st-key-landing_motion button {background: transparent; border-radius: 999px; font-size: .7rem;}
+.login-notice {padding: 22px; background: linear-gradient(125deg, #e3faee, #f6f5e8); border: 1px solid #cce3d3; border-radius: 16px; margin-bottom: 16px;}
+.login-notice .login-kicker {font-size: .67rem; letter-spacing: .1em; text-transform: uppercase; color: #357360;}
+.login-notice h3 {font-size: 1.5rem; color: #113b35; margin: 10px 0;}
+.login-notice p {font-size: .9rem; line-height: 1.75; color: #486b5e;}
+.stButton button, .stDownloadButton button {transition: transform .18s ease, opacity .18s ease;}
+@media (max-width: 900px) {
+    .inspector-demo-body {grid-template-columns: minmax(0, 1fr);}
+    .inspector-demo-review {border-inline-start: 0; border-top: 1px solid #deeadf; padding: 16px 22px;}
+    .inspector-demo-review p {margin-bottom: 10px;}
+}
+@media (max-width: 760px) {
+    .st-key-app_header {padding-inline: 45px;}
+    .st-key-app_header [data-testid="stColumn"]:nth-child(4) {flex-basis: 65px; width: 65px !important; min-width: 65px;}
+    .st-key-header_login button {padding-inline: 9px; font-size: .76rem;}
+    .st-key-app_header [data-testid="stHorizontalBlock"] {gap: 5px;}
+    .brand-header .brand-logo {display: none;}
+    .brand-title {font-size: .77rem;}
+    .welcome-panel {padding: 30px 18px 24px; gap: 0; border-radius: 20px;}
+    .welcome-title {font-size: clamp(2.65rem, 10vw, 4rem);}
+    .welcome-panel p.welcome-description {font-size: .9rem;}
+    .welcome-preview {padding: 0; margin-top: 28px;}
+    .welcome-preview-top {padding: 12px 14px; gap: 9px;}
+    .inspector-demo-sheet {padding: 19px 12px;}
+    .inspector-demo-table {font-size: .63rem;}
+    .inspector-demo-table td, .inspector-demo-table th {padding: 10px 5px;}
+    .welcome-steps {grid-template-columns: minmax(0, 1fr);}
+}
+@media (prefers-reduced-motion: reduce) {
+    .stButton button, .stDownloadButton button, .st-key-header_login button {transition: none !important; transform: none !important;}
+}
 .welcome-copy {animation: inspector-reveal .7s cubic-bezier(.2,.7,.2,1) both;}
 .welcome-preview {container-type: inline-size; animation: inspector-reveal .8s .12s both;}
 .welcome-step {animation: inspector-reveal .65s both;}

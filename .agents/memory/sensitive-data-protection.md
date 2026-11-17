@@ -14,3 +14,9 @@ For persistent upload history, retain inspection summaries only for 30 days, not
 **Why:** The user explicitly chose summaries-only history and a 30-day retention period.
 
 **How to apply:** Keep stored summaries free of raw cell values and do not expand storage scope without asking.
+
+Use organisation SSO for private history; the user chose to set up its connection later. Keep saving and viewing history disabled until that connection is securely configured.
+
+**Why:** The user chose organisation sign-in and explicitly deferred the SSO connection.
+
+**How to apply:** Do not substitute Replit accounts, shared history, anonymous browser identifiers, or self-asserted identities.

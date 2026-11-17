@@ -30,7 +30,17 @@ The product mark combines a data grid, inspection lens, and analytics signal, sh
 - Apply selected safe fixes, inspect resolved and remaining issue counts, and download the corrected CSV or XLSX. Invalid emails, dates, and statistical outliers remain for manual review.
 - Search/filter issue logs by text and column, then download the matching issue report as CSV.
 - Download a cleaned CSV for the active file or a ZIP containing cleaned CSVs for the batch.
-- Keep uploaded data in the current app session only. The app does not use a database or authentication, and does not contact an LLM unless a user configures an endpoint and explicitly enables dataset sharing.
+- Keep uploaded data in the current app session only. A PostgreSQL inspection-history foundation is prepared, but history saving and access are disabled until organisation SSO and scheduled retention cleanup are configured. No external LLM is contacted unless a user configures an endpoint and explicitly enables dataset sharing.
+
+## Inspection history preparation
+
+Open **Inspection history** in the sidebar to see the setup status. After an approved SSO integration is implemented, the prepared controls will let signed-in users explicitly save aggregate inspection summaries, view their own summaries, and delete them with confirmation. There is no file recovery: uploaded files, filenames, column names, cell values, custom-rule contents, and model conversations are excluded.
+
+The retention policy is **30 days**. Reads exclude expired summaries, and database operations remove expired rows. `scripts/purge_inspection_history.py` is prepared for a scheduled cleanup job; **it is not scheduled yet**. Before activating history, configure and verify recurring cleanup independently of user traffic, and review hosting backup retention with the security owner. Application expiry does not erase provider backups.
+
+The production identity adapter is intentionally disabled in `current_history_owner()`. Connecting an IdP alone is insufficient: implement and test server-verified issuer/subject identity, approved-tenant access, logout/session expiry, and private query isolation before enabling it. Never use user-entered email addresses or browser/session-state claims as an identity.
+
+`db/inspection_history.sql` is the schema source and has been applied to development. There is no runtime schema creation. Managed production schema changes use the normal Publish flow. The app has not been published as part of this work.
 
 See [APP_PROMPT.md](./APP_PROMPT.md) for the complete application prompt and acceptance criteria.
 For a credit-conscious, two-day Replit build plan, use [REPLIT_PHASED_PROMPT.md](./REPLIT_PHASED_PROMPT.md) and submit one phase at a time.
