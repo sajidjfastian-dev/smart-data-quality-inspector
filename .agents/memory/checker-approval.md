@@ -13,3 +13,9 @@ Use demo approval for now, not a separate authenticated checker.
 **Why:** The user selected “Demo approval for now.”
 
 **How to apply:** Clearly label the approval as a demo session action; do not claim independent reviewer identity or production separation of duties.
+
+After demo approval, provide a demo service desk ticket to request application of the fixes to production.
+
+**Why:** The user requested this step and selected “Demo ticket for now.”
+
+**How to apply:** Clearly distinguish the simulated ticket from a real submitted service desk request; generating it must not change production data.
