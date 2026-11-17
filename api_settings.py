@@ -4,7 +4,7 @@ import hashlib
 import json
 
 import pandas as pd
-import streamlit as st
+from localization import st
 
 from api_connections import ApiConnectionError, SAMPLE_API_URL, fetch_api_data, push_api_data
 
