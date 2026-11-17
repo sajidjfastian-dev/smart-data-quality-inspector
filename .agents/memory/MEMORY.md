@@ -1,5 +1,6 @@
 - [Intended CBUAE use](intended-cbuae-use.md) — the user says the application will be used by CBUAE.
 - [Checker approval](checker-approval.md) — side-by-side corrections review and demo final approval before destination pushes.
+- [Request workflow](request-workflow.md) — department requests, data-owner review, ticket/CAB gates; demo-only with minimal application changes.
 - [Upload placement](upload-placement.md) — keep file uploads in the sidebar, not on the landing page.
 - [Sensitive data protection](sensitive-data-protection.md) — mask sensitive data in screens and outputs, with user-selectable additional columns.
 - [Browser navigation checks](browser-navigation-checks.md) — verify sidebar navigation in the browser; server-side state alone can conceal UI failures.
