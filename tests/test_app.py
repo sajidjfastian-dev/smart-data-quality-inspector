@@ -1,9 +1,13 @@
 """End-to-end quick-sample regressions against the real Streamlit script."""
 
+from io import BytesIO
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 
+import pandas as pd
 from pandas.testing import assert_frame_equal
+import streamlit as st
 from streamlit.testing.v1 import AppTest
 
 
@@ -92,6 +96,58 @@ class QuickSampleTests(unittest.TestCase):
         assert_frame_equal(
             self.app.session_state["quality_scan_cache"][SAMPLE]["issues"], scan["issues"]
         )
+
+    def test_issue_report_download_matches_visible_filtered_findings(self):
+        # AppTest exposes the download button but not its bytes. Capture the
+        # actual argument while still rendering the real Streamlit button.
+        downloads = []
+        original_download_button = st.download_button
+
+        def capture_download(*args, **kwargs):
+            if args and args[0] == "Download issue report":
+                downloads.append(kwargs.copy())
+            return original_download_button(*args, **kwargs)
+
+        def assert_report(expected_keys):
+            self.assert_no_exception()
+            report = downloads[-1]
+            self.assertEqual(report["file_name"], "Sample messy dataset_issue_report.csv")
+            self.assertEqual(report["mime"], "text/csv")
+            self.assertTrue(report["data"].startswith(b"\xef\xbb\xbf"))
+            self.assertEqual(report["disabled"], not expected_keys)
+            csv = pd.read_csv(BytesIO(report["data"]), keep_default_na=False)
+            self.assertEqual(self.issue_keys(csv), expected_keys)
+            self.assertEqual(len(csv), len(expected_keys))
+            issue_tab = next(tab for tab in self.app.tabs if tab.label == "2 · Issue log")
+            if expected_keys:
+                self.assertEqual(len(issue_tab.dataframe), 1)
+                assert_frame_equal(csv, issue_tab.dataframe[0].value.reset_index(drop=True))
+            else:
+                self.assertEqual(len(issue_tab.dataframe), 0)
+                self.assertTrue(any(
+                    "No findings match" in info.value for info in issue_tab.info
+                ))
+
+        with patch.object(st, "download_button", side_effect=capture_download):
+            self.load_sample()
+            assert_report(EXPECTED_ISSUES)
+
+            self.widget("selectbox", "Filter findings").select("Missing Value").run()
+            assert_report({key for key in EXPECTED_ISSUES if key[2] == "Missing Value"})
+
+            self.widget("selectbox", "Filter by column").select("name").run()
+            assert_report({(8, "name", "Missing Value"), (33, "name", "Missing Value")})
+
+            # Search trims whitespace and narrows an already type- and
+            # column-filtered report.
+            self.widget("text_input", "Search findings").set_value("  33  ").run()
+            assert_report({(33, "name", "Missing Value")})
+
+            self.widget("text_input", "Search findings").set_value("no such finding").run()
+            assert_report(set())
+
+            self.widget("text_input", "Search findings").set_value("").run()
+            assert_report({(8, "name", "Missing Value"), (33, "name", "Missing Value")})
 
     def test_connected_sample_loads_all_files(self):
         self.app.default_timeout = 120
