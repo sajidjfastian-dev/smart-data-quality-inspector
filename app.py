@@ -405,7 +405,11 @@ def answer_data_quality_question(
     health_score,
     column_profile,
     active_dataset,
+    enabled_checks=None,
 ):
+    enabled_checks = set(enabled_checks) if enabled_checks is not None else {
+        "missing", "duplicates", "email", "date", "outliers"
+    }
     normalized = re.sub(r"\s+", " ", question.strip().lower())
     if not normalized:
         return "Ask me about duplicates, missing values, invalid formats, outliers, a column, or the overall quality score."
@@ -424,6 +428,8 @@ def answer_data_quality_question(
     )
 
     if "duplicate" in normalized or "duplicated" in normalized or "repeated row" in normalized:
+        if "duplicates" not in enabled_checks:
+            return "The duplicate check is turned off. Enable it in settings to inspect duplicate rows."
         if duplicate_count:
             row_list = ", ".join(str(row) for row in duplicate_rows[:20])
             if len(duplicate_rows) > 20:
@@ -575,7 +581,8 @@ def answer_data_quality_question(
         return (
             f"**{active_dataset}** contains **{len(data):,} row(s)** and "
             f"**{len(data.columns):,} column(s)**. "
-            f"{duplicate_count:,} row(s) are exact duplicate occurrences."
+            + (f"{duplicate_count:,} row(s) are exact duplicate occurrences."
+               if "duplicates" in enabled_checks else "Duplicate rows were not checked.")
         )
 
     if any(token in normalized for token in ("fix", "recommend", "recommendation", "clean", "improve")):
@@ -592,6 +599,8 @@ def answer_data_quality_question(
             suggestions.append("manually verify invalid email/date values")
         if issue_counts.get("Numeric Outlier"):
             suggestions.append("review numeric outliers against the source")
+        if any(kind.startswith("Custom: ") for kind in issue_counts):
+            suggestions.append("review values flagged by custom rules")
         if not suggestions:
             return f"No cleaning actions are currently needed for **{active_dataset}**."
         return "Recommended next steps: " + "; ".join(suggestions) + ". Open **Review & fix** to apply safe fixes."
@@ -618,9 +627,19 @@ def scan_data(
     numeric_columns=None,
     iqr_multiplier=1.5,
     progress_callback=None,
+    enabled_checks=None,
+    custom_rules=None,
 ):
     issues = []
-    duplicate_mask = data.duplicated(keep="first")
+    enabled_checks = set(enabled_checks) if enabled_checks is not None else {
+        "missing", "duplicates", "email", "date", "outliers"
+    }
+    custom_rules = custom_rules or []
+    duplicate_mask = (
+        data.duplicated(keep="first")
+        if "duplicates" in enabled_checks
+        else pd.Series(False, index=data.index)
+    )
     email_columns = (
         set(email_columns)
         if email_columns is not None
@@ -643,10 +662,11 @@ def scan_data(
     )
     row_count = len(data)
     total_passes = (
-        len(data.columns)
-        + len(email_columns)
-        + 2 * len(date_columns)
-        + len(numeric_columns)
+        (len(data.columns) if "missing" in enabled_checks else 0)
+        + (len(email_columns) if "email" in enabled_checks else 0)
+        + (2 * len(date_columns) if "date" in enabled_checks else 0)
+        + (len(numeric_columns) if "outliers" in enabled_checks else 0)
+        + len(custom_rules)
     )
     total_work = max(row_count * total_passes, 1)
     progress_interval = max(1, row_count // 10)
@@ -677,18 +697,19 @@ def scan_data(
 
     for column in data.columns:
         series = data[column]
-        for position, value in enumerate(series):
-            if is_missing(value):
-                add_issue(
-                    position + 1,
-                    column,
-                    "Missing Value",
-                    value,
-                    "Provide a value or fill using an appropriate default.",
-                )
-            report_progress(position, "Checking missing values", column)
+        if "missing" in enabled_checks:
+            for position, value in enumerate(series):
+                if is_missing(value):
+                    add_issue(
+                        position + 1,
+                        column,
+                        "Missing Value",
+                        value,
+                        "Provide a value or fill using an appropriate default.",
+                    )
+                report_progress(position, "Checking missing values", column)
 
-        if column in email_columns:
+        if "email" in enabled_checks and column in email_columns:
             for position, value in enumerate(series):
                 if not is_missing(value) and not EMAIL_PATTERN.fullmatch(str(value).strip()):
                     add_issue(
@@ -700,7 +721,7 @@ def scan_data(
                     )
                 report_progress(position, "Validating email formats", column)
 
-        if column in date_columns:
+        if "date" in enabled_checks and column in date_columns:
             valid_string_shapes = []
             for position, value in enumerate(series):
                 if isinstance(value, str) and value.strip() and parse_date(value):
@@ -734,7 +755,7 @@ def scan_data(
                         )
                 report_progress(position, "Validating date formats", column)
 
-        if column in numeric_columns:
+        if "outliers" in enabled_checks and column in numeric_columns:
             numeric_series = parse_numeric_series(series)
             finite_mask = np.isfinite(numeric_series.to_numpy(dtype=float, na_value=np.nan))
             numeric_values = numeric_series[finite_mask].dropna()
@@ -757,6 +778,32 @@ def scan_data(
             else:
                 for position in range(row_count):
                     report_progress(position, "Checking numeric outliers", column)
+
+    for rule in custom_rules:
+        column, kind, expected = rule["column"], rule["kind"], rule["expected"]
+        if column not in data.columns:
+            continue
+        allowed = {value.strip() for value in expected.split(",") if value.strip()}
+        for position, value in enumerate(data[column]):
+            if not is_missing(value):
+                text = str(value).strip()
+                if kind == "Must contain":
+                    valid = expected.casefold() in text.casefold()
+                    suggestion = f"Include the text: {expected}"
+                elif kind == "Allowed values":
+                    valid = text in allowed
+                    suggestion = f"Use one of: {expected}"
+                else:
+                    numeric = pd.to_numeric(text, errors="coerce")
+                    valid_number = pd.notna(numeric) and np.isfinite(numeric)
+                    valid = valid_number and (
+                        numeric >= float(expected) if kind == "Minimum number"
+                        else numeric <= float(expected)
+                    )
+                    suggestion = f"Use a number {'at least' if kind == 'Minimum number' else 'at most'} {expected}."
+                if not valid:
+                    add_issue(position + 1, column, f"Custom: {kind}", value, suggestion)
+            report_progress(position, "Checking custom rule", column)
 
     for position in np.flatnonzero(duplicate_mask.to_numpy()):
         add_issue(
@@ -893,12 +940,16 @@ def reset_quality_caches():
     st.session_state["batch_export_cache"] = None
 
 
-def column_rule_signature(email_columns, date_columns, numeric_columns, iqr_multiplier):
+def column_rule_signature(email_columns, date_columns, numeric_columns, iqr_multiplier,
+                          enabled_checks=None, custom_rules=None):
     return (
         tuple(sorted(repr(column) for column in email_columns)),
         tuple(sorted(repr(column) for column in date_columns)),
         tuple(sorted(repr(column) for column in numeric_columns)),
         float(iqr_multiplier),
+        tuple(sorted(enabled_checks)) if enabled_checks is not None else None,
+        tuple((repr(rule["column"]), rule["kind"], rule["expected"])
+              for rule in (custom_rules or [])),
     )
 
 
@@ -1126,6 +1177,12 @@ st.markdown(
     .sidebar-section-label {
         margin: 18px 0 4px; color: #52716a; font-size: .68rem;
         font-weight: 760; letter-spacing: .13em; text-transform: uppercase;
+    }
+    .st-key-settings_anchor {position: fixed; bottom: 16px; left: 30px; z-index: 20;}
+    section[data-testid="stSidebar"] [data-testid="stSidebarContent"] {padding-bottom: 72px;}
+    .st-key-settings_button button p {
+        position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+        overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
     }
     .dashboard-intro {
         margin: 1rem 0 .25rem; padding: 16px 19px;
@@ -1368,6 +1425,161 @@ def brand_logo(variant):
         f'stroke-linecap="round" stroke-linejoin="round"/></svg>'
     )
 
+def delete_custom_rule(rules_key, selector_key, index):
+    st.session_state[rules_key].pop(index)
+    st.session_state[selector_key] = 0
+
+
+def render_settings(anchor, columns=None, defaults=None, column_signature=None):
+    """Render model and active-file inspection controls in one sidebar menu."""
+    with anchor:
+        with st.popover(
+            "Settings",
+            icon=":material/settings:",
+            help="LLM and inspection settings",
+            key="settings_button",
+        ):
+            st.subheader("Settings")
+            model_tab, checks_tab = st.tabs(["LLM assistant", "Inspection checks"])
+            with model_tab:
+                st.markdown("**Connect your own LLM**")
+                st.caption(
+                    "Use an OpenAI-compatible Chat Completions endpoint. Settings stay "
+                    "in this session and are not saved to files."
+                )
+                st.text_input(
+                    "Chat Completions URL",
+                    placeholder="https://your-provider.example/v1/chat/completions",
+                    key="assistant_api_url",
+                    help="Enter the full endpoint URL, including /chat/completions.",
+                )
+                st.text_input("Model ID", placeholder="your-model-name", key="assistant_model_id")
+                st.text_input(
+                    "API key", type="password", key="assistant_api_key",
+                    help="The key is sent only to the endpoint URL you configure.",
+                )
+                st.checkbox(
+                    "Allow sending the active dataset to this endpoint",
+                    value=False, key="assistant_share_dataset",
+                    help="When enabled, each assistant request includes every row in the active file.",
+                )
+                st.warning(
+                    "When sharing is enabled, the configured provider receives the complete "
+                    "active dataset and your questions. Use only a trusted endpoint."
+                )
+                st.caption(
+                    "The local assistant remains available when sharing is off. "
+                    "Requests over 10 MB are rejected."
+                )
+                st.button(
+                    "Clear model settings", on_click=clear_assistant_settings,
+                    width="stretch", key="clear_assistant_settings",
+                )
+            with checks_tab:
+                st.markdown("**Built-in checks**")
+                st.caption("Choose which checks run. Changes rescan the active file.")
+                checks = {}
+                for key, label in (
+                    ("missing", "Missing values"),
+                    ("duplicates", "Duplicate rows"),
+                    ("email", "Invalid email formats"),
+                    ("date", "Invalid and inconsistent dates"),
+                    ("outliers", "Numeric outliers"),
+                ):
+                    checks[key] = st.checkbox(label, value=True, key=f"check_{key}")
+                enabled_checks = {key for key, enabled in checks.items() if enabled}
+                if columns is None:
+                    st.info("Upload a file or load a sample to configure columns and custom rules.")
+                    return None
+                email_defaults, date_defaults, numeric_defaults = defaults
+                st.markdown("**Column rules for the active file**")
+                email_columns = st.multiselect(
+                    "Treat columns as Email", options=columns, default=email_defaults,
+                    key=f"rule_email_columns_{column_signature}",
+                    help="Selected columns are checked for valid email addresses.",
+                )
+                date_columns = st.multiselect(
+                    "Treat columns as Date", options=columns, default=date_defaults,
+                    key=f"rule_date_columns_{column_signature}",
+                    help="Selected columns are checked for valid and consistent dates.",
+                )
+                numeric_columns = st.multiselect(
+                    "Treat columns as Numeric", options=columns, default=numeric_defaults,
+                    key=f"rule_numeric_columns_{column_signature}",
+                    help="Selected columns are checked for outliers and used for numeric fixes.",
+                )
+                iqr_multiplier = st.slider(
+                    "IQR outlier multiplier", min_value=1.5, max_value=3.0,
+                    value=1.5, step=0.1, format="%.1f×",
+                    help="Values outside Q1 − multiplier × IQR or Q3 + multiplier × IQR are flagged.",
+                )
+                st.markdown("**Custom column rules**")
+                st.caption(
+                    "Add as many rules as needed for this file. Missing values are handled "
+                    "by the missing-values check. Custom findings require manual review."
+                )
+                rules_key = f"custom_rules_{column_signature}"
+                rules = st.session_state.setdefault(rules_key, [])
+                rule_choices = ["New rule"] + [
+                    f"{index + 1}. {rule['column']} · {rule['kind']}"
+                    for index, rule in enumerate(rules)
+                ]
+                selected_rule = st.selectbox(
+                    "Rule to edit", options=range(len(rule_choices)),
+                    format_func=lambda index: rule_choices[index],
+                    key=f"edit_rule_{column_signature}",
+                )
+                selected = rules[selected_rule - 1] if selected_rule else None
+                kinds = ["Must contain", "Allowed values", "Minimum number", "Maximum number"]
+                with st.form(key=f"custom_rule_form_{column_signature}_{selected_rule}"):
+                    rule_column = st.selectbox(
+                        "Rule column", columns,
+                        index=columns.index(selected["column"]) if selected else 0,
+                    )
+                    rule_kind = st.selectbox(
+                        "Rule type", kinds,
+                        index=kinds.index(selected["kind"]) if selected else 0,
+                    )
+                    expected = st.text_input(
+                        "Expected value", value=selected["expected"] if selected else "",
+                        help="Text to include, comma-separated allowed values, or a numeric limit.",
+                    )
+                    save_rule = st.form_submit_button(
+                        "Save changes" if selected else "Add rule", width="stretch"
+                    )
+                if save_rule:
+                    expected = expected.strip()
+                    error = None
+                    if not expected:
+                        error = "Enter an expected value."
+                    elif rule_kind == "Allowed values" and not any(
+                        part.strip() for part in expected.split(",")
+                    ):
+                        error = "Enter at least one allowed value."
+                    elif rule_kind in ("Minimum number", "Maximum number"):
+                        try:
+                            if not np.isfinite(float(expected)):
+                                raise ValueError
+                        except ValueError:
+                            error = "Enter a finite number for the limit."
+                    if error:
+                        st.error(error)
+                    else:
+                        rule = {"column": rule_column, "kind": rule_kind, "expected": expected}
+                        if selected_rule:
+                            rules[selected_rule - 1] = rule
+                        else:
+                            rules.append(rule)
+                        st.rerun()
+                if selected_rule:
+                    st.button(
+                        "Delete selected rule", key=f"delete_rule_{column_signature}",
+                        width="stretch", on_click=delete_custom_rule,
+                        args=(rules_key, f"edit_rule_{column_signature}", selected_rule - 1),
+                    )
+                return email_columns, date_columns, numeric_columns, iqr_multiplier, enabled_checks, list(rules)
+
+
 header_col, demo_button_col = st.columns([4, 1.05], vertical_alignment="center")
 with header_col:
     st.markdown(
@@ -1409,55 +1621,6 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
     st.caption("Your data quality command center")
-    with st.popover(
-        "LLM assistant settings",
-        icon=":material/settings:",
-        width="stretch",
-        help="Connect your own OpenAI-compatible model",
-    ):
-        st.markdown("**Connect your own LLM**")
-        st.caption(
-            "Optional OpenAI-compatible Chat Completions endpoint. Settings are kept "
-            "in this app session and are not written to files."
-        )
-        st.text_input(
-            "Chat Completions URL",
-            placeholder="https://your-provider.example/v1/chat/completions",
-            key="assistant_api_url",
-            help="Enter the full endpoint URL, including /chat/completions.",
-        )
-        st.text_input(
-            "Model ID",
-            placeholder="your-model-name",
-            key="assistant_model_id",
-        )
-        st.text_input(
-            "API key",
-            type="password",
-            key="assistant_api_key",
-            help="The key is sent only to the endpoint URL you configure.",
-        )
-        st.checkbox(
-            "Allow sending the active dataset to this endpoint",
-            value=False,
-            key="assistant_share_dataset",
-            help="When enabled, each assistant request includes every row in the active file.",
-        )
-        st.warning(
-            "When sharing is enabled, the configured provider receives the complete "
-            "active dataset and your questions. Only use an endpoint you trust; do not "
-            "send sensitive data unless you have approval."
-        )
-        st.caption(
-            "The local assistant remains available when dataset sharing is off. "
-            "Requests larger than 10 MB are rejected rather than truncated."
-        )
-        st.button(
-            "Clear model settings",
-            on_click=clear_assistant_settings,
-            width="stretch",
-            key="clear_assistant_settings",
-        )
     st.markdown('<div class="sidebar-section-label">01 &nbsp; Add your data</div>', unsafe_allow_html=True)
     uploaded_files = st.file_uploader(
         "Drop your data files here",
@@ -1488,6 +1651,7 @@ with st.sidebar:
         icon=":material/folder_zip:",
     )
     st.caption("Synthetic test data · CSV and Excel · Session-only processing")
+    settings_anchor = st.container(key="settings_anchor")
 
 if load_sample_clicked:
     with st.status(
@@ -1602,9 +1766,11 @@ if uploaded_files and upload_signatures != st.session_state.get(
         st.warning(file_error)
     if not loaded_datasets:
         st.error("No files could be analyzed. Check the file format and try again.")
+        render_settings(settings_anchor)
         st.stop()
 
 if not datasets:
+    render_settings(settings_anchor)
     st.markdown(
         """
         <section class="welcome-panel" aria-labelledby="welcome-title">
@@ -1705,47 +1871,21 @@ column_signature = hashlib.sha256(
 ).hexdigest()[:12]
 email_defaults, date_defaults, numeric_defaults = infer_column_rules(data)
 
-with st.sidebar:
-    st.markdown('<div class="sidebar-section-label">02 &nbsp; Configure checks</div>', unsafe_allow_html=True)
-    with st.expander("Column Rules", expanded=False):
-        email_columns = st.multiselect(
-            "Treat columns as Email",
-            options=columns,
-            default=email_defaults,
-            key=f"rule_email_columns_{column_signature}",
-            help="Selected columns are checked for valid email addresses.",
-        )
-        date_columns = st.multiselect(
-            "Treat columns as Date",
-            options=columns,
-            default=date_defaults,
-            key=f"rule_date_columns_{column_signature}",
-            help="Selected columns are checked for valid and consistent date formats.",
-        )
-        numeric_columns = st.multiselect(
-            "Treat columns as Numeric",
-            options=columns,
-            default=numeric_defaults,
-            key=f"rule_numeric_columns_{column_signature}",
-            help="Selected columns are checked for outliers; numeric text values are parsed when possible.",
-        )
-        iqr_multiplier = st.slider(
-            "IQR outlier multiplier",
-            min_value=1.5,
-            max_value=3.0,
-            value=1.5,
-            step=0.1,
-            format="%.1f×",
-            help="Values outside Q1 − multiplier × IQR or Q3 + multiplier × IQR are flagged.",
-        )
-    st.divider()
-    st.caption("Checks include missing values, exact duplicates, email/date formats, and numeric outliers.")
+(
+    email_columns, date_columns, numeric_columns, iqr_multiplier,
+    enabled_checks, custom_rules,
+) = render_settings(
+    settings_anchor, columns, (email_defaults, date_defaults, numeric_defaults),
+    column_signature,
+)
 
 rule_signature = column_rule_signature(
     email_columns,
     date_columns,
     numeric_columns,
     iqr_multiplier,
+    enabled_checks,
+    custom_rules,
 )
 quality_scan_cache = st.session_state.setdefault("quality_scan_cache", {})
 cached_scan = quality_scan_cache.get(active_dataset)
@@ -1781,6 +1921,8 @@ else:
             numeric_columns=numeric_columns,
             iqr_multiplier=iqr_multiplier,
             progress_callback=update_inspection_progress,
+            enabled_checks=enabled_checks,
+            custom_rules=custom_rules,
         )
         inspection_progress.empty()
         inspection_loader.empty()
@@ -1807,9 +1949,10 @@ batch_row_count = sum(len(frame) for frame in datasets.values())
 
 findings_step = (
     f"{issue_count:,} finding{'s' if issue_count != 1 else ''} · "
-    f"{duplicate_count:,} duplicate row{'s' if duplicate_count != 1 else ''}"
+    + (f"{duplicate_count:,} duplicate row{'s' if duplicate_count != 1 else ''}"
+       if "duplicates" in enabled_checks else "duplicate check off")
     if issue_count
-    else "No issues found"
+    else "No findings under enabled checks"
 )
 findings_status = "workflow-step-findings" if issue_count else "workflow-step-clear"
 findings_icon = "!" if issue_count else "✓"
@@ -1827,6 +1970,10 @@ st.caption(
     f"Workspace · {len(datasets):,} file(s) · {batch_row_count:,} rows total · "
     f"Inspecting **{active_dataset}** · {int(data.memory_usage(deep=True).sum() / 1024):,} KB in memory"
 )
+if len(enabled_checks) < 5:
+    st.warning(
+        "Some built-in checks are turned off. Results only reflect the checks enabled in settings."
+    )
 if set(CONNECTED_SAMPLE_FILES).issubset(datasets):
     with st.expander("How the sample files connect"):
         st.caption(
@@ -1839,7 +1986,7 @@ metric_cards = [
     ("health", "📈 Data Health Score", f"{health_score}%", "How the quality score is calculated"),
     ("rows", "📋 Total Rows", f"{len(data):,}", "Dataset size and duplicate-row summary"),
     ("issues", "⚠️ Total Issues Found", f"{issue_count:,}", "Breakdown of detected issues"),
-    ("duplicates", "⧉ Duplicate Rows", f"{duplicate_count:,}", "Exact duplicate row details"),
+    ("duplicates", "⧉ Duplicate Rows", f"{duplicate_count:,}" if "duplicates" in enabled_checks else "Not checked", "Exact duplicate row details"),
 ]
 with st.container(key="metric_cards"):
     metric_columns = st.columns(4)
@@ -1871,6 +2018,7 @@ if selected_metric:
                 f"There are **{flagged_cells:,} flagged findings** across "
                 f"**{total_cells:,} cells** ({data.shape[0]:,} rows × {data.shape[1]:,} columns)."
             )
+            st.caption("This score reflects only enabled checks and the custom rules for this file.")
             if issues.empty:
                 st.success("No quality issues are currently detected.")
             else:
@@ -1889,8 +2037,8 @@ if selected_metric:
             row_col, column_col, unique_col, duplicate_col = st.columns(4)
             row_col.metric("Rows in dataset", f"{len(data):,}")
             column_col.metric("Columns", f"{len(data.columns):,}")
-            unique_col.metric("Rows after deduplication", f"{unique_rows:,}")
-            duplicate_col.metric("Rows duplicated", f"{duplicate_percent:.1f}%")
+            unique_col.metric("Rows after deduplication", f"{unique_rows:,}" if "duplicates" in enabled_checks else "Not checked")
+            duplicate_col.metric("Rows duplicated", f"{duplicate_percent:.1f}%" if "duplicates" in enabled_checks else "Not checked")
             st.caption(
                 "Row numbers in the issue log refer to the displayed data order, starting at 1."
             )
@@ -1922,7 +2070,9 @@ if selected_metric:
         elif selected_metric == "duplicates":
             duplicate_mask = data.duplicated(keep="first").to_numpy()
             duplicate_positions = np.flatnonzero(duplicate_mask)
-            if duplicate_count == 0:
+            if "duplicates" not in enabled_checks:
+                st.info("The duplicate check is turned off in settings.")
+            elif duplicate_count == 0:
                 st.success("No exact duplicate rows are currently detected.")
             else:
                 duplicate_rows = data.iloc[duplicate_positions].copy()
@@ -1955,7 +2105,7 @@ with overview_tab:
         st.subheader("Findings by column")
         st.caption("Columns with the most findings appear first. A finding is a review candidate, not always an error.")
         if issues.empty:
-            st.success("This dataset is looking healthy. No issues were found by the active checks.")
+            st.success("No findings were found by the enabled checks.")
         else:
             issue_counts = (
                 issues.groupby("Column Name", as_index=False)
@@ -2034,7 +2184,9 @@ with overview_tab:
         st.subheader("Missing values by column")
         st.caption("Percentage of rows with a missing value in each column.")
         missing_profile = column_profile.sort_values("Missing %", ascending=False)
-        if int(missing_profile["Missing"].sum()) == 0:
+        if "missing" not in enabled_checks:
+            st.info("The missing-values check is turned off in settings.")
+        elif int(missing_profile["Missing"].sum()) == 0:
             st.success("Every column is complete under the current missing-value check.")
         else:
             missing_chart = px.bar(
@@ -2090,8 +2242,12 @@ with overview_tab:
             recommendations.append(
                 ("Check statistical outliers against the source before changing values.", "Numeric Outlier")
             )
+        if any(issue_type.startswith("Custom: ") for issue_type in issue_types):
+            recommendations.append(
+                ("Review values that do not meet your custom column rules in the issue log.", "Custom")
+            )
         if not recommendations:
-            st.success("No action needed — your data looks great.")
+            st.success("No findings were detected by the enabled checks.")
             st.markdown("Preview the dataset or export a cleaned copy whenever you’re ready.")
         else:
             for index, (recommendation, _) in enumerate(recommendations, start=1):
@@ -2101,7 +2257,7 @@ with overview_tab:
             st.markdown(
                 "- Each finding represents a detected value or duplicate row, not a confirmed business error.\n"
                 "- Statistical outliers are review candidates, not automatic corrections.\n"
-                "- Change the column rules in the sidebar to match your data."
+                "- Use the settings icon at the bottom of the sidebar to adjust checks and column rules."
             )
 
     st.divider()
@@ -2150,10 +2306,10 @@ with overview_tab:
                     distribution, width="stretch", config={"displayModeBar": False}
                 )
     else:
-        st.info("Choose a Numeric column in the sidebar to explore its distribution.")
+        st.info("Choose a Numeric column in settings to explore its distribution.")
 
     with st.expander("Column profile", expanded=False):
-        st.caption("Automatically inferred types can be adjusted in Column Rules.")
+        st.caption("Automatically inferred types can be adjusted in settings.")
         st.dataframe(column_profile, width="stretch", hide_index=True)
 
 with issues_tab:
@@ -2350,6 +2506,8 @@ with review_tab:
                     numeric_columns=numeric_columns,
                     iqr_multiplier=iqr_multiplier,
                     progress_callback=update_review_progress,
+                    enabled_checks=enabled_checks,
+                    custom_rules=custom_rules,
                 )
                 review_progress.empty()
                 review_loader.empty()
@@ -2572,8 +2730,10 @@ with assistant_tab:
     st.subheader("🤖 Data Quality Copilot")
     st.caption(
         f"Ask questions about **{active_dataset}**. I use its live scan, column profile, "
-        "and current Column Rules to answer."
+        "and current inspection settings to answer."
     )
+    if len(enabled_checks) < 5:
+        st.caption("Some checks are turned off; answers based on findings only cover enabled checks.")
     if assistant_share_dataset and not assistant_configured:
         st.error(
             "Dataset sharing is enabled, but the endpoint URL, model ID, and API key "
@@ -2628,7 +2788,9 @@ with assistant_tab:
     with context_column:
         st.caption(
             f"Current context · {len(data):,} rows · {len(data.columns):,} columns · "
-            f"{len(issues):,} findings · {duplicate_count:,} duplicate rows"
+            f"{len(issues):,} findings · "
+            + (f"{duplicate_count:,} duplicate rows" if "duplicates" in enabled_checks
+               else "duplicate check off")
         )
     with clear_column:
         clear_chat = st.button(
@@ -2709,6 +2871,7 @@ with assistant_tab:
                     health_score,
                     column_profile,
                     active_dataset,
+                    enabled_checks=enabled_checks,
                 )
                 assistant_loader.empty()
                 assistant_status.update(

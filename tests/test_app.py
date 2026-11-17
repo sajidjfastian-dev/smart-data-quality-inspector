@@ -111,6 +111,115 @@ class QuickSampleTests(unittest.TestCase):
         self.assertEqual(self.app.session_state["assistant_model_id"], "")
         self.assertEqual(self.app.session_state["assistant_api_key"], "")
 
+    def test_each_builtin_check_can_be_disabled_and_restored(self):
+        self.load_sample()
+        categories = {
+            "Missing values": {"Missing Value"},
+            "Duplicate rows": {"Duplicate Row"},
+            "Invalid email formats": {"Invalid Email"},
+            "Invalid and inconsistent dates": {"Invalid Date", "Inconsistent Date Format"},
+            "Numeric outliers": {"Numeric Outlier"},
+        }
+        for label, disabled_types in categories.items():
+            with self.subTest(label=label):
+                self.widget("checkbox", label).uncheck().run()
+                self.assert_no_exception()
+                issues = self.app.session_state["quality_scan_cache"][SAMPLE]["issues"]
+                self.assertTrue(disabled_types.isdisjoint(set(issues["Issue Type"])))
+                if label == "Duplicate rows":
+                    self.assertEqual(self.app.session_state["quality_scan_cache"][SAMPLE]["duplicates"], 0)
+                self.widget("checkbox", label).check().run()
+                self.assert_no_exception()
+                self.assertEqual(
+                    self.issue_keys(self.app.session_state["quality_scan_cache"][SAMPLE]["issues"]),
+                    EXPECTED_ISSUES,
+                )
+
+    def test_custom_rule_add_edit_delete_and_fixed_preview_rescan(self):
+        data = self.load_sample()
+        self.widget("selectbox", "Rule column").select("age")
+        self.widget("selectbox", "Rule type").select("Minimum number")
+        self.widget("text_input", "Expected value").set_value("30")
+        self.click("Add rule")
+        issues = self.app.session_state["quality_scan_cache"][SAMPLE]["issues"]
+        custom = issues[issues["Issue Type"] == "Custom: Minimum number"]
+        expected_rows = {
+            index + 1 for index, value in enumerate(data["age"])
+            if value is not None and value == value and float(value) < 30
+        }
+        self.assertEqual(set(custom["Row Number"]), expected_rows)
+        self.click("Apply selected fixes")
+        self.assertTrue(any(
+            self.app.session_state["review_scan_cache"][SAMPLE]["issues"]["Issue Type"]
+            == "Custom: Minimum number"
+        ))
+        self.widget("selectbox", "Rule to edit").select(1).run()
+        self.assert_no_exception()
+        self.widget("text_input", "Expected value").set_value("100")
+        self.click("Save changes")
+        updated = self.app.session_state["quality_scan_cache"][SAMPLE]["issues"]
+        self.assertGreater(
+            len(updated[updated["Issue Type"] == "Custom: Minimum number"]), len(custom)
+        )
+        review_updated = self.app.session_state["review_scan_cache"][SAMPLE]["issues"]
+        self.assertGreater(
+            len(review_updated[review_updated["Issue Type"] == "Custom: Minimum number"]),
+            len(custom),
+        )
+        self.click("Delete selected rule")
+        self.assertNotIn(
+            "Custom: Minimum number",
+            set(self.app.session_state["quality_scan_cache"][SAMPLE]["issues"]["Issue Type"]),
+        )
+        self.assertNotIn(
+            "Custom: Minimum number",
+            set(self.app.session_state["review_scan_cache"][SAMPLE]["issues"]["Issue Type"]),
+        )
+
+    def test_custom_rule_rejects_invalid_numeric_limit(self):
+        self.load_sample()
+        self.widget("selectbox", "Rule column").select("age")
+        self.widget("selectbox", "Rule type").select("Minimum number")
+        self.widget("text_input", "Expected value").set_value("not-a-number")
+        self.click("Add rule")
+        self.assertTrue(any("finite number" in error.value for error in self.app.error))
+        self.assertEqual(
+            self.issue_keys(self.app.session_state["quality_scan_cache"][SAMPLE]["issues"]),
+            EXPECTED_ISSUES,
+        )
+
+    def test_custom_text_allowed_values_and_maximum_rules(self):
+        data = self.load_sample()
+        cases = [
+            ("name", "Must contain", "a", lambda value: "a" not in str(value).strip().lower()),
+            ("region", "Allowed values", "North, South", lambda value: str(value).strip() not in {"North", "South"}),
+            ("age", "Maximum number", "40", lambda value: float(value) > 40),
+        ]
+        for column, kind, expected, is_invalid in cases:
+            with self.subTest(kind=kind):
+                self.widget("selectbox", "Rule column").select(column)
+                self.widget("selectbox", "Rule type").select(kind)
+                self.widget("text_input", "Expected value").set_value(expected)
+                self.click("Add rule")
+                issues = self.app.session_state["quality_scan_cache"][SAMPLE]["issues"]
+                observed = set(issues.loc[issues["Issue Type"] == f"Custom: {kind}", "Row Number"])
+                expected_rows = {
+                    index + 1 for index, value in enumerate(data[column])
+                    if value is not None and value == value
+                    and str(value).strip() and is_invalid(value)
+                }
+                self.assertEqual(observed, expected_rows)
+
+    def test_assistant_reports_duplicate_check_disabled(self):
+        self.load_sample()
+        self.widget("checkbox", "Duplicate rows").uncheck().run()
+        self.assert_no_exception()
+        self.click("🔁 How many rows are duplicates?")
+        self.assertTrue(any(
+            "duplicate check is turned off" in item.value.lower()
+            for item in self.app.markdown
+        ))
+
     def test_default_fixes_change_only_safe_cells_and_one_duplicate(self):
         original = self.load_sample().copy(deep=True)
         for label in FIX_LABELS:
