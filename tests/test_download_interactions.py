@@ -109,6 +109,13 @@ class DownloadInteractionTests(unittest.TestCase):
     def upload(self, files):
         self.page.locator('input[type="file"]').set_input_files(files)
         self.page.get_by_role("tab", name="3 · Review & fix").wait_for()
+        self.review_privacy()
+
+    def review_privacy(self):
+        self.page.get_by_role("button", name="Settings", exact=True).click()
+        self.page.get_by_role("tab", name="Data privacy").click()
+        self.page.get_by_text("I reviewed all columns for sensitive data", exact=True).click()
+        self.page.get_by_role("button", name="Settings", exact=True).click()
 
     def click_tab(self, name):
         self.page.get_by_role("tab", name=name).click()
@@ -228,7 +235,43 @@ class DownloadInteractionTests(unittest.TestCase):
         self.page.get_by_role("button", name="التبديل إلى الإنجليزية").click()
         self.page.get_by_role("heading", name="Turn data into decisions.").wait_for()
         self.assertEqual(self.page.locator("html").get_attribute("dir"), "ltr")
-        self.assertEqual(self.page.locator("footer.app-footer").count(), 1)
+        self.assertEqual(self.page.locator("#inspector-footer-source").count(), 1)
+
+    def test_landing_motion_menu_and_full_width_footer(self):
+        self.page.get_by_role("button", name="Pause workflow animation").click()
+        self.page.get_by_role("button", name="Resume workflow animation").wait_for()
+        self.assertEqual(self.page.locator(".journey-icon").first.evaluate(
+            "el => getComputedStyle(el, '::after').animationPlayState"
+        ), "paused")
+        menu = self.page.locator(".st-key-workspace_menu")
+        menu.get_by_text("Inspect & review", exact=True).click()
+        self.assertTrue(menu.get_by_role("button", name="Overview", exact=True).is_disabled())
+        menu.get_by_text("Settings", exact=True).click()
+        menu.get_by_role("button", name="Data privacy", exact=True).click()
+        self.page.get_by_role("tab", name="Data privacy").wait_for(state="visible")
+        self.assertEqual(self.page.get_by_role("tab", name="Data privacy").get_attribute("aria-selected"), "true")
+        self.page.keyboard.press("Escape")
+        for width in (1280, 390):
+            self.page.set_viewport_size({"width": width, "height": 844})
+            self.page.locator("#inspector-footer-source").evaluate("el => el.scrollIntoView({block: 'end'})")
+            self.page.wait_for_function("""() => {
+                const f = document.getElementById('inspector-viewport-footer');
+                return f && getComputedStyle(f).visibility === 'visible';
+            }""")
+            rect = self.page.locator("#inspector-viewport-footer").bounding_box()
+            self.assertAlmostEqual(rect["x"], 0, delta=1)
+            self.assertAlmostEqual(rect["width"], width, delta=1)
+            self.assertTrue(self.page.evaluate(
+                "() => document.documentElement.scrollWidth <= innerWidth"
+            ))
+
+    def test_sidebar_menu_selects_workspace_tab(self):
+        self.upload([{"name": "menu.csv", "mimeType": "text/csv", "buffer": CSV_INPUT}])
+        menu = self.page.locator(".st-key-workspace_menu")
+        menu.get_by_text("Inspect & review", exact=True).click()
+        menu.get_by_role("button", name="Issue log", exact=True).click()
+        self.page.wait_for_function("""() => [...document.querySelectorAll('[role=tab]')]
+            .some(tab => tab.textContent.includes('2 · Issue log') && tab.getAttribute('aria-selected') === 'true')""")
 
     def test_fixed_csv_download_reflects_applied_fixes(self):
         self.upload([{"name": "customer records.csv", "mimeType": "text/csv", "buffer": CSV_INPUT}])
@@ -243,8 +286,8 @@ class DownloadInteractionTests(unittest.TestCase):
         self.assertEqual(filename, "customer records_fixed.csv")
         self.assertTrue(content.startswith(b"\xef\xbb\xbf"))
         self.assert_data(pd.read_csv(BytesIO(content)), [
-            [1, "Alice", 10.0, "2024-01-20"],
-            [2, "Bob", 10.0, "2024-02-21"],
+            ["••••", "••••", 10.0, "2024-01-20"],
+            ["••••", "••••", 10.0, "2024-02-21"],
         ])
 
     def test_fixed_excel_download_honors_selected_fixes(self):
@@ -262,9 +305,9 @@ class DownloadInteractionTests(unittest.TestCase):
         filename, content = self.download("Download fixed file (XLSX)")
         self.assertEqual(filename, "sales_fixed.xlsx")
         self.assert_data(pd.read_excel(BytesIO(content), sheet_name="Fixed data"), [
-            [7, "Zoe", 20.0, "2024-03-18"],
-            [8, "Kai", 20.0, "2024-04-19"],
-            [7, "Zoe", 20.0, "2024-03-18"],
+            ["••••", "••••", 20.0, "2024-03-18"],
+            ["••••", "••••", 20.0, "2024-04-19"],
+            ["••••", "••••", 20.0, "2024-03-18"],
         ])
 
     def test_prepared_batch_download_contains_each_cleaned_file(self):
@@ -272,6 +315,9 @@ class DownloadInteractionTests(unittest.TestCase):
             {"name": "customer records.csv", "mimeType": "text/csv", "buffer": CSV_INPUT},
             {"name": "sales.xlsx", "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "buffer": excel_bytes()},
         ])
+        self.page.get_by_role("combobox", name="Active file").click()
+        self.page.get_by_role("option", name="sales.xlsx").click()
+        self.review_privacy()
         self.click_tab("4 · Preview & export")
         self.assertEqual(self.page.get_by_role("button", name="Download all cleaned files").count(), 0)
         self.page.get_by_role("button", name="Prepare cleaned batch ZIP").click()
@@ -287,12 +333,12 @@ class DownloadInteractionTests(unittest.TestCase):
             self.assertEqual(len(archive.namelist()), 2)
             self.assertIsNone(archive.testzip())
             self.assert_data(pd.read_csv(BytesIO(archive.read("customer_records_cleaned.csv"))), [
-                [1, "Alice", 10.0, "2024/01/20"],
-                [2, "Bob", 10.0, "2024/02/21"],
+                ["••••", "••••", 10.0, "2024/01/20"],
+                ["••••", "••••", 10.0, "2024/02/21"],
             ])
             self.assert_data(pd.read_csv(BytesIO(archive.read("sales.xlsx_cleaned.csv"))), [
-                [7, "Zoe", 20.0, "2024/03/18"],
-                [8, "Kai", 20.0, "2024/04/19"],
+                ["••••", "••••", 20.0, "2024/03/18"],
+                ["••••", "••••", 20.0, "2024/04/19"],
             ])
 
 

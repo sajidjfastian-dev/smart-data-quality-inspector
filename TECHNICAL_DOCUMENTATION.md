@@ -329,21 +329,21 @@ and password-masked API key in the sidebar's **LLM assistant settings**. The
 endpoint and key are held in Streamlit session state only and are not written
 to files.
 
-Dataset sharing is a separate, explicit opt-in and defaults off. When enabled,
-each request sends the complete active dataset, column profile, current
-quality-finding counts, recent conversation, and question to the configured
-endpoint. This allows broader natural-language analysis, but the provider
-receives the uploaded data and applies its own privacy and retention terms. The
-app limits the serialized request to 10 MB and rejects oversized requests
-rather than silently truncating data. Use only a trusted endpoint and avoid
-sending sensitive data without approval. Local mode remains available when
-sharing is off or no endpoint is configured.
+Dataset sharing is a separate, explicit opt-in and defaults off. After the user
+reviews the sensitive columns, each request sends a masked copy of the active
+dataset, column profile, finding counts, recent conversation, and question to
+the configured endpoint. Automatic detection is not complete; users must mark
+additional sensitive columns and must not put sensitive information in chat.
+Filenames and column names are not generally anonymized. Requests larger than
+10 MB are rejected. Local mode remains available when sharing is off.
 
 The app sends a non-streaming OpenAI-compatible Chat Completions request with
-a 60-second timeout and does not expose the API key in the UI or assistant
+a 20-second connection timeout and does not expose the API key in the UI or assistant
 conversation. Provider/network/response errors are surfaced to the user. The
 model is instructed to treat dataset cell contents as untrusted data and not
 as instructions; its answers are informational and do not alter the dataset.
+Only public HTTPS endpoints on port 443 are supported, with verified TLS and
+redirects and private/local addresses blocked.
 
 ## 10. State, caching, and loader lifecycle
 
@@ -377,9 +377,11 @@ The application does not intentionally write uploaded data or model credentials
 to disk or a database. It reads uploaded bytes into memory and works with
 in-memory DataFrames and buffers. Download artifacts are generated in memory.
 No external model is contacted unless a user configures an endpoint and opts in
-to dataset sharing. In that case, the complete active dataset and recent
-conversation are sent to the configured provider for each assistant request;
-review that provider's data-handling terms before enabling the option.
+to dataset sharing. After a privacy review and opt-in, a masked dataset and
+recent conversation are sent to the configured provider; review that
+provider's data-handling terms before enabling the option. Detection can miss
+sensitive information and is not a substitute for access control or a security
+and legal review.
 
 An upload is nevertheless sent to the server hosting Streamlit. Hosting
 providers may have their own infrastructure, logging, backups, retention, or
@@ -482,7 +484,7 @@ smoke checks:
 - The local assistant answers supported questions using current scan results.
   An optional configured OpenAI-compatible endpoint can answer broader
   questions only when dataset sharing is explicitly enabled; that request sends
-  the complete active dataset and recent conversation to the chosen provider.
+  a masked copy of the active dataset and recent conversation to the chosen provider.
 
 ## 15. Related project documentation
 

@@ -59,6 +59,7 @@ class DataInsightsUiTests(unittest.TestCase):
     def test_sample_navigation_and_insight_sections(self):
         app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"), default_timeout=30).run()
         load_test_fixture(app)
+        next(item for item in app.checkbox if item.label == "I reviewed all columns for sensitive data").check().run()
         app.session_state["dashboard_tabs"] = "6 · Data insights"
         app.run()
         self.assertFalse(app.exception)

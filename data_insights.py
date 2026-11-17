@@ -3,6 +3,7 @@ from datetime import date, datetime
 
 import numpy as np
 import pandas as pd
+from security_guardrails import mask_dataframe
 import plotly.express as px
 import plotly.graph_objects as go
 from localization import st
@@ -98,7 +99,7 @@ def _chart_style(figure, x_title, y_title):
 
 
 def render_data_insights(data, column_profile, numeric_columns, date_columns,
-                         active_dataset, column_signature, parser):
+                         active_dataset, column_signature, parser, sensitive_columns=()):
     st.markdown(
         '<div class="dashboard-intro"><strong>See the bigger picture</strong>'
         '<span>Explore the shape, distributions, common values, and timeline of your active file.</span></div>',
@@ -137,11 +138,11 @@ def render_data_insights(data, column_profile, numeric_columns, date_columns,
             st.dataframe(column_profile, width="stretch", hide_index=True)
             st.subheader("A look at the data")
             st.caption("The first 10 rows of the active file.")
-            st.dataframe(data.head(10), width="stretch", hide_index=True)
+            st.dataframe(mask_dataframe(data.head(10), sensitive_columns), width="stretch", hide_index=True)
 
     with numbers:
         if numbers.open:
-            options = [column for column in columns if column in numeric_columns]
+            options = [column for column in columns if column in numeric_columns and column not in sensitive_columns]
             if not options:
                 st.info("No numeric columns were detected. You can select numeric columns in settings.")
             else:
@@ -173,10 +174,11 @@ def render_data_insights(data, column_profile, numeric_columns, date_columns,
 
     with categories:
         if categories.open:
-            if not columns:
-                st.info("There are no columns to explore.")
+            safe_columns = [column for column in columns if column not in sensitive_columns]
+            if not safe_columns:
+                st.info("There are no unprotected columns to explore.")
             else:
-                selected = st.selectbox("Column to explore", columns, key=f"insight_category_{column_signature}")
+                selected = st.selectbox("Column to explore", safe_columns, key=f"insight_category_{column_signature}")
                 key = (active_dataset, column_signature, "category", repr(selected))
                 if key not in cache:
                     with st.spinner("Finding the most common values..."):
@@ -208,7 +210,7 @@ def render_data_insights(data, column_profile, numeric_columns, date_columns,
 
     with dates:
         if dates.open:
-            options = [column for column in columns if column in date_columns]
+            options = [column for column in columns if column in date_columns and column not in sensitive_columns]
             if not options:
                 st.info("No date columns were detected. You can select date columns in settings.")
             else:
@@ -235,7 +237,7 @@ def render_data_insights(data, column_profile, numeric_columns, date_columns,
 
     with relationships:
         if relationships.open:
-            options = [column for column in columns if column in numeric_columns]
+            options = [column for column in columns if column in numeric_columns and column not in sensitive_columns]
             if len(options) < 2:
                 st.info("Choose at least two numeric columns in settings to explore a relationship.")
             else:

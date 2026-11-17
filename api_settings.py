@@ -7,6 +7,7 @@ import pandas as pd
 from localization import st
 
 from api_connections import ApiConnectionError, SAMPLE_API_URL, fetch_api_data, push_api_data
+from security_guardrails import mask_dataframe
 
 
 def _auth_controls(prefix):
@@ -38,7 +39,8 @@ def _queue_import(url, data_format, json_path, auth_mode, secret, header_name, l
     st.rerun()
 
 
-def render_api_settings(active_dataset=None, data=None, fixed_data=None):
+def render_api_settings(active_dataset=None, data=None, fixed_data=None,
+                        sensitive_columns=None, privacy_reviewed=False):
     st.markdown("**Read data from an API**")
     st.caption(
         "GET a public HTTPS endpoint returning JSON, CSV, or Excel. For JSON, "
@@ -75,7 +77,7 @@ def render_api_settings(active_dataset=None, data=None, fixed_data=None):
     st.markdown("**Push data to an API**")
     st.caption(
         "Send the active file or its fixed copy using POST or PUT. "
-        "The destination receives every row in the selected copy."
+        "Protected columns are masked before sending."
     )
     destination_url = st.text_input(
         "Destination API URL", placeholder="https://api.example.com/records",
@@ -91,9 +93,11 @@ def render_api_settings(active_dataset=None, data=None, fixed_data=None):
         choice = st.selectbox("Data to send", copies, key=f"api_export_copy_{active_dataset}")
         send_data = fixed_data if choice == "Fixed copy" else data
         if choice == "Original data":
-            st.caption("This sends the original data without applying fixes.")
+            st.caption("This sends a masked copy of the original data without applying fixes.")
         else:
-            st.caption("This sends the copy produced by the selected fixes.")
+            st.caption("This sends a masked copy produced by the selected fixes.")
+        if not privacy_reviewed:
+            st.warning("Review sensitive columns in Data privacy before sending data.")
         st.caption(f"Selected: {active_dataset} · {len(send_data):,} rows · {len(send_data.columns):,} columns")
         # Bind consent to both the destination and the exact selected data.
         try:
@@ -106,7 +110,7 @@ def render_api_settings(active_dataset=None, data=None, fixed_data=None):
         consent_key = "approve_api_push_" + hashlib.sha256(
             json.dumps(
                 [destination_url, method, output_format, active_dataset, choice, data_digest,
-                 dest_auth, dest_header], ensure_ascii=False
+                 dest_auth, dest_header, sorted(map(str, sensitive_columns or ()))], ensure_ascii=False
             ).encode()
         ).hexdigest()
         approved = st.checkbox(
@@ -115,7 +119,7 @@ def render_api_settings(active_dataset=None, data=None, fixed_data=None):
         )
         if st.button(
             "Push data to API", key="push_external_api", type="primary",
-            width="stretch", disabled=not approved,
+            width="stretch", disabled=not approved or not privacy_reviewed,
         ):
             if not destination_url.strip():
                 st.error("Enter a destination API URL.")
@@ -123,7 +127,7 @@ def render_api_settings(active_dataset=None, data=None, fixed_data=None):
                 with st.spinner("Sending the selected data..."):
                     try:
                         status = push_api_data(
-                            destination_url, send_data, method, output_format,
+                            destination_url, mask_dataframe(send_data, sensitive_columns or ()), method, output_format,
                             dest_auth, dest_secret, dest_header,
                         )
                     except ApiConnectionError as error:

@@ -1,0 +1,107 @@
+/* Focused enhancements to the existing inspector, not a second application. */
+.welcome-copy {animation: inspector-reveal .7s cubic-bezier(.2,.7,.2,1) both;}
+.welcome-preview {container-type: inline-size; animation: inspector-reveal .8s .12s both;}
+.welcome-step {animation: inspector-reveal .65s both;}
+.welcome-step:nth-child(2) {animation-delay: .12s;}
+.welcome-step:nth-child(3) {animation-delay: .24s;}
+.welcome-step:nth-child(4) {animation-delay: .36s;}
+.journey-stage {--phase: 0s;}
+.journey-stage:nth-child(3) {--phase: 2s;}
+.journey-stage:nth-child(5) {--phase: 4s;}
+.journey-stage:nth-child(7) {--phase: 6s;}
+.journey-icon::after {
+    content: ""; position: absolute; inset: 0; border: 2px solid #e4c45f;
+    border-radius: inherit; pointer-events: none; opacity: 0;
+    animation: inspector-stage 8s var(--phase) infinite;
+}
+.journey-stage-label {font-size: .64rem; letter-spacing: .045em;}
+.journey-stage small {line-height: 1.5;}
+@container (max-width: 360px) {
+    .journey-visual {flex-wrap: wrap; gap: 18px 8px;}
+    .journey-stage {flex: 0 0 calc(50% - 4px);}
+    .journey-link {display: none;}
+    .journey-stage-label {font-size: .68rem; white-space: nowrap;}
+    .journey-stage small {font-size: .7rem;}
+}
+.journey-link::after {animation: inspector-packet 8s infinite;}
+.journey-link:nth-child(4)::after {animation-delay: 2s;}
+.journey-link:nth-child(6)::after {animation-delay: 4s;}
+.journey-scan-line {
+    top: 20%; box-shadow: none;
+    animation: inspector-scan 8s 2s ease-in-out infinite;
+}
+.journey-grid i {animation-duration: 8s;}
+.journey-bars i {animation-duration: 8s; animation-delay: 4s;}
+.journey-export-arrow {animation-duration: 8s; animation-delay: 6s;}
+.welcome-preview-badge::before {
+    content: ""; display: inline-block; width: 5px; height: 5px;
+    margin-inline-end: 6px; border-radius: 50%; background: #b6e9df;
+    animation: inspector-breathe 4s ease-in-out infinite;
+}
+.landing-privacy-note {
+    margin-block: 18px 0; padding-inline-start: 12px; border-inline-start: 2px solid #d6ae38;
+    color: #526b69; font-size: .76rem; line-height: 1.6;
+}
+.st-key-landing_motion {margin-block: .25rem .5rem;}
+.st-key-landing_motion button {font-size: .76rem; color: #365c59; background: #edf5f1;}
+html:has(.st-key-landing_motion_paused) .welcome-panel *,
+html:has(.st-key-landing_motion_paused) .welcome-panel *::before,
+html:has(.st-key-landing_motion_paused) .welcome-panel *::after {animation-play-state: paused !important;}
+.st-key-workspace_menu {margin-block: .4rem 1rem;}
+.st-key-workspace_menu [data-testid="stExpander"] {
+    border: 1px solid #dce8e3; background: #f1f6f3; border-radius: 12px;
+}
+.st-key-workspace_menu summary {min-height: 46px; color: #204f49;}
+.st-key-workspace_menu summary p {font-size: .82rem; font-weight: 650;}
+.st-key-workspace_menu button {
+    min-height: 39px; justify-content: flex-start; text-align: start;
+    padding-inline: 12px; border-color: transparent; background: transparent;
+    border-radius: 8px; color: #365c59;
+}
+.st-key-workspace_menu button p {font-size: .79rem;}
+.st-key-workspace_menu button:hover:not(:disabled) {background: #dfede6; transform: translateX(2px);}
+html[dir="rtl"] .st-key-workspace_menu button:hover:not(:disabled) {transform: translateX(-2px);}
+.st-key-workspace_menu button:focus-visible {outline: 3px solid #bc931c; outline-offset: 2px;}
+.st-key-workspace_menu button:disabled {opacity: .55;}
+/* A normal-flow settings panel replaces the old bottom-pinned icon. */
+.st-key-settings_anchor {position: static; margin-block: .25rem 1rem;}
+.st-key-settings_button button {width: 100%; min-height: 42px;}
+.st-key-settings_button button p {
+    position: static; width: auto; height: auto; margin: 0;
+    overflow: visible; clip: auto; white-space: normal;
+}
+.st-key-settings_anchor:has(.st-key-settings_menu_hint) [data-testid="stPopoverBody"] {max-width: 100%;}
+.app-footer {
+    box-sizing: border-box; border-top: 3px solid #d6ae38; border-radius: 0;
+    margin-top: 3rem; padding: 1.4rem clamp(22px, 4vw, 60px);
+    display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+    color: #d3e9e3; background: linear-gradient(105deg, #102d35, #164c4d 75%, #185269);
+    font-size: .83rem; overflow-wrap: anywhere;
+}
+.app-footer strong {display: block; color: #f3fcf8; font-size: .9rem; margin-bottom: .3rem;}
+.app-footer-links {display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;}
+.app-footer a {color: #c1f0e7; text-decoration: underline; text-underline-offset: 3px;}
+.app-footer a:focus-visible {outline: 3px solid #efcf71; outline-offset: 3px;}
+/* The projected footer occupies exactly its original normal-flow footprint. */
+#inspector-viewport-footer {position: fixed; inset-inline: 0; margin: 0; z-index: 1000000; visibility: hidden;}
+@keyframes inspector-reveal {from {opacity: 0; transform: translateY(14px);} to {opacity: 1; transform: none;}}
+@keyframes inspector-stage {0%,24% {opacity: 1;} 26%,100% {opacity: 0;}}
+@keyframes inspector-packet {0%,24%,100% {opacity: 0; transform: translateX(0);} 3% {opacity: 1;} 22% {opacity: 1; transform: translateX(15px);}}
+@keyframes inspector-scan {0%,24%,100% {transform: translateY(0); opacity: .35;} 12% {transform: translateY(28px); opacity: 1;}}
+@keyframes inspector-breathe {0%,100% {opacity: .4;} 50% {opacity: 1;}}
+@media (max-width: 760px) {
+    .welcome-preview {min-width: 0;}
+    .journey-visual {flex-wrap: wrap; gap: 16px 8px;}
+    .journey-stage {flex: 0 0 calc(50% - 4px);}
+    .journey-link {display: none;}
+    .journey-stage-label {font-size: .69rem;}
+    .journey-stage small {font-size: .7rem;}
+    .app-footer {gap: 18px; padding: 22px;}
+    .app-footer-links {gap: 10px 20px;}
+}
+@media (prefers-reduced-motion: reduce) {
+    .welcome-panel, .welcome-panel *, .welcome-panel *::before, .welcome-panel *::after {
+        animation: none !important; transition: none !important;
+    }
+    .st-key-workspace_menu button, .st-key-landing_motion button {transition: none !important; transform: none !important;}
+}

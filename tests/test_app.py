@@ -159,6 +159,8 @@ class QuickSampleTests(unittest.TestCase):
 
         with patch.object(st, "download_button", side_effect=capture_download):
             self.load_sample()
+            self.assertTrue(downloads[-1]["disabled"])
+            self.widget("checkbox", "I reviewed all columns for sensitive data").check().run()
             assert_report(EXPECTED_ISSUES)
 
             self.widget("selectbox", "Filter findings").select("Missing Value").run()

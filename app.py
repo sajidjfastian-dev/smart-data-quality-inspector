@@ -7,9 +7,7 @@ import re
 from datetime import date, datetime
 from io import BytesIO, StringIO
 from pathlib import Path
-from urllib.error import HTTPError, URLError
-from urllib.parse import urlsplit
-from urllib.request import Request, urlopen
+from uuid import uuid4
 from zipfile import BadZipFile, ZipFile
 
 import numpy as np
@@ -17,8 +15,11 @@ import pandas as pd
 import plotly.express as px
 from localization import language, native, st, translate
 from api_settings import render_api_settings
+from api_connections import ApiConnectionError, request_public_api
 from data_insights import render_data_insights
+from workspace_presentation import install_presentation_styles, render_motion_control, render_viewport_footer, render_workspace_menu
 from quality_large import scan_large_data
+from security_guardrails import MASK, detect_sensitive_columns, mask_dataframe, mask_findings, mask_text, mask_text_with_dataset
 
 
 APP_LOGO_PATH = Path(__file__).resolve().parent / "assets" / "data-inspector-logo.svg"
@@ -251,23 +252,6 @@ def request_configured_assistant(
     response_language="English",
 ):
     endpoint = endpoint.strip()
-    try:
-        parsed_endpoint = urlsplit(endpoint)
-        parsed_endpoint.port
-    except ValueError:
-        raise AssistantRequestError(
-            "Enter a valid HTTP(S) Chat Completions endpoint URL without embedded credentials."
-        ) from None
-    if (
-        parsed_endpoint.scheme not in {"http", "https"}
-        or not parsed_endpoint.hostname
-        or parsed_endpoint.username
-        or parsed_endpoint.password
-        or parsed_endpoint.fragment
-    ):
-        raise AssistantRequestError(
-            "Enter a valid HTTP(S) Chat Completions endpoint URL without embedded credentials."
-        )
 
     issue_counts = (
         {
@@ -324,33 +308,12 @@ def request_configured_assistant(
         )
 
     try:
-        request = Request(
-            endpoint,
-            data=payload,
-            headers={
-                "Authorization": f"Bearer {api_key.strip()}",
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-            },
-            method="POST",
+        response_body, _ = request_public_api(
+            endpoint, method="POST", auth_mode="Bearer token", secret=api_key.strip(),
+            body=payload, content_type="application/json",
         )
-    except ValueError:
-        raise AssistantRequestError(
-            "The endpoint URL contains invalid characters. Check the URL and try again."
-        ) from None
-    try:
-        with urlopen(request, timeout=60) as response:
-            response_body = response.read(2 * 1024 * 1024 + 1)
-    except HTTPError as error:
-        raise AssistantRequestError(
-            f"The configured provider returned HTTP {error.code}. "
-            "Check the endpoint, model ID, API key, and provider limits."
-        ) from None
-    except (URLError, TimeoutError, OSError):
-        raise AssistantRequestError(
-            "Could not reach the configured model endpoint. Check the URL, network, "
-            "and whether the endpoint is reachable from this app."
-        ) from None
+    except ApiConnectionError as error:
+        raise AssistantRequestError(str(error)) from None
 
     if len(response_body) > 2 * 1024 * 1024:
         raise AssistantRequestError(
@@ -1032,6 +995,8 @@ def reset_quality_caches():
     st.session_state["distribution_cache"] = {}
     st.session_state["data_insights_cache"] = {}
     st.session_state["fixed_export_cache"] = {}
+    st.session_state["privacy_detection_cache"] = {}
+    st.session_state["privacy_policies"] = {}
 
 
 def column_rule_signature(email_columns, date_columns, numeric_columns, iqr_multiplier,
@@ -1080,11 +1045,13 @@ def connected_sample_archive():
     return archive.getvalue()
 
 
-def build_cleaned_batch_archive(datasets, progress_callback=None):
+def build_cleaned_batch_archive(datasets, progress_callback=None, sensitive_columns_by_dataset=None):
     archive = BytesIO()
     with ZipFile(archive, mode="w") as zip_file:
         for index, (dataset_name, dataset) in enumerate(datasets.items()):
             cleaned = clean_data(dataset)
+            if sensitive_columns_by_dataset is not None:
+                cleaned = mask_dataframe(cleaned, sensitive_columns_by_dataset[dataset_name])
             safe_name = re.sub(r"[^A-Za-z0-9._-]+", "_", dataset_name)
             if not safe_name.lower().endswith(".csv"):
                 safe_name = f"{safe_name}.csv"
@@ -1414,7 +1381,7 @@ st.markdown(
     }
     [data-testid="stPopoverBody"]:is([aria-label="Settings"], [aria-label="الإعدادات"]) [role="tablist"] {
         position: sticky; top: 0; z-index: 2;
-        display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+        display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 6px; padding: 5px; border: 1px solid #e0ebe6;
         border-radius: 15px; background: #edf5f1;
     }
@@ -1432,6 +1399,7 @@ st.markdown(
     [data-testid="stPopoverBody"]:is([aria-label="Settings"], [aria-label="الإعدادات"]) [role="tab"][data-key="0"]::before {content: "✦";}
     [data-testid="stPopoverBody"]:is([aria-label="Settings"], [aria-label="الإعدادات"]) [role="tab"][data-key="1"]::before {content: "↗";}
     [data-testid="stPopoverBody"]:is([aria-label="Settings"], [aria-label="الإعدادات"]) [role="tab"][data-key="2"]::before {content: "✓";}
+    [data-testid="stPopoverBody"]:is([aria-label="Settings"], [aria-label="الإعدادات"]) [role="tab"][data-key="3"]::before {content: "◆";}
     [data-testid="stPopoverBody"]:is([aria-label="Settings"], [aria-label="الإعدادات"]) [role="tab"] p {
         margin: 0; color: inherit; font-size: .75rem; line-height: 1.25; font-weight: 700;
     }
@@ -1770,7 +1738,8 @@ def delete_custom_rule(rules_key, selector_key, index):
 
 
 def render_settings(anchor, columns=None, defaults=None, column_signature=None,
-                    active_dataset=None, active_data=None, fixed_data=None):
+                    active_dataset=None, active_data=None, fixed_data=None,
+                    detected_sensitive=None, dataset_token=None):
     """Render model and active-file inspection controls in one sidebar menu."""
     with anchor:
         with st.popover(
@@ -1778,6 +1747,7 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
             icon=":material/settings:",
             help="LLM, API, and inspection settings",
             key="settings_button",
+            on_change="rerun",
         ):
             st.markdown(
                 '<div class="settings-hero">'
@@ -1788,14 +1758,55 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                 '</div>',
                 unsafe_allow_html=True,
             )
-            model_tab, api_tab, checks_tab = st.tabs(
-                ["LLM assistant", "Data APIs", "Inspection checks"], key="settings_navigation"
+            model_tab, api_tab, checks_tab, privacy_tab = st.tabs(
+                ["LLM assistant", "Data APIs", "Inspection checks", "Data privacy"],
+                key="settings_navigation", on_change="rerun",
             )
+            sensitive_columns = set(detected_sensitive or ())
+            privacy_reviewed = False
+            with privacy_tab:
+                st.markdown("**Sensitive data protection**")
+                st.caption(
+                    "Identified sensitive columns are masked in previews and outputs. "
+                    "Detection can miss sensitive data; review every column before sharing."
+                )
+                if columns is None:
+                    st.info("Load a dataset to review its sensitive columns.")
+                else:
+                    if sensitive_columns:
+                        st.caption(translate("Automatically protected columns: {0}").format(", ".join(str(c) for c in columns if c in sensitive_columns)))
+                    else:
+                        st.caption("No sensitive columns were automatically identified.")
+                    manual_columns = st.multiselect(
+                        "Protect additional columns",
+                        options=columns,
+                        key=f"privacy_manual_{column_signature}",
+                        help="Select all additional columns containing sensitive or confidential data.",
+                    )
+                    sensitive_columns.update(manual_columns)
+                    policy_digest = hashlib.sha256(
+                        repr((dataset_token, tuple(sorted(map(str, sensitive_columns))))).encode()
+                    ).hexdigest()[:16]
+                    privacy_reviewed = st.checkbox(
+                        "I reviewed all columns for sensitive data",
+                        key=f"privacy_review_{column_signature}_{policy_digest}",
+                        help="Review again if the dataset or protected columns change.",
+                    )
+                    policies = st.session_state.setdefault("privacy_policies", {})
+                    policies[active_dataset] = {
+                        "data": active_data, "columns": sensitive_columns.copy(), "reviewed": privacy_reviewed,
+                    }
+                    if st.session_state.get("privacy_policy_digest") != (active_dataset, policy_digest, privacy_reviewed):
+                        st.session_state["privacy_policy_digest"] = (active_dataset, policy_digest, privacy_reviewed)
+                        st.session_state["fixed_export_cache"] = {}
+                        st.session_state["batch_export_cache"] = None
+                    st.info("Masking is not a substitute for access controls or a security review. This app does not provide built-in sign-in.")
             with model_tab:
                 st.markdown("**Connect your own LLM**")
                 st.caption(
                     "Use an OpenAI-compatible Chat Completions endpoint. Settings stay "
-                    "in this session and are not saved to files."
+                    "in this session and are not saved to files. Only public HTTPS endpoints "
+                    "on port 443 are supported; redirects are blocked."
                 )
                 st.text_input(
                     "Chat Completions URL",
@@ -1808,14 +1819,24 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                     "API key", type="password", key="assistant_api_key",
                     help="The key is sent only to the endpoint URL you configure.",
                 )
+                consent_binding = (
+                    st.session_state.get("assistant_api_url", "").strip(),
+                    st.session_state.get("assistant_model_id", "").strip(),
+                    dataset_token,
+                    tuple(sorted(map(str, sensitive_columns))),
+                    privacy_reviewed,
+                )
+                if st.session_state.get("assistant_consent_binding") != consent_binding:
+                    st.session_state["assistant_consent_binding"] = consent_binding
+                    st.session_state["assistant_share_dataset"] = False
                 st.checkbox(
                     "Allow sending the active dataset to this endpoint",
                     value=False, key="assistant_share_dataset",
-                    help="When enabled, each assistant request includes every row in the active file.",
+                    help="When enabled, each assistant request includes a masked copy of the active file.",
                 )
                 st.warning(
-                    "When sharing is enabled, the configured provider receives the complete "
-                    "active dataset and your questions. Use only a trusted endpoint."
+                    "When sharing is enabled, the configured provider receives a masked "
+                    "copy of the dataset and your questions. Review sensitive columns first."
                 )
                 st.caption(
                     "The local assistant remains available when sharing is off. "
@@ -1826,7 +1847,7 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                     width="stretch", key="clear_assistant_settings",
                 )
             with api_tab:
-                render_api_settings(active_dataset, active_data, fixed_data)
+                render_api_settings(active_dataset, active_data, fixed_data, sensitive_columns, privacy_reviewed)
             with checks_tab:
                 st.markdown("**Built-in checks**")
                 st.caption("Choose which checks run. Changes rescan the active file.")
@@ -1929,36 +1950,12 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                         width="stretch", on_click=delete_custom_rule,
                         args=(rules_key, f"edit_rule_{column_signature}", selected_rule - 1),
                     )
-                return email_columns, date_columns, numeric_columns, iqr_multiplier, enabled_checks, list(rules)
+                return email_columns, date_columns, numeric_columns, iqr_multiplier, enabled_checks, list(rules), sensitive_columns, privacy_reviewed
 
 
 def render_app_footer():
     """Show the same honest, product-branded footer on the landing and workspace."""
-    product = translate("Smart Data Quality Inspector")
-    session = translate("Session-based processing")
-    review = translate("Accessibility review pending")
-    guidance = translate("UAE accessibility guidance")
-    st.markdown(
-        f"""
-        <style>
-        .app-footer {{ border-top: 3px solid #d6ae38; border-radius: 15px; margin-top: 3rem; padding: 1.4rem 1.5rem;
-          display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
-          color: #d3e9e3; background: linear-gradient(105deg, #102d35, #164c4d 75%, #185269);
-          font-size: .83rem; }}
-        .app-footer strong {{ display: block; color: #fff; font-size: .9rem; margin-bottom: .3rem; }}
-        .app-footer-links {{ display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }}
-        .app-footer a {{ color: #c1f0e7; text-decoration: underline; text-underline-offset: 3px; }}
-        .app-footer a:focus-visible {{ outline: 3px solid #efcf71; outline-offset: 3px; }}
-        </style>
-        <footer class="app-footer">
-          <div><strong>{product}</strong><span>{session}</span></div>
-          <div class="app-footer-links"><span>{review}</span>
-            <a href="https://designsystem.gov.ae/guidelines/accessibility">{guidance}</a>
-          </div>
-        </footer>
-        """,
-        unsafe_allow_html=True,
-    )
+    render_viewport_footer()
 
 
 @st.dialog("A quick tour of the inspector", width="large")
@@ -1978,6 +1975,7 @@ def toggle_interface_language():
 
 
 _rtl = native.session_state.get("interface_language", "English") == "العربية"
+install_presentation_styles()
 native.html(
     '<script>document.documentElement.lang="ar";document.documentElement.dir="rtl";</script>'
     if _rtl else
@@ -2024,6 +2022,8 @@ with st.sidebar:
         f'</div></div>',
         unsafe_allow_html=True,
     )
+    settings_anchor = st.container(key="settings_anchor")
+    render_workspace_menu()
     with st.container(key="source_panel"):
         st.markdown(
             '<div class="sidebar-source-heading"><span class="sidebar-source-kicker">Data sources</span>'
@@ -2055,7 +2055,6 @@ with st.sidebar:
             '<div class="sidebar-session-note">Files are available for this session.</div>',
             unsafe_allow_html=True,
         )
-    settings_anchor = st.container(key="settings_anchor")
 
 if load_connected_clicked:
     with st.status(
@@ -2146,7 +2145,7 @@ if uploaded_files and upload_signatures != st.session_state.get(
                     "Try a smaller file or increase the available memory."
                 )
             except Exception:
-                logging.exception("Failed to read an uploaded dataset")
+                logging.error("Failed to read an uploaded dataset")
                 file_errors.append(
                     f"{uploaded_file.name}: the file could not be read. "
                     "Check that it is a valid CSV or Excel file and try again."
@@ -2198,6 +2197,7 @@ if pending_api_dataset is not None:
 
 if not datasets:
     render_settings(settings_anchor)
+    render_motion_control()
     welcome_placeholder.markdown(
         """
         <section class="welcome-panel" aria-label="Data quality introduction">
@@ -2217,6 +2217,7 @@ if not datasets:
             <div class="welcome-meta" aria-label="Supported capabilities">
               <span>CSV &amp; Excel</span><span>API connections</span><span>Configurable checks</span><span>Export options</span>
             </div>
+            <p class="landing-privacy-note">Your original stays unchanged. Review sensitive columns before sharing or exporting.</p>
           </div>
           <div class="welcome-preview" aria-label="Data quality checks included">
             <div class="welcome-preview-top">
@@ -2306,6 +2307,29 @@ column_signature = hashlib.sha256(
         )
     ).encode("utf-8")
 ).hexdigest()[:12]
+privacy_cache = st.session_state.setdefault("privacy_detection_cache", {})
+cached_privacy = privacy_cache.get(active_dataset)
+if cached_privacy and cached_privacy["data"] is data:
+    detected_sensitive = cached_privacy["columns"]
+    dataset_token = cached_privacy["token"]
+else:
+    with st.status("Checking the file for sensitive data...", expanded=True) as privacy_status:
+        privacy_progress = st.progress(0.0, text="Checking columns for sensitive values...")
+        try:
+            detected_sensitive = detect_sensitive_columns(
+                data,
+                progress_callback=lambda fraction: privacy_progress.progress(
+                    fraction, text=f"{fraction:.0%} · Checking columns for sensitive values..."
+                ),
+            )
+        except Exception:
+            # If detection fails, do not expose any dataset values by default.
+            detected_sensitive = set(columns)
+            st.warning("Sensitive-data detection could not finish. All columns are protected; review your data privacy settings.")
+        privacy_progress.empty()
+        privacy_status.update(label="Sensitive-data check complete", state="complete", expanded=False)
+    dataset_token = uuid4().hex
+    privacy_cache[active_dataset] = {"data": data, "columns": detected_sensitive, "token": dataset_token}
 inference_data = data.head(10_000) if len(data) >= 100_000 else data
 try:
     email_defaults, date_defaults, numeric_defaults = infer_column_rules(inference_data)
@@ -2313,7 +2337,7 @@ except MemoryError:
     st.error("There is not enough memory to prepare this dataset. Try a smaller file or increase the available memory.")
     st.stop()
 except Exception:
-    logging.exception("Unable to infer dataset column types")
+    logging.error("Unable to infer dataset column types")
     st.error("The file was loaded, but its columns could not be prepared for inspection. Check the file and try again.")
     st.stop()
 if len(data) >= 100_000:
@@ -2324,12 +2348,20 @@ if len(data) >= 100_000:
 
 (
     email_columns, date_columns, numeric_columns, iqr_multiplier,
-    enabled_checks, custom_rules,
+    enabled_checks, custom_rules, sensitive_columns, privacy_reviewed,
 ) = render_settings(
     settings_anchor, columns, (email_defaults, date_defaults, numeric_defaults),
     column_signature, active_dataset, data,
     st.session_state.get("fixed_datasets", {}).get(active_dataset),
+    detected_sensitive, dataset_token,
 )
+display_sensitive_columns = sensitive_columns if privacy_reviewed else set(columns)
+st.caption(
+    "Sensitive-data masking is active. Review all columns in Settings → Data privacy "
+    "before downloading or sending data; detection cannot identify every sensitive value."
+)
+if not privacy_reviewed:
+    st.warning("All data values are hidden until you review the columns in Data privacy.")
 
 rule_signature = column_rule_signature(
     email_columns,
@@ -2390,7 +2422,7 @@ else:
             st.error("There is not enough memory to finish inspecting this file. Try a smaller file or increase the available memory.")
             st.stop()
         except Exception:
-            logging.exception("Quality inspection failed")
+            logging.error("Quality inspection failed")
             inspection_status.update(label="Inspection could not finish", state="error", expanded=True)
             st.error("The file could not be inspected. Check the data and settings, then try again.")
             st.stop()
@@ -2537,7 +2569,7 @@ if selected_metric:
                     st.caption("Findings by column")
                     st.dataframe(issue_column_counts, width="stretch", hide_index=True)
                 st.caption("Showing every detected issue:")
-                st.dataframe(issues.head(1_000), width="stretch", hide_index=True)
+                st.dataframe(mask_findings(issues.head(1_000), display_sensitive_columns), width="stretch", hide_index=True)
                 if len(issues) > 1_000:
                     st.caption("Showing the first 1,000 findings. The issue report contains all matching findings.")
         elif selected_metric == "duplicates":
@@ -2548,7 +2580,7 @@ if selected_metric:
             elif duplicate_count == 0:
                 st.success("No exact duplicate rows are currently detected.")
             else:
-                duplicate_rows = data.iloc[duplicate_positions[:1_000]].copy()
+                duplicate_rows = mask_dataframe(data.iloc[duplicate_positions[:1_000]], display_sensitive_columns)
                 duplicate_rows.insert(0, "Row Number", duplicate_positions[:1_000] + 1)
                 st.markdown(
                     f"**{duplicate_count:,}** exact duplicate row(s) were found. "
@@ -2751,7 +2783,7 @@ with insights_tab:
     if insights_tab.open:
         render_data_insights(
             data, column_profile, numeric_columns, date_columns,
-            active_dataset, column_signature, parse_numeric_series,
+            active_dataset, column_signature, parse_numeric_series, display_sensitive_columns,
         )
 
 with issues_tab:
@@ -2767,8 +2799,9 @@ with issues_tab:
                 "Filter findings", filter_options,
                 format_func=lambda option, locale=language(): translate(option, locale),
             )
-        filtered_issues = issues if selected_type == "All issue types" else issues[
-            issues["Issue Type"] == selected_type
+        protected_issues = mask_findings(issues, display_sensitive_columns)
+        filtered_issues = protected_issues if selected_type == "All issue types" else protected_issues[
+            protected_issues["Issue Type"] == selected_type
         ]
         with summary_col:
             st.markdown(
@@ -2841,7 +2874,7 @@ with issues_tab:
             width="content",
             icon=":material/summarize:",
             key=f"download_issues_{column_signature}",
-            disabled=filtered_issues.empty,
+            disabled=filtered_issues.empty or not privacy_reviewed,
         )
 
 with review_tab:
@@ -2923,7 +2956,7 @@ with review_tab:
                     st.error("There is not enough memory to create the fixed copy. The original data has not changed.")
                     st.stop()
                 except Exception:
-                    logging.exception("Failed to apply data fixes")
+                    logging.error("Failed to apply data fixes")
                     fix_status.update(label="Could not apply fixes", state="error", expanded=True)
                     st.error("The fixes could not be applied. Check your settings and try again; the original data has not changed.")
                     st.stop()
@@ -2997,7 +3030,7 @@ with review_tab:
                     st.error("There is not enough memory to check the fixed copy. The original data has not changed.")
                     st.stop()
                 except Exception:
-                    logging.exception("Failed to inspect the fixed copy")
+                    logging.error("Failed to inspect the fixed copy")
                     review_status.update(label="Could not check the fixed copy", state="error", expanded=True)
                     st.error("The fixed copy could not be inspected. Check your settings and try again.")
                     st.stop()
@@ -3073,6 +3106,8 @@ with review_tab:
     if review_search.strip():
         search_mask = np.zeros(len(review_data), dtype=bool)
         for column in review_data.columns:
+            if column in display_sensitive_columns:
+                continue
             search_mask |= review_data[column].astype(str).str.contains(
                 review_search.strip(), case=False, regex=False, na=False
             ).to_numpy(dtype=bool)
@@ -3091,7 +3126,7 @@ with review_tab:
         st.caption(f"Page {review_page:,} of {review_pages:,}; the dataset and exports retain all rows.")
     review_start = (review_page - 1) * 1_000
     displayed_positions = matching_positions[review_start:review_start + 1_000]
-    review_display = review_data.iloc[displayed_positions].copy()
+    review_display = mask_dataframe(review_data.iloc[displayed_positions], display_sensitive_columns)
     review_display.insert(0, "Row Number", displayed_positions + 1)
     st.caption(
         f"Showing {len(review_display):,} of {len(matching_positions):,} matching rows"
@@ -3113,21 +3148,21 @@ with review_tab:
     if has_fixed_data and show_fixed:
         fixed_exports = st.session_state.setdefault("fixed_export_cache", {})
         fixed_export = fixed_exports.get(active_dataset)
-        if fixed_export is None and len(review_data) < 100_000:
-            fixed_export = serialize_data_file(active_dataset, review_data)
-        elif fixed_export is None:
+        if fixed_export is None and privacy_reviewed and len(review_data) < 100_000:
+            fixed_export = serialize_data_file(active_dataset, mask_dataframe(review_data, sensitive_columns))
+        elif fixed_export is None and privacy_reviewed:
             st.caption("Prepare the fixed file before downloading; large exports may take some time.")
             if st.button("Prepare fixed download", key=f"prepare_fixed_{column_signature}"):
                 with st.status("Preparing the fixed file...", expanded=True) as export_status:
                     try:
-                        fixed_export = serialize_data_file(active_dataset, review_data)
+                        fixed_export = serialize_data_file(active_dataset, mask_dataframe(review_data, sensitive_columns))
                         fixed_exports[active_dataset] = fixed_export
                         export_status.update(label="Fixed file ready", state="complete", expanded=False)
                     except MemoryError:
                         export_status.update(label="Could not prepare the fixed file", state="error", expanded=True)
                         st.error("There is not enough memory to prepare this download. Try a smaller file.")
                     except Exception:
-                        logging.exception("Failed to prepare fixed export")
+                        logging.error("Failed to prepare fixed export")
                         export_status.update(label="Could not prepare the fixed file", state="error", expanded=True)
                         st.error("The fixed file could not be prepared. Please try again.")
         output_stem = Path(active_dataset).stem or "data"
@@ -3149,7 +3184,7 @@ with preview_tab:
     st.caption(
         f"Previewing **{active_dataset}**. The original data remains unchanged by export cleaning."
     )
-    st.dataframe(data.head(100), width="stretch", hide_index=True)
+    st.dataframe(mask_dataframe(data.head(100), display_sensitive_columns), width="stretch", hide_index=True)
     st.caption(
         "Click once to remove exact duplicates, trim whitespace, and fill missing "
         "selected numeric values with the median. A cleaned copy is created only "
@@ -3163,7 +3198,7 @@ with preview_tab:
                 data,
                 numeric_columns=numeric_columns,
             )
-            return cleaned.to_csv(index=False).encode("utf-8-sig")
+            return mask_dataframe(cleaned, sensitive_columns).to_csv(index=False).encode("utf-8-sig")
 
         st.download_button(
             "Download a clean copy",
@@ -3175,15 +3210,25 @@ with preview_tab:
             icon=":material/download:",
             on_click="ignore",
             key=f"download_clean_csv_{column_signature}",
+            disabled=not privacy_reviewed,
         )
     with batch_col:
         if len(datasets) > 1:
+            privacy_policies = st.session_state.get("privacy_policies", {})
+            all_reviewed = all(
+                name in privacy_policies and privacy_policies[name]["data"] is frame
+                and privacy_policies[name]["reviewed"]
+                for name, frame in datasets.items()
+            )
+            if not all_reviewed:
+                st.info("Review sensitive columns for each file before preparing a batch download.")
             batch_archive = st.session_state.get("batch_export_cache")
             if batch_archive is None and st.button(
                 "Prepare cleaned batch ZIP",
                 width="stretch",
                 icon=":material/folder_zip:",
                 key=f"prepare_batch_export_{column_signature}",
+                disabled=not all_reviewed,
             ):
                 with st.status(
                     "Preparing the cleaned batch export...",
@@ -3212,13 +3257,16 @@ with preview_tab:
                         batch_archive = build_cleaned_batch_archive(
                             datasets,
                             progress_callback=update_batch_export_progress,
+                            sensitive_columns_by_dataset={
+                                name: privacy_policies[name]["columns"] for name in datasets
+                            },
                         )
                     except MemoryError:
                         batch_status.update(label="Could not prepare the batch", state="error", expanded=True)
                         st.error("There is not enough memory to prepare this batch. Try exporting fewer files.")
                         st.stop()
                     except Exception:
-                        logging.exception("Failed to prepare the batch export")
+                        logging.error("Failed to prepare the batch export")
                         batch_status.update(label="Could not prepare the batch", state="error", expanded=True)
                         st.error("The batch could not be prepared. Check the files and try again.")
                         st.stop()
@@ -3258,7 +3306,7 @@ with assistant_tab:
     assistant_configured = bool(
         assistant_endpoint and assistant_model and assistant_api_key
     )
-    assistant_remote_enabled = assistant_configured and assistant_share_dataset
+    assistant_remote_enabled = assistant_configured and assistant_share_dataset and privacy_reviewed
 
     st.subheader("🤖 Data Quality Copilot")
     st.caption(
@@ -3272,11 +3320,13 @@ with assistant_tab:
             "Dataset sharing is enabled, but the endpoint URL, model ID, and API key "
             "must all be set in **LLM assistant settings**."
         )
+    elif assistant_share_dataset and not privacy_reviewed:
+        st.warning("Review sensitive columns in Data privacy before sending data to a model.")
     elif assistant_remote_enabled:
         st.warning(
-            "Configured model mode is on. Each question sends the complete active "
-            "dataset to your configured provider. Verify the endpoint and provider "
-            "privacy terms before sharing sensitive data."
+            "Configured model mode is on. Each question sends a masked copy of the active "
+            "dataset and your conversation to your provider. Do not include sensitive "
+            "information in questions; automatic detection is not complete."
         )
     else:
         st.info(
@@ -3342,13 +3392,19 @@ with assistant_tab:
     user_question = user_question or selected_prompt
     if user_question:
         history = st.session_state[assistant_history_key]
-        history.append({"role": "user", "content": user_question})
+        try:
+            safe_question = mask_text_with_dataset(user_question, data, display_sensitive_columns)
+        except Exception:
+            safe_question = MASK
+        history.append({"role": "user", "content": safe_question})
         if assistant_share_dataset and not assistant_configured:
             answer = (
                 "I could not contact a model because the endpoint URL, model ID, or API "
                 "key is missing. Complete **LLM assistant settings** or turn off dataset "
                 "sharing to use local answers."
             )
+        elif assistant_share_dataset and not privacy_reviewed:
+            answer = "Review sensitive columns in Data privacy before sending data to a model."
         elif assistant_remote_enabled:
             request_error = None
             with st.status(
@@ -3357,8 +3413,8 @@ with assistant_tab:
             ) as assistant_status:
                 assistant_loader = st.empty()
                 render_inspection_loader(
-                    "Sending the active dataset to your configured model",
-                    "The complete dataset and recent conversation are included.",
+                    "Sending the masked dataset to your configured model",
+                    "The masked dataset and recent conversation are included.",
                     assistant_loader,
                 )
                 try:
@@ -3366,12 +3422,12 @@ with assistant_tab:
                         assistant_endpoint,
                         assistant_api_key,
                         assistant_model,
-                        user_question,
-                        data,
+                        safe_question,
+                        mask_dataframe(data, sensitive_columns),
                         issues,
                         column_profile,
-                        active_dataset,
-                        history[:-1],
+                        "Active dataset",
+                        [{"role": item["role"], "content": mask_text(item["content"].replace(active_dataset, "active dataset"))} for item in history[:-1]],
                         response_language=language(),
                     )
                 except AssistantRequestError as error:
@@ -3412,7 +3468,11 @@ with assistant_tab:
                     state="complete",
                     expanded=False,
                 )
-        history.append({"role": "assistant", "content": answer})
+        try:
+            safe_answer = mask_text_with_dataset(answer, data, display_sensitive_columns)
+        except Exception:
+            safe_answer = MASK
+        history.append({"role": "assistant", "content": safe_answer})
 
     if not st.session_state[assistant_history_key]:
         st.session_state[assistant_history_key].append(
@@ -3426,6 +3486,6 @@ with assistant_tab:
         )
     for message in st.session_state[assistant_history_key]:
         with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+            st.markdown(mask_text(message["content"]))
 
 render_app_footer()

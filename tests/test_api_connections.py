@@ -8,6 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pandas as pd
+from security_guardrails import mask_dataframe
 from streamlit.testing.v1 import AppTest
 
 import api_connections as api
@@ -108,11 +109,13 @@ class ApiUiTests(unittest.TestCase):
             self.assertTrue(self.find("button", "Push data to API").disabled)
             self.find("text_input", "Destination API URL").set_value("https://example.com/receive").run()
             self.find("checkbox", "I approve sending the selected data to this destination").check().run()
+            self.assertTrue(self.find("button", "Push data to API").disabled)
+            self.find("checkbox", "I reviewed all columns for sensitive data").check().run()
             self.assertFalse(self.find("button", "Push data to API").disabled)
             self.find("button", "Push data to API").click().run()
             self.assertFalse(self.app.exception)
             self.assertEqual(push.call_count, 1)
-            pd.testing.assert_frame_equal(push.call_args.args[1], frame)
+            pd.testing.assert_frame_equal(push.call_args.args[1], mask_dataframe(frame, {"id", "name"}))
             self.assertTrue(any("HTTP 202" in item.value for item in self.app.success))
             self.find("text_input", "Destination API URL").set_value("https://example.com/other").run()
             self.assertTrue(self.find("button", "Push data to API").disabled)
@@ -129,6 +132,7 @@ class ApiUiTests(unittest.TestCase):
 
     def test_push_fixed_copy_and_consent_resets(self):
         load_test_fixture(self.app)
+        self.find("checkbox", "I reviewed all columns for sensitive data").check().run()
         self.find("text_input", "Destination API URL").set_value("https://example.com/receive").run()
         self.find("checkbox", "I approve sending the selected data to this destination").check().run()
         self.find("button", "Apply selected fixes").click().run()
@@ -141,7 +145,10 @@ class ApiUiTests(unittest.TestCase):
             self.assertFalse(self.app.exception)
             pd.testing.assert_frame_equal(
                 push.call_args.args[1],
-                self.app.session_state["fixed_datasets"]["Sample messy dataset"],
+                mask_dataframe(
+                    self.app.session_state["fixed_datasets"]["Sample messy dataset"],
+                    self.app.session_state["privacy_policies"]["Sample messy dataset"]["columns"],
+                ),
             )
             self.assertEqual(len(push.call_args.args[1]), 49)
 
