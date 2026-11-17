@@ -18,6 +18,16 @@ from streamlit.delta_generator import DeltaGenerator
 
 _ROOT = Path(__file__).resolve().parent
 _ARABIC = json.loads((_ROOT / "assets" / "translations" / "ar.json").read_text(encoding="utf-8"))
+_ARABIC.update({
+    "Share of findings": "نسبة النتائج",
+    "All categories are listed below, including small slices.": "جميع الفئات مدرجة أدناه، بما فيها الشرائح الصغيرة.",
+    "Column-level findings and duplicate rows, ranked by count.": "النتائج على مستوى الأعمدة والصفوف المكررة، مرتبة حسب العدد.",
+    "Each share is measured against all detected findings.": "تُحسب كل نسبة من إجمالي النتائج المكتشفة.",
+    "Missing rows (%)": "الصفوف ذات القيم المفقودة (%)",
+    "Exact counts and share of rows; all columns are listed.": "الأعداد الدقيقة ونسبة الصفوف؛ جميع الأعمدة مدرجة.",
+    "Review missing values in {0} ({1} missing).": "راجع القيم المفقودة في {0} (النسبة المفقودة {1}).",
+    "Findings are review candidates, not confirmed errors.": "النتائج مرشحة للمراجعة وليست أخطاء مؤكدة.",
+})
 _REVERSE = {value: key for key, value in _ARABIC.items() if "{" not in key}
 _PATTERNS = []
 for _source, _translation in _ARABIC.items():

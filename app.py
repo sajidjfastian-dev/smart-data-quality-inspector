@@ -92,6 +92,91 @@ SAMPLE_RELATIONSHIPS = pd.DataFrame(
 MAX_ASSISTANT_REQUEST_BYTES = 10 * 1024 * 1024
 
 
+def overview_percentage(count, total):
+    """Display shares without rounding a nonzero count to zero (or to 100)."""
+    if not total or not count:
+        return "0%"
+    share = count / total * 100
+    if share < 0.01:
+        return "<0.01%"
+    if 99.99 < share < 100:
+        return ">99.99%"
+    return f"{share:.2f}".rstrip("0").rstrip(".") + "%"
+
+
+def overview_heading(title, description):
+    native.markdown(
+        '<div class="overview-heading"><h3>'
+        + html.escape(translate(title)) + "</h3><p>"
+        + html.escape(translate(description)) + "</p></div>",
+        unsafe_allow_html=True,
+    )
+
+
+def overview_table(labels, counts, total, label_heading, share_heading, colors=None):
+    """An exact, scrollable chart key; uploaded labels are never translated."""
+    rows = []
+    for index, (label, count) in enumerate(zip(labels, counts)):
+        swatch = (
+            f'<span class="overview-swatch" style="background:{colors[index % len(colors)]}" aria-hidden="true"></span>'
+            if colors else ""
+        )
+        rows.append(
+            '<tr><td class="overview-label">' + swatch
+            + '<bdi>' + html.escape(str(label)) + '</bdi></td>'
+            + f'<td class="overview-number"><bdi>{int(count):,}</bdi></td>'
+            + '<td class="overview-number"><bdi>'
+            + html.escape(overview_percentage(int(count), total)) + '</bdi></td></tr>'
+        )
+    headings = [label_heading, "Issue Count" if colors else "Missing", share_heading]
+    header = "".join(
+        f'<th scope="col" class="{"overview-number" if index else "overview-label"}">'
+        + html.escape(translate(label)) + "</th>" for index, label in enumerate(headings)
+    )
+    native.markdown(
+        '<div class="overview-table-wrap" tabindex="0" role="region" aria-label="'
+        + html.escape(translate(label_heading), quote=True)
+        + '"><table class="overview-table"><thead><tr>' + header
+        + '</tr></thead><tbody>' + "".join(rows) + "</tbody></table></div>",
+        unsafe_allow_html=True,
+    )
+
+
+def overview_pie(counts, label_column, chart_key):
+    """Compact pies with an always-visible exact key for every slice."""
+    colors = ["#147d73", "#c5a044", "#7eaaa0", "#506b83", "#b77d62", "#8c86a0",
+              "#a6bd6d", "#659eaf"]
+    total = int(counts["Issue Count"].sum())
+    labels = counts[label_column].astype(str).tolist()
+    values = counts["Issue Count"].astype(int).tolist()
+    chart = px.pie(
+        values=values, names=[html.escape(label) for label in labels],
+        color_discrete_sequence=colors,
+    )
+    chart.update_traces(
+        sort=False, direction="clockwise", textinfo="text", textposition="inside",
+        text=[overview_percentage(value, total) if value / total >= .05 else "" for value in values],
+        customdata=[overview_percentage(value, total) for value in values],
+        hovertemplate="%{label}<br>%{value:,} " + html.escape(translate("findings"))
+        + " · %{customdata}<extra></extra>",
+        marker=dict(line=dict(color="#fcfdf9", width=1)),
+        insidetextfont=dict(size=13, color="#fcfdf9"),
+    )
+    chart.update_layout(
+        height=235, showlegend=False, margin=dict(l=12, r=12, t=8, b=8),
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#294a43"), uniformtext=dict(minsize=12, mode="hide"),
+    )
+    st.plotly_chart(chart, key=chart_key, width="stretch",
+                    config={"displayModeBar": False, "scrollZoom": False})
+    overview_table(labels, values, total, label_column, "Share of findings", colors)
+    native.markdown(
+        '<div class="overview-note">'
+        + html.escape(translate("All categories are listed below, including small slices."))
+        + "</div>", unsafe_allow_html=True,
+    )
+
+
 def is_missing(value):
     if isinstance(value, str):
         return value.strip() == ""
@@ -2649,10 +2734,11 @@ with overview_tab:
         'then use the tabs above to inspect individual issues and apply safe fixes.</span></div>',
         unsafe_allow_html=True,
     )
-    chart_col, type_col = st.columns([1.35, 1])
-    with chart_col:
-        st.subheader("Findings by column")
-        st.caption("Columns with the most findings appear first. A finding is a review candidate, not always an error.")
+    issue_types = set(issues["Issue Type"]) if not issues.empty else set()
+    with st.container(key="overview_composition"):
+        chart_col, type_col = st.columns(2, gap="medium")
+    with chart_col, st.container(key="overview_columns"):
+        overview_heading("Findings by column", "Column-level findings and duplicate rows, ranked by count.")
         if issues.empty:
             st.success("No findings were found by the enabled checks.")
         else:
@@ -2664,117 +2750,52 @@ with overview_tab:
                 .rename(columns={"size": "Issue Count"})
                 .sort_values("Issue Count", ascending=False)
             )
-            chart = px.pie(
-                issue_counts,
-                values="Issue Count",
-                names="Column Name",
-                color_discrete_sequence=["#61A9BD", "#CED14E", "#44986D", "#DD83C9", "#1F74AD", "#E98E2E", "#9267C6", "#8D6C5B"],
-            )
-            chart.update_traces(
-                textinfo="label+percent", textposition="inside",
-                hovertemplate="%{label}<br>%{value:,} " + translate("findings") + " · %{percent}<extra></extra>",
-            )
-            chart.update_layout(
-                template="plotly_white",
-                height=420,
-                legend=dict(orientation="h", y=-0.1, x=0),
-                uniformtext=dict(minsize=11, mode="hide"),
-                margin=dict(l=12, r=12, t=15, b=20),
-                plot_bgcolor="rgba(0,0,0,0)",
-                paper_bgcolor="rgba(0,0,0,0)",
-                font=dict(color="#526c68"),
-            )
-            st.plotly_chart(chart, width="stretch", config={"displayModeBar": False})
+            overview_pie(issue_counts, "Column Name", "overview_column_pie")
 
-    with type_col:
-        st.subheader("Findings by type")
-        st.caption("Counts and share of all detected findings, including duplicate rows.")
-        issue_types = set(issues["Issue Type"]) if not issues.empty else set()
+    with type_col, st.container(key="overview_types"):
+        overview_heading("Findings by type", "Each share is measured against all detected findings.")
         if issues.empty:
-            st.caption("Findings will appear here after a check detects an issue.")
+            st.success("No findings were found by the enabled checks.")
         else:
             type_counts = (
                 issues.groupby("Issue Type", as_index=False)
                 .size()
-                .rename(columns={"size": "Findings"})
-                .sort_values("Findings", ascending=False)
+                .rename(columns={"size": "Issue Count"})
+                .sort_values("Issue Count", ascending=False)
             )
-            type_counts["Share (%)"] = type_counts["Findings"] / type_counts["Findings"].sum() * 100
             type_counts["Issue Type"] = type_counts["Issue Type"].map(translate_issue_type)
-            type_chart = px.pie(
-                type_counts,
-                values="Findings",
-                names="Issue Type",
-                color_discrete_sequence=["#61A9BD", "#CED14E", "#44986D", "#DD83C9", "#1F74AD", "#E98E2E", "#9267C6", "#8D6C5B"],
-            )
-            type_chart.update_traces(
-                textinfo="label+percent", textposition="inside",
-                hovertemplate="%{label}<br>%{value:,} " + translate("findings") + " · %{percent}<extra></extra>",
-            )
-            type_chart.update_layout(
-                template="plotly_white",
-                height=420,
-                legend=dict(orientation="h", y=-0.1, x=0),
-                uniformtext=dict(minsize=11, mode="hide"),
-                margin=dict(l=12, r=12, t=15, b=20),
-                plot_bgcolor="rgba(0,0,0,0)",
-                paper_bgcolor="rgba(0,0,0,0)",
-                font=dict(color="#526c68"),
-            )
-            st.plotly_chart(type_chart, width="stretch", config={"displayModeBar": False})
-            type_counts = type_counts.rename(columns={"Findings": "Issue Count"})
-            st.dataframe(type_counts.rename(columns=translate), width="stretch", hide_index=True)
+            overview_pie(type_counts, "Issue Type", "overview_type_pie")
 
-    st.divider()
-    missing_col, recommendations_col = st.columns([1.3, 1])
-    with missing_col:
-        st.subheader("Missing values by column")
-        st.caption("Percentage of rows with a missing value in each column.")
-        missing_profile = column_profile.sort_values("Missing %", ascending=False)
+    with st.container(key="overview_detail"):
+        missing_col, recommendations_col = st.columns(2, gap="medium")
+    with missing_col, st.container(key="overview_missing"):
+        overview_heading("Missing values by column", "Exact counts and share of rows; all columns are listed.")
+        missing_profile = column_profile.sort_values("Missing", ascending=False, kind="stable")
         if "missing" not in enabled_checks:
             st.info("The missing-values check is turned off in settings.")
         elif int(missing_profile["Missing"].sum()) == 0:
             st.success("Every column is complete under the current missing-value check.")
         else:
-            missing_chart = px.bar(
-                missing_profile,
-                x="Missing %",
-                y="Column",
-                orientation="h",
-                color_discrete_sequence=["#61A9BD"],
-                text="Missing %",
-                hover_data={"Missing": True, "Unique": True},
-                labels={"Missing %": translate("Missing %"), "Missing": translate("Missing"), "Unique": translate("Unique"), "Column": translate("Column")},
+            overview_table(
+                missing_profile["Column"].tolist(), missing_profile["Missing"].tolist(),
+                len(data), "Column", "Missing rows (%)",
             )
-            missing_chart.update_traces(texttemplate="%{text:.1f}%", textposition="outside", cliponaxis=False)
-            missing_chart.update_layout(
-                template="plotly_white",
-                xaxis_title=translate("Missing values (%)"),
-                yaxis_title="",
-                yaxis=dict(autorange="reversed", automargin=True),
-                xaxis=dict(rangemode="tozero", gridcolor="#edf2f0"),
-                height=max(260, min(700, 80 + 42 * len(missing_profile))),
-                margin=dict(l=8, r=55, t=12, b=18),
-                plot_bgcolor="rgba(0,0,0,0)",
-                paper_bgcolor="rgba(0,0,0,0)",
-                font=dict(color="#526c68"),
-            )
-            st.plotly_chart(missing_chart, width="stretch", config={"displayModeBar": False})
 
-    with recommendations_col:
-        st.subheader("Recommended next steps")
-        st.caption("Use these suggestions to prioritize review; no changes are made automatically.")
+    with recommendations_col, st.container(key="overview_recommendations"):
+        overview_heading("Recommended next steps", "Use these suggestions to prioritize review; no changes are made automatically.")
         recommendations = []
         if duplicate_count:
             recommendations.append(
                 (f"Remove {duplicate_count} exact duplicate row(s).", "Duplicate Row")
             )
         if "Missing Value" in issue_types:
-            top_missing = column_profile.sort_values("Missing %", ascending=False).iloc[0]
+            top_missing = missing_profile.iloc[0]
             recommendations.append(
                 (
-                    f"Review missing values first in **{top_missing['Column']}** "
-                    f"({top_missing['Missing %']:.1f}% missing).",
+                    translate("Review missing values in {0} ({1} missing).").format(
+                        top_missing["Column"],
+                        overview_percentage(int(top_missing["Missing"]), len(data)),
+                    ),
                     "Missing Value",
                 )
             )
@@ -2799,7 +2820,13 @@ with overview_tab:
             st.markdown("Preview the dataset or export a cleaned copy whenever you’re ready.")
         else:
             for index, (recommendation, _) in enumerate(recommendations, start=1):
-                st.markdown(f"**{index:02d}** &nbsp; {translate(recommendation)}")
+                # The missing-value sentence is already localized around the raw column name.
+                copy = recommendation if _ == "Missing Value" else translate(recommendation)
+                native.markdown(
+                    f'<div class="overview-step"><span class="overview-step-number">{index:02d}</span>'
+                    '<span class="overview-step-copy">' + html.escape(copy) + "</span></div>",
+                    unsafe_allow_html=True,
+                )
             st.info("Next: open **Issue log** for details, then **Review & fix** to choose safe changes.")
         with st.expander("How to interpret this report"):
             st.markdown(translate("- Each finding represents a detected value or duplicate row, not a confirmed business error.\n"
