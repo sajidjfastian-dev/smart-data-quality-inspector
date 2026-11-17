@@ -58,6 +58,11 @@ def _view_request(state, reference):
 def _change_page(delta):
     st.session_state["rd_page"] = max(1, st.session_state.get("rd_page", 1) + delta)
 
+def _filter_status_card(statuses):
+    selected = set(st.session_state.get("rd_statuses", []))
+    st.session_state["rd_statuses"] = [] if selected == set(statuses) else list(statuses)
+    st.session_state["rd_page"] = 1
+
 
 def _cell(label, value, css=""):
     return (
@@ -189,17 +194,28 @@ def render_request_dashboard(state):
         with summary_panel:
             counts = [item["revisions"][-1]["status"] for item in filtered]
             metrics = st.columns(4)
-            for column, label, count in zip(
+            for column, label, count, group, slug in zip(
                 metrics,
                 ("Draft", "Submitted / pending", "Approved", "Rejected"),
                 (counts.count("Draft"), counts.count("Submitted"),
                  sum(status in _APPROVED for status in counts), counts.count("Rejected")),
+                (["Draft"], ["Submitted"], [s for s in request_workflow.STATUSES if s in _APPROVED], ["Rejected"]),
+                ("draft", "submitted", "approved", "rejected"),
             ):
-                column.metric(
-                    localization.translate(label), count,
-                    help=localization.translate("Approved includes Approved, Ticket approved, CAB approved and Simulated.")
-                    if label == "Approved" else None,
-                )
+                with column:
+                    with st.container(key=f"rd_status_card_{slug}"):
+                        st.metric(
+                            localization.translate(label), count,
+                            help=localization.translate("Approved includes Approved, Ticket approved, CAB approved and Simulated.")
+                            if label == "Approved" else None,
+                        )
+                        st.button(
+                            f"{localization.translate(label)}: {count}",
+                            key=f"rd_status_click_{slug}",
+                            type="primary" if set(statuses) == set(group) else "secondary",
+                            on_click=_filter_status_card, args=(group,),
+                            use_container_width=True,
+                        )
         st.markdown(
             '<div class="request-register-section"><h3>'
             + escape(localization.translate("Request register"))

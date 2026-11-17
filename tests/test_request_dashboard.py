@@ -119,6 +119,24 @@ class DashboardTests(unittest.TestCase):
         self.clean(app)
         self.assertNotIn("demo_requests", app.session_state)
 
+    def test_clickable_status_cards(self):
+        app = self.app()
+        state = {"demo_user": "Sajid", "demo_role": "Submitter"}
+        for status in ("Draft", "Submitted", "Approved", "Ticket approved", "CAB approved", "Simulated", "Rejected"):
+            ref = new_request(state)
+            state["demo_requests"][ref]["revisions"][-1]["status"] = status
+        app.session_state["demo_requests"] = state["demo_requests"]
+        app.run()
+        for slug, expected in (("draft", ["Draft"]), ("submitted", ["Submitted"]),
+                               ("approved", ["Approved", "Ticket approved", "CAB approved", "Simulated"]),
+                               ("rejected", ["Rejected"])):
+            app.button(key=f"rd_status_click_{slug}").click().run()
+            self.clean(app)
+            self.assertEqual(set(app.multiselect(key="rd_statuses").value), set(expected))
+            self.assertEqual(len([b for b in app.button if str(b.key).startswith("rd_view_")]), len(expected))
+        app.button(key="rd_status_click_rejected").click().run()
+        self.assertEqual(app.multiselect(key="rd_statuses").value, [])
+
 
 if __name__ == "__main__":
     unittest.main()
