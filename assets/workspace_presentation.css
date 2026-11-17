@@ -110,6 +110,52 @@ section[data-testid="stSidebar"] [data-testid="stSidebarUserContent"] {padding-t
 }
 
 /* Demo account control, pinned to the bottom of the sidebar. */
+/* Signed-out guide: quiet document motif, not navigation or sample results. */
+section[data-testid="stSidebar"] .signed-out-guide {
+    margin-block: clamp(12px, 4vh, 38px) 20px;
+    padding: 18px 16px 8px; border-top: 1px solid #d6e5de;
+    color: #436760; text-align: start;
+}
+section[data-testid="stSidebar"] .signed-out-guide__motif {
+    display: block; width: 100%; height: 106px; margin-block-end: 15px;
+}
+section[data-testid="stSidebar"] .signed-out-guide h3 {
+    margin: 0 0 14px; padding: 0; color: #285e54;
+    font-family: inherit; font-size: .88rem; font-weight: 650; line-height: 1.6;
+}
+section[data-testid="stSidebar"] .signed-out-guide ol {
+    list-style: none; margin: 0; padding: 0; display: grid; gap: 14px;
+}
+section[data-testid="stSidebar"] .signed-out-guide li {
+    display: flex; align-items: flex-start; gap: 10px; margin: 0; padding: 0;
+}
+section[data-testid="stSidebar"] .signed-out-guide__marker {
+    flex: 0 0 9px; width: 9px; height: 9px; margin-block-start: 6px;
+    border: 1px solid #b49643; border-radius: 50%; background: #f6edcf;
+}
+section[data-testid="stSidebar"] .signed-out-guide strong {
+    display: block; color: #285e54; font-size: .8rem; font-weight: 650; line-height: 1.5;
+}
+section[data-testid="stSidebar"] .signed-out-guide p {
+    margin: 3px 0 0; color: #617a72; font-size: .73rem;
+    line-height: 1.65; overflow-wrap: anywhere;
+}
+section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"]:has(> .signed-out-guide) {
+    margin-bottom: 0 !important;
+}
+/* Let the guide yield space before the existing sticky SSO account panel. */
+@media (max-height: 740px) {
+    section[data-testid="stSidebar"] .signed-out-guide {margin-block: 8px 12px; padding-block-start: 12px;}
+    section[data-testid="stSidebar"] .signed-out-guide__motif {height: 64px; margin-block-end: 8px;}
+    section[data-testid="stSidebar"] .signed-out-guide ol {gap: 8px;}
+    section[data-testid="stSidebar"] .signed-out-guide h3 {margin-bottom: 8px;}
+}
+@media (max-height: 560px) {
+    section[data-testid="stSidebar"] .signed-out-guide__motif,
+    section[data-testid="stSidebar"] .signed-out-guide p {display: none;}
+    section[data-testid="stSidebar"] .signed-out-guide {margin-block: 4px 8px; padding-block: 8px 0;}
+    section[data-testid="stSidebar"] .signed-out-guide ol {gap: 5px;}
+}
 section[data-testid="stSidebar"] [data-testid="stSidebarContent"] {display: flex; flex-direction: column; padding-bottom: 0 !important;}
 section[data-testid="stSidebar"] [data-testid="stSidebarUserContent"] {flex: 1 0 auto; display: flex; flex-direction: column; padding-bottom: 0 !important;}
 section[data-testid="stSidebar"] [data-testid="stSidebarUserContent"] > div,

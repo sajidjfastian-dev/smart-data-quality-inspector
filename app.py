@@ -17,7 +17,7 @@ from localization import language, native, st, translate, translate_issue_type, 
 from api_settings import render_api_settings
 from api_connections import ApiConnectionError, request_public_api
 from data_insights import render_data_insights
-from workspace_presentation import install_presentation_styles, remove_legacy_footer, render_account_panel
+from workspace_presentation import install_presentation_styles, remove_legacy_footer, render_account_panel, render_signed_out_sidebar
 from demo_session import is_signed_in
 from review_approval import sync_context, invalidate, change_index, frame_digest
 from review_ui import render_checker_review
@@ -2184,6 +2184,8 @@ with st.sidebar:
         if st.session_state.get("demo_role", "Submitter") == "Submitter":
             native.button(translate("New request"), key="nav_new_request", width="stretch",
                           icon=":material/add_circle:", on_click=start_new, args=(st.session_state,))
+    if not is_signed_in():
+        render_signed_out_sidebar()
     settings_anchor = render_account_panel()
 
 uploaded_files = None

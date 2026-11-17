@@ -36,6 +36,48 @@ def show_login_notice():
     notice()
 
 
+def render_signed_out_sidebar():
+    """A decorative, translated guide for the otherwise empty signed-out sidebar."""
+    if signed_in_user():
+        return
+
+    def text(value):
+        return html.escape(translate(value))
+
+    steps = (
+        ("Data security", "Review changes before any production action."),
+        ("Privacy first", "Mask sensitive columns before sharing."),
+        ("Compliance-aware review", "Check data against your organisation’s quality rules."),
+    )
+    guide = "".join(
+        '<li><span class="signed-out-guide__marker" aria-hidden="true"></span>'
+        f'<div><strong>{text(title)}</strong><p>{text(description)}</p></div></li>'
+        for title, description in steps
+    )
+    native.markdown(
+        '<div class="signed-out-guide">'
+        '<svg class="signed-out-guide__motif" viewBox="0 0 224 106" '
+        'xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">'
+        '<ellipse cx="112" cy="94" rx="75" ry="5" fill="#e3eee7"/>'
+        '<g fill="#eef5ef" stroke="#cedfd5" stroke-width="1.2">'
+        '<rect x="51" y="12" width="99" height="75" rx="8" transform="rotate(-8 100 50)"/>'
+        '<rect x="70" y="9" width="99" height="81" rx="8"/>'
+        '</g>'
+        '<g fill="none" stroke="#abc7b9" stroke-width="2" stroke-linecap="round">'
+        '<path d="M84 26h38M84 40h14m9 0h15M84 54h38M84 68h14m9 0h15"/>'
+        '</g>'
+        '<rect x="133" y="34" width="23" height="23" rx="6" fill="#f5eccf" stroke="#d9c487"/>'
+        '<path d="m139 45 4 4 7-8" fill="none" stroke="#8c763a" stroke-width="1.8" '
+        'stroke-linecap="round" stroke-linejoin="round"/>'
+        '<circle cx="40" cy="65" r="3" fill="#d6e6dc"/>'
+        '<path d="M183 19v8m-4-4h8" stroke="#cbb56f" stroke-width="1.3" stroke-linecap="round"/>'
+        '</svg>'
+        f'<h3>{text("Handle your data responsibly")}</h3>'
+        f'<ol>{guide}</ol></div>',
+        unsafe_allow_html=True,
+    )
+
+
 def render_account_panel():
     """Bottom-of-sidebar account and settings controls; returns the settings anchor."""
     with native.container(key="account_panel"):
