@@ -1461,43 +1461,53 @@ st.markdown(
     }
     .section-heading h2 {margin: 0; font-size: 1.35rem; letter-spacing: -.025em;}
     .section-caption {color: var(--muted); font-size: .88rem; margin-top: .25rem;}
+    .workflow-panel {
+        padding: 20px; border: 1px solid #dce9e3; border-radius: 16px;
+        background: linear-gradient(120deg, #f6fbf8, #fff 68%);
+        box-shadow: 0 6px 22px rgba(23, 52, 58, .045);
+    }
+    .workflow-header {
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 12px; margin-bottom: 16px;
+    }
+    .workflow-heading {color: #173c3b; font-size: .97rem; font-weight: 750; letter-spacing: -.02em;}
+    .workflow-subheading {color: #647d76; font-size: .75rem; margin-top: 3px;}
+    .workflow-badge {
+        flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px;
+        padding: 6px 10px; border: 1px solid #cce9dd; border-radius: 999px;
+        color: #176c59; background: #eaf8f1; font-size: .68rem; font-weight: 700;
+    }
+    .workflow-badge::before {content: ""; width: 6px; height: 6px; border-radius: 50%; background: #39a67c;}
     .workflow-strip {
         display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
-        align-items: stretch; gap: 9px;
-        margin: .15rem 0 .85rem; padding: 11px;
-        background: linear-gradient(115deg, #f1f8f6, #f8faf8 55%, #f2f7f5);
-        border: 1px solid #dfe9e5; border-radius: 16px;
-        box-shadow: 0 5px 16px rgba(23, 52, 58, .045);
+        align-items: stretch; gap: 8px;
     }
     .workflow-step {
         display: flex; align-items: flex-start; gap: 9px; min-width: 0;
-        padding: 10px 9px; border: 1px solid transparent; border-radius: 11px;
-        background: rgba(255,255,255,.78);
-        color: #758198; font-size: .77rem; font-weight: 650;
-        transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
+        padding: 13px 10px; border: 1px solid #e4ece8; border-radius: 11px;
+        background: #fff; color: #758198; font-size: .77rem; font-weight: 650;
     }
     .workflow-step > span {display: block; min-width: 0; padding-top: 1px;}
     .workflow-step b {
-        display: block; color: var(--ink); font-size: .82rem; font-weight: 720;
-        line-height: 1.25; letter-spacing: -.01em;
+        display: block; color: #173d3b; font-size: .79rem; font-weight: 720;
+        line-height: 1.3; letter-spacing: -.01em;
     }
     .workflow-step small {
-        display: block; color: var(--muted); font-size: .73rem;
-        font-weight: 450; line-height: 1.35; margin-top: 4px;
+        display: block; color: #657b76; font-size: .71rem;
+        font-weight: 450; line-height: 1.45; margin-top: 5px;
     }
     .workflow-step strong {
         display: grid; place-items: center; flex: 0 0 29px; width: 29px; height: 29px;
-        border: 1px solid transparent; border-radius: 10px;
+        border: 1px solid transparent; border-radius: 9px;
         background: #edf0f6; color: #65728a; font-size: .72rem;
     }
     .workflow-step-active {color: var(--teal-dark);}
-    .workflow-step-complete {background: #f7fbf9; border-color: #e0eee9;}
+    .workflow-step-complete {background: #f8fcfa; border-color: #deeee6;}
     .workflow-step-complete strong {
         background: #dff3ed; border-color: #cbe9df; color: #087568;
     }
     .workflow-step-findings {
-        background: #fffaf0; border-color: #f0e2bd;
-        box-shadow: inset 0 0 0 1px rgba(218, 170, 0, .04);
+        background: #fffbf2; border-color: #f1e4c3;
     }
     .workflow-step-findings strong {
         background: #fff0c4; border-color: #f1dfa0; color: #8a6800;
@@ -1506,7 +1516,7 @@ st.markdown(
     .workflow-step-clear strong {
         background: #e2f4e6; border-color: #d0e9d5; color: #21784a;
     }
-    .workflow-step-ready {background: rgba(255,255,255,.68); border-color: #e7ece9;}
+    .workflow-step-ready {background: #fff; border-color: #e7ece9;}
     .workflow-step-ready strong {background: #f0f2f5; border-color: #e7eaf0; color: #718096;}
     .st-key-active_dataset [data-baseweb="select"] {
         border-radius: 10px; background: #fff;
@@ -1555,24 +1565,36 @@ st.markdown(
         color: var(--teal-dark); border-bottom-color: var(--teal);
         background: #eaf7f4;
     }
-    .st-key-dashboard_tabs [role="tablist"] {
-        display: flex; gap: 6px; padding: 6px; border: 1px solid #dceae4;
-        border-radius: 14px; background: #edf5f1;
+    .st-key-dashboard_tabs > div > [role="tablist"] {
+        display: flex; gap: 4px; padding: 5px; border: 1px solid #dbe8e2;
+        border-radius: 13px; background: #fff;
+        box-shadow: 0 5px 18px rgba(22, 65, 57, .05);
+        scrollbar-width: thin; scrollbar-color: #a2c8bb transparent;
     }
-    .st-key-dashboard_tabs [role="tab"] {
-        flex: 1 0 auto; justify-content: center; padding: 12px 14px;
-        border: 1px solid transparent; border-radius: 10px; color: #5b746d;
-        transition: background .18s ease, box-shadow .18s ease;
+    .st-key-dashboard_tabs > div > [role="tablist"] > [role="tab"] {
+        flex: 1 0 auto; justify-content: center; min-height: 44px; padding: 10px 11px;
+        border: 1px solid transparent; border-radius: 9px; color: #536b67;
+        transition: background .18s ease, color .18s ease, box-shadow .18s ease;
     }
-    .st-key-dashboard_tabs [role="tab"] p {font-weight: 700; font-size: .83rem;}
-    .st-key-dashboard_tabs [role="tab"][aria-selected="true"] {
-        color: #086c5f; background: #fff; border-color: #d6e8df;
-        box-shadow: 0 3px 10px rgba(22,78,64,.08);
+    .st-key-dashboard_tabs > div > [role="tablist"] > [role="tab"] p {
+        color: inherit; font-weight: 650; font-size: .82rem; white-space: nowrap;
     }
-    .st-key-dashboard_tabs [role="tab"]:focus-visible {outline: 3px solid #d0a319; outline-offset: 2px;}
-    .st-key-dashboard_tabs .react-aria-SelectionIndicator {display: none;}
+    .st-key-dashboard_tabs > div > [role="tablist"] > [role="tab"]:hover:not([aria-selected="true"]) {
+        background: #f0f8f4; color: #075e56;
+    }
+    .st-key-dashboard_tabs > div > [role="tablist"] > [role="tab"][aria-selected="true"] {
+        color: #fff; background: #087467; border-color: #087467;
+        box-shadow: 0 4px 10px rgba(0, 94, 82, .18);
+    }
+    .st-key-dashboard_tabs > div > [role="tablist"] > [role="tab"][aria-selected="true"] p {
+        color: #fff;
+    }
+    .st-key-dashboard_tabs > div > [role="tablist"] > [role="tab"]:focus-visible {
+        outline: 3px solid #d0a319; outline-offset: 2px;
+    }
+    .st-key-dashboard_tabs > div > [role="tablist"] .react-aria-SelectionIndicator {display: none;}
     @media (prefers-reduced-motion: reduce) {
-        .st-key-dashboard_tabs [role="tab"] {transition: none;}
+        .st-key-dashboard_tabs > div > [role="tablist"] > [role="tab"] {transition: none;}
     }
     .stButton button, .stDownloadButton button {
         min-height: 2.55rem; border-radius: 10px; font-weight: 640;
@@ -1621,14 +1643,20 @@ st.markdown(
         .welcome-title {font-size: 2.25rem;}
         .welcome-preview {padding: 20px;}
         .welcome-steps {grid-template-columns: 1fr; gap: 16px; padding-top: 20px;}
-        .workflow-strip {grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; padding: 8px;}
-        .workflow-step {gap: 7px; padding: 9px 8px;}
+        .workflow-panel {padding: 15px;}
+        .workflow-header {align-items: flex-start; flex-wrap: wrap;}
+        .workflow-strip {grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px;}
+        .workflow-step {gap: 7px; padding: 10px 8px;}
         .workflow-step:last-child {grid-column: span 2;}
         .workflow-step b {font-size: .78rem;}
         .workflow-step small {font-size: .70rem;}
         .workflow-step strong {flex-basis: 26px; width: 26px; height: 26px;}
         [data-testid="stTabs"] [role="tablist"] {overflow-x: auto; flex-wrap: nowrap; scrollbar-width: thin;}
         [data-testid="stTabs"] [role="tab"] {flex: 0 0 auto; padding: .5rem .65rem; font-size: .8rem; white-space: nowrap;}
+        .st-key-dashboard_tabs > div > [role="tablist"] {
+            padding-inline: 25px; scroll-padding-inline: 25px; scroll-snap-type: x proximity;
+        }
+        .st-key-dashboard_tabs > div > [role="tablist"] > [role="tab"] {flex: 0 0 auto; scroll-snap-align: start;}
         .st-key-metric_cards [data-testid="stHorizontalBlock"] {
             display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem;
         }
@@ -2179,7 +2207,8 @@ if cached_scan and cached_scan["rules"] == rule_signature:
     duplicate_count = cached_scan["duplicates"]
     column_profile = cached_scan["profile"]
 else:
-    with st.status(
+    inspection_slot = st.empty()
+    with inspection_slot.status(
         f"Inspecting {len(data):,} rows across {len(columns):,} columns...",
         expanded=True,
     ) as inspection_status:
@@ -2233,6 +2262,7 @@ else:
             state="complete",
             expanded=False,
         )
+    inspection_slot.empty()
     quality_scan_cache[active_dataset] = {
         "rules": rule_signature,
         "issues": issues,
@@ -2252,17 +2282,20 @@ findings_step = (
 )
 findings_status = "workflow-step-findings" if issue_count else "workflow-step-clear"
 findings_icon = "!" if issue_count else "✓"
-with st.expander("Inspection workflow", expanded=False):
-    st.markdown(
-        '<div class="workflow-strip" aria-label="File inspection progress">'
-        f'<span class="workflow-step workflow-step-complete"><strong>✓</strong><span><b>File loaded</b><small>{len(data):,} rows · {len(columns):,} columns</small></span></span>'
-        '<span class="workflow-step workflow-step-complete"><strong>✓</strong><span><b>Inspection complete</b><small>Active quality rules applied</small></span></span>'
-        f'<span class="workflow-step {findings_status}"><strong>{findings_icon}</strong><span><b>Findings</b><small>{findings_step}</small></span></span>'
-        '<span class="workflow-step workflow-step-ready"><strong>4</strong><span><b>Review &amp; fix</b><small>Ready when you are</small></span></span>'
-        '<span class="workflow-step workflow-step-ready"><strong>5</strong><span><b>Export</b><small>Use Preview &amp; export</small></span></span>'
-        '</div>',
-        unsafe_allow_html=True,
-    )
+st.markdown(
+    '<section class="workflow-panel" aria-label="Inspection workflow">'
+    '<div class="workflow-header"><div><div class="workflow-heading">Inspection workflow</div>'
+    '<div class="workflow-subheading">Your file’s journey from inspection to export</div></div>'
+    '<span class="workflow-badge">Inspection complete</span></div>'
+    '<div class="workflow-strip" role="list" aria-label="File inspection progress">'
+    f'<div role="listitem" class="workflow-step workflow-step-complete"><strong>✓</strong><span><b>File loaded</b><small>{len(data):,} rows · {len(columns):,} columns</small></span></div>'
+    '<div role="listitem" class="workflow-step workflow-step-complete"><strong>✓</strong><span><b>Inspection complete</b><small>Active quality rules applied</small></span></div>'
+    f'<div role="listitem" class="workflow-step {findings_status}"><strong>{findings_icon}</strong><span><b>Findings</b><small>{findings_step}</small></span></div>'
+    '<div role="listitem" class="workflow-step workflow-step-ready"><strong>4</strong><span><b>Review &amp; fix</b><small>Ready when you are</small></span></div>'
+    '<div role="listitem" class="workflow-step workflow-step-ready"><strong>5</strong><span><b>Export</b><small>Use Preview &amp; export</small></span></div>'
+    '</div></section>',
+    unsafe_allow_html=True,
+)
 st.caption(
     f"Workspace · {len(datasets):,} file(s) · {batch_row_count:,} rows total · "
     f"Inspecting **{active_dataset}** · {int(data.memory_usage(deep=True).sum() / 1024):,} KB in memory"

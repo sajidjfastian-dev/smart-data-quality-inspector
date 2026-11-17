@@ -104,6 +104,27 @@ class QuickSampleTests(unittest.TestCase):
             self.app.session_state["quality_scan_cache"][SAMPLE]["issues"], scan["issues"]
         )
 
+    def test_inspection_workflow_stays_visible_with_and_without_findings(self):
+        self.load_sample()
+
+        def workflow(app):
+            return next(item.value for item in app.markdown if 'class="workflow-panel"' in item.value)
+
+        self.assertNotIn("Inspection workflow", [item.label for item in self.app.expander])
+        self.assertIn("10 findings · 1 duplicate row", workflow(self.app))
+        for stage in ("File loaded", "Inspection complete", "Findings", "Review &amp; fix", "Export"):
+            self.assertIn(stage, workflow(self.app))
+        self.app.run()
+        self.assertIn("10 findings · 1 duplicate row", workflow(self.app))
+
+        clean = AppTest.from_file(str(APP), default_timeout=30).run()
+        clean.session_state["inspector_datasets"] = {"Clean data": pd.DataFrame({"id": [1, 2]})}
+        clean.session_state["active_dataset"] = "Clean data"
+        clean.run()
+        self.assert_no_exception(clean)
+        self.assertIn("No findings under enabled checks", workflow(clean))
+        self.assertIn("workflow-step-clear", workflow(clean))
+
     def test_issue_report_download_matches_visible_filtered_findings(self):
         # AppTest exposes the download button but not its bytes. Capture the
         # actual argument while still rendering the real Streamlit button.
