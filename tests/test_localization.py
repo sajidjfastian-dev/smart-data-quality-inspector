@@ -5,6 +5,7 @@ from unittest.mock import patch
 import pandas as pd
 from pandas.testing import assert_frame_equal
 from streamlit.testing.v1 import AppTest
+from demo_login import signed_in
 
 import api_settings
 from localization import translate, translate_issue_type
@@ -20,26 +21,26 @@ class LocalizationTests(unittest.TestCase):
         self.assertEqual(translate("Active file", "English"), "Active file")
 
     def test_language_switch_keeps_loaded_dataset(self):
-        app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"), default_timeout=90).run()
+        app = signed_in(AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"), default_timeout=90)).run()
         self.assertFalse(app.exception)
         app.button(key="sidebar_sample").click().run(timeout=90)
         active_file = app.selectbox(key="active_dataset").value
-        app.button(key="language_toggle").click().run(timeout=90)
+        app.segmented_control(key="language_choice").set_value("AR").run(timeout=90)
         self.assertFalse(app.exception)
         self.assertEqual(app.selectbox(key="active_dataset").value, active_file)
         self.assertIn("درجة جودة البيانات", app.button(key="metric_card_health").label)
         self.assertIn("نظرة عامة", app.tabs[0].label)
-        app.button(key="language_toggle").click().run(timeout=90)
+        app.segmented_control(key="language_choice").set_value("EN").run(timeout=90)
         self.assertFalse(app.exception)
         self.assertEqual(app.selectbox(key="active_dataset").value, active_file)
         self.assertEqual(app.tabs[0].label, "1 · Overview")
 
     def test_arabic_settings_api_errors_and_dataset_are_preserved(self):
-        app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"), default_timeout=90).run()
+        app = signed_in(AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"), default_timeout=90)).run()
         load_test_fixture(app)
         name = app.selectbox(key="active_dataset").value
         before = app.session_state["inspector_datasets"][name].copy(deep=True)
-        app.button(key="language_toggle").click().run()
+        app.segmented_control(key="language_choice").set_value("AR").run()
         self.assertFalse(app.exception)
         self.assertEqual(app.checkbox(key="check_email").label, "تنسيقات البريد الإلكتروني غير الصالحة")
         url = "https://example.com/Rows?value=Upload"
@@ -49,14 +50,14 @@ class LocalizationTests(unittest.TestCase):
         self.assertTrue(any("مسار بيانات JSON" in error.value for error in app.error))
         self.assertEqual(app.text_input(key="source_api_url").value, url)
         assert_frame_equal(app.session_state["inspector_datasets"][name], before)
-        app.button(key="language_toggle").click().run()
+        app.segmented_control(key="language_choice").set_value("EN").run()
         self.assertEqual(app.text_input(key="source_api_url").value, url)
         assert_frame_equal(app.session_state["inspector_datasets"][name], before)
 
     def test_arabic_assistant_answers_common_intents(self):
-        app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"), default_timeout=90).run()
+        app = signed_in(AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"), default_timeout=90)).run()
         load_test_fixture(app)
-        app.button(key="language_toggle").click().run()
+        app.segmented_control(key="language_choice").set_value("AR").run()
         app.session_state["dashboard_tabs"] = "5 · المساعد"
         app.run()
         for question, expected in [
@@ -76,11 +77,11 @@ class LocalizationTests(unittest.TestCase):
         self.assertEqual(translate_issue_type("Custom: Must contain", "English"), "Custom: Must contain")
 
     def test_switching_languages_keeps_fixed_copy_and_insights(self):
-        app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"), default_timeout=90).run()
+        app = signed_in(AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"), default_timeout=90)).run()
         load_test_fixture(app)
         name = app.selectbox(key="active_dataset").value
         original = app.session_state["inspector_datasets"][name].copy(deep=True)
-        app.button(key="language_toggle").click().run()
+        app.segmented_control(key="language_choice").set_value("AR").run()
         app.session_state["dashboard_tabs"] = "3 · مراجعة وإصلاح"
         app.run()
         button = next(button for button in app.button if button.label == "تطبيق الإصلاحات المحددة")
@@ -91,7 +92,7 @@ class LocalizationTests(unittest.TestCase):
         app.session_state["dashboard_tabs"] = "6 · رؤى البيانات"
         app.run()
         self.assertTrue(any("حقولك في لمحة" in item.value for item in app.subheader))
-        app.button(key="language_toggle").click().run()
+        app.segmented_control(key="language_choice").set_value("EN").run()
         assert_frame_equal(app.session_state["fixed_datasets"][name], fixed)
         assert_frame_equal(app.session_state["inspector_datasets"][name], original)
         self.assertTrue(any("Your fields at a glance" in item.value for item in app.subheader))

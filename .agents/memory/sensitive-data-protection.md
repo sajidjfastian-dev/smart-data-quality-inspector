@@ -9,6 +9,12 @@ Mask sensitive data across screens, downloads, and external API and model reques
 
 **How to apply:** Preserve the original data for inspection, acknowledge that automatic detection can miss sensitive information, and do not represent masking alone as regulatory compliance.
 
+The user requested that “I reviewed all columns for sensitive data” be checked by default.
+
+**Why:** The user explicitly requested this default rather than a mandatory manual confirmation.
+
+**How to apply:** Keep automatic and manually selected column masking active. Allow users to uncheck the review checkbox; do not reset their explicit choice on reruns. A default check is not evidence of an actual human review.
+
 For persistent upload history, retain inspection summaries only for 30 days, not original files or masked file copies.
 
 **Why:** The user explicitly chose summaries-only history and a 30-day retention period.

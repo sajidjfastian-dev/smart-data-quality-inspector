@@ -8,6 +8,7 @@ from localization import st, translate, language
 
 from api_connections import ApiConnectionError, SAMPLE_API_URL, fetch_api_data, push_api_data
 from security_guardrails import mask_dataframe
+from demo_session import is_signed_in
 
 
 def _auth_controls(prefix):
@@ -46,6 +47,15 @@ def render_api_settings(active_dataset=None, data=None, fixed_data=None,
         "GET a public HTTPS endpoint returning JSON, CSV, or Excel. For JSON, "
         "choose the object path that contains an array of rows."
     )
+    if not is_signed_in():
+        st.info("Log in to read data from an API.", icon=":material/lock:")
+    else:
+        _render_api_reader()
+
+    _render_api_push(active_dataset, data, fixed_data, sensitive_columns, privacy_reviewed)
+
+
+def _render_api_reader():
     if st.button(
         "Try sample API", key="sample_external_api", icon=":material/science:",
         help="Fetch ten public sample users from JSONPlaceholder.",
@@ -73,6 +83,8 @@ def render_api_settings(active_dataset=None, data=None, fixed_data=None,
                 source_header, "API data",
             )
 
+
+def _render_api_push(active_dataset, data, fixed_data, sensitive_columns, privacy_reviewed):
     st.divider()
     st.markdown("**Push data to an API**")
     st.caption(

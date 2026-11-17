@@ -6,6 +6,7 @@ import pandas as pd
 
 from data_insights import category_counts, date_counts, insight_sample, numeric_relationship, numeric_summary
 from streamlit.testing.v1 import AppTest
+from demo_login import signed_in
 from sample_fixtures import load_test_fixture
 
 
@@ -57,7 +58,7 @@ class DataInsightsTests(unittest.TestCase):
 
 class DataInsightsUiTests(unittest.TestCase):
     def test_sample_navigation_and_insight_sections(self):
-        app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"), default_timeout=30).run()
+        app = signed_in(AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"), default_timeout=30)).run()
         load_test_fixture(app)
         next(item for item in app.checkbox if item.label == "I reviewed all columns for sensitive data").check().run()
         app.session_state["dashboard_tabs"] = "6 · Data insights"

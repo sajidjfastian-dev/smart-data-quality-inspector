@@ -14,6 +14,7 @@ import pandas as pd
 import psycopg
 from psycopg.rows import dict_row
 from streamlit.testing.v1 import AppTest
+from demo_login import signed_in
 
 from inspection_history import (
     HistoryRepository, HistoryUnavailable, InspectionSummary, build_summary,
@@ -103,23 +104,9 @@ class DatabaseHistoryTests(unittest.TestCase):
 
 
 class HistoryUiTests(unittest.TestCase):
-    def test_history_is_available_but_data_access_disabled_before_sso(self):
-        with patch("inspection_history._connect", side_effect=AssertionError("Must not access DB before SSO")):
-            app = AppTest.from_file(str(ROOT / "app.py"), default_timeout=30).run()
-            app.button(key="nav_history").click().run()
-            self.assertFalse(app.exception)
-            self.assertTrue(app.button(key="history_signin_pending").disabled)
-            self.assertTrue(any("Organisation SSO setup pending" in item.value for item in app.subheader))
-            app.button(key="language_toggle").click().run()
-            self.assertFalse(app.exception)
-            self.assertEqual(app.header[0].value, "سجل الفحوصات")
-            app.button(key="history_back").click().run()
-            self.assertFalse(app.exception)
-            self.assertTrue(any('welcome-panel' in item.value for item in app.markdown))
-
     def test_save_disabled_and_inspection_remains_functional(self):
         with patch("inspection_history._connect", side_effect=AssertionError("Must not persist before SSO")):
-            app = AppTest.from_file(str(ROOT / "app.py"), default_timeout=30).run()
+            app = signed_in(AppTest.from_file(str(ROOT / "app.py"), default_timeout=30)).run()
             app.session_state["inspector_datasets"] = {"private.csv": pd.DataFrame({"amount": [1, None, 1]})}
             app.session_state["active_dataset"] = "private.csv"
             app.run()

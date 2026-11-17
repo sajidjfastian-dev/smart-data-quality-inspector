@@ -9,6 +9,7 @@ import pandas as pd
 from pandas.testing import assert_frame_equal
 import streamlit as st
 from streamlit.testing.v1 import AppTest
+from demo_login import signed_in
 from sample_fixtures import load_test_fixture
 
 
@@ -41,7 +42,7 @@ FIX_LABELS = [
 class QuickSampleTests(unittest.TestCase):
     def setUp(self):
         # Each test gets its own session; never import app.py as a helper module.
-        self.app = AppTest.from_file(str(APP), default_timeout=30).run()
+        self.app = signed_in(AppTest.from_file(str(APP), default_timeout=30)).run()
         self.assert_no_exception()
 
     def assert_no_exception(self, app=None):
@@ -73,8 +74,8 @@ class QuickSampleTests(unittest.TestCase):
         self.assertNotIn("inspector_datasets", self.app.session_state)
         landing = next(item.value for item in self.app.markdown if 'class="welcome-panel"' in item.value)
         self.assertIn("Turn data into", landing)
-        self.assertIn("Start in the sidebar", landing)
-        for check in ("missing values", "duplicates", "formats", "outliers"):
+        self.assertIn("Get started with your data", landing)
+        for check in ("Missing values", "Duplicates", "Invalid formats", "Outliers"):
             self.assertIn(check, landing)
         self.assertNotIn("Explore with 50-row quick sample", [button.label for button in self.app.button])
         self.assertFalse(self.widget("button", "Explore sample workspace").disabled)
@@ -117,7 +118,7 @@ class QuickSampleTests(unittest.TestCase):
         self.app.run()
         self.assertIn("10 findings · 1 duplicate row", workflow(self.app))
 
-        clean = AppTest.from_file(str(APP), default_timeout=30).run()
+        clean = signed_in(AppTest.from_file(str(APP), default_timeout=30)).run()
         clean.session_state["inspector_datasets"] = {"Clean data": pd.DataFrame({"id": [1, 2]})}
         clean.session_state["active_dataset"] = "Clean data"
         clean.run()
@@ -404,7 +405,7 @@ class QuickSampleTests(unittest.TestCase):
             self.issue_keys(self.app.session_state["quality_scan_cache"][SAMPLE]["issues"]),
             EXPECTED_ISSUES,
         )
-        fresh = AppTest.from_file(str(APP), default_timeout=30).run()
+        fresh = signed_in(AppTest.from_file(str(APP), default_timeout=30)).run()
         self.assert_no_exception(fresh)
         self.assertNotIn("inspector_datasets", fresh.session_state)
         self.assertNotIn("fixed_datasets", fresh.session_state)

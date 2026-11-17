@@ -9,6 +9,7 @@ from unittest.mock import patch
 import pandas as pd
 import streamlit as st
 from streamlit.testing.v1 import AppTest
+from demo_login import signed_in
 
 from security_guardrails import (
     MASK, detect_sensitive_columns, mask_dataframe, mask_findings,
@@ -49,7 +50,7 @@ class MaskingTests(unittest.TestCase):
 
 class PrivacyFlowTests(unittest.TestCase):
     def setUp(self):
-        self.app = AppTest.from_file(str(ROOT / "app.py"), default_timeout=60).run()
+        self.app = signed_in(AppTest.from_file(str(ROOT / "app.py"), default_timeout=60)).run()
         self.data = pd.DataFrame({
             "name": ["Alice Smith", "Bob Jones", "Alice Smith"],
             "email": ["alice@example.com", "bob@example.com", "alice@example.com"],

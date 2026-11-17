@@ -17,9 +17,9 @@ from localization import language, native, st, translate, translate_issue_type, 
 from api_settings import render_api_settings
 from api_connections import ApiConnectionError, request_public_api
 from data_insights import render_data_insights
-from workspace_presentation import install_presentation_styles, landing_markup, render_motion_control, render_viewport_footer, render_workspace_menu, show_login_notice
-from history_ui import render_history, render_save_summary
-from inspection_history import build_summary
+from workspace_presentation import install_presentation_styles, remove_legacy_footer, render_account_panel
+from demo_session import is_signed_in
+from history_ui import render_history
 from quality_large import scan_large_data
 from security_guardrails import MASK, detect_sensitive_columns, mask_dataframe, mask_findings, mask_text, mask_text_with_dataset
 
@@ -1159,7 +1159,7 @@ st.markdown(
         align-items: center; flex-wrap: nowrap; gap: 12px;
     }
     .st-key-app_header [data-testid="stColumn"]:nth-child(1) {flex: 1 1 auto; width: auto !important; min-width: 0;}
-    .st-key-app_header [data-testid="stColumn"]:nth-child(2) {flex: 0 0 42px; width: 42px !important; min-width: 42px;}
+    .st-key-app_header [data-testid="stColumn"]:nth-child(2) {flex: 0 0 auto; width: auto !important; min-width: 0;}
     .st-key-app_header [data-testid="stColumn"]:nth-child(3) {flex: 0 0 140px; width: 140px !important; min-width: 140px;}
     .brand-header {display: flex; align-items: center; gap: 12px; margin: 0; padding: 0; min-width: 0;}
     .brand-logo {
@@ -1174,21 +1174,21 @@ st.markdown(
         line-height: 1.15; font-weight: 740; letter-spacing: -.025em;
     }
     .brand-subtitle {color: #d0dfdc; font-size: .75rem; margin-top: 3px;}
-    .st-key-language_toggle button, .st-key-header_demo button {
+    .st-key-header_demo button {
         min-height: 40px; border: 1px solid rgba(218, 239, 234, .3);
         border-radius: 10px; color: #fff; background: rgba(255,255,255,.1);
     }
-    .st-key-language_toggle button:hover, .st-key-header_demo button:hover {
+    .st-key-header_demo button:hover {
         color: #fff; border-color: #b8e7dc; background: rgba(255,255,255,.18);
     }
     .st-key-header_demo button p {color: #fff !important; white-space: normal; line-height: 1.2;}
-    .st-key-language_toggle button:focus-visible, .st-key-header_demo button:focus-visible {
+    .st-key-header_demo button:focus-visible {
         outline: 3px solid #efcf71; outline-offset: 2px;
     }
-    .st-key-language_toggle button p {
-        position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
-        overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
-    }
+    .login-notice {padding: 20px; border-radius: 14px; margin-bottom: 14px; background: #eef7f4; border: 1px solid #cfe5de;}
+    .login-notice .login-kicker {font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; color: #2d6b62; font-weight: 700;}
+    .login-notice h3 {font-size: 1.3rem; color: #12312f; margin: 8px 0;}
+    .login-notice p {font-size: .9rem; line-height: 1.7; color: #3f5f5a; margin: 0;}
     .welcome-panel {
         position: relative; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(320px, .95fr);
         align-items: center; gap: 42px clamp(28px, 4vw, 64px);
@@ -1361,8 +1361,6 @@ st.markdown(
     }
     .sidebar-session-note {display: flex; align-items: center; gap: 7px; color: #6b807a; font-size: .72rem; padding-top: 8px;}
     .sidebar-session-note::before {content: ""; width: 7px; height: 7px; flex: 0 0 7px; background: #5baa8c; border-radius: 50%;}
-    .st-key-settings_anchor {position: fixed; bottom: 16px; left: 30px; z-index: 20;}
-    section[data-testid="stSidebar"] [data-testid="stSidebarContent"] {padding-bottom: 72px;}
     .st-key-settings_button button p {
         position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
         overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
@@ -1822,6 +1820,7 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                     ).hexdigest()[:16]
                     privacy_reviewed = st.checkbox(
                         "I reviewed all columns for sensitive data",
+                        value=True,
                         key=f"privacy_review_{column_signature}_{policy_digest}",
                         help="Review again if the dataset or protected columns change.",
                     )
@@ -1986,11 +1985,6 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                 return email_columns, date_columns, numeric_columns, iqr_multiplier, enabled_checks, list(rules), sensitive_columns, privacy_reviewed
 
 
-def render_app_footer():
-    """Show the same honest, product-branded footer on the landing and workspace."""
-    render_viewport_footer()
-
-
 @st.dialog("A quick tour of the inspector", width="large")
 def show_product_demo():
     if not DEMO_VIDEO_PATH.is_file():
@@ -2002,19 +1996,24 @@ def show_product_demo():
     )
 
 
-def toggle_interface_language():
-    current = native.session_state.get("interface_language", "English")
-    native.session_state["interface_language"] = "English" if current == "العربية" else "العربية"
+LANGUAGE_CODES = {"EN": "English", "AR": "العربية"}
+
+
+def set_interface_language():
+    choice = native.session_state.get("language_choice")
+    if choice in LANGUAGE_CODES:
+        native.session_state["interface_language"] = LANGUAGE_CODES[choice]
 
 
 _rtl = native.session_state.get("interface_language", "English") == "العربية"
 install_presentation_styles()
+remove_legacy_footer()
 native.html(
     "<script>" + (Path(__file__).resolve().parent / "assets" / "native_controls.js").read_text(encoding="utf-8").replace("__ARABIC__", "true" if _rtl else "false") + "</script>",
     unsafe_allow_javascript=True,
 )
 with st.container(key="app_header"):
-    header_col, language_col, demo_button_col, login_col = st.columns([6, 1, 2, 1.4], vertical_alignment="center")
+    header_col, language_col = st.columns([6, 1], vertical_alignment="center")
     with header_col:
         st.markdown(
             f'<header class="brand-header">{brand_logo("header")}<div>'
@@ -2025,24 +2024,12 @@ with st.container(key="app_header"):
             unsafe_allow_html=True,
         )
     with language_col:
-        native.button(
-            "التبديل إلى الإنجليزية" if _rtl else "Switch to Arabic",
-            key="language_toggle", icon=":material/language:",
-            help="التبديل إلى الإنجليزية" if _rtl else "Switch to Arabic",
-            on_click=toggle_interface_language, width="stretch",
+        # Show both codes with the active one highlighted; reselecting it is a no-op.
+        native.session_state["language_choice"] = "AR" if _rtl else "EN"
+        native.segmented_control(
+            "Language / اللغة", list(LANGUAGE_CODES), key="language_choice",
+            label_visibility="collapsed", on_change=set_interface_language,
         )
-    with demo_button_col:
-        if st.button(
-            "Watch demo",
-            key="header_demo",
-            width="stretch",
-            icon=":material/play_circle:",
-            help="Play the short visual tour for your presentation.",
-        ):
-            show_product_demo()
-    with login_col:
-        if native.button(translate("Login"), key="header_login", width="stretch"):
-            show_login_notice()
 
 # Keep one sidebar uploader and one widget key for both empty and active workspaces.
 landing_at_start = not bool(st.session_state.get("inspector_datasets", {}))
@@ -2050,45 +2037,53 @@ welcome_placeholder = st.empty()
 
 with st.sidebar:
     st.markdown(
-        f'<div class="sidebar-brand">{brand_logo("sidebar")}<div>'
+        '<div class="sidebar-brand"><div>'
         f'<div class="sidebar-brand-title">Data Inspector</div>'
         f'<div class="sidebar-brand-caption">Quality workspace</div>'
         f'</div></div>',
         unsafe_allow_html=True,
     )
-    settings_anchor = st.container(key="settings_anchor")
-    render_workspace_menu()
     with st.container(key="source_panel"):
         st.markdown(
             '<div class="sidebar-source-heading"><span class="sidebar-source-kicker">Data sources</span>'
             '<strong>Add your data</strong><span>Upload files to begin your quality assessment.</span></div>',
             unsafe_allow_html=True,
         )
-        uploaded_files = st.file_uploader(
-            "Upload CSV or Excel files",
-            type=["csv", "xlsx"],
-            accept_multiple_files=True,
-            label_visibility="collapsed",
-            key="data_upload",
-        )
-        st.markdown(
-            '<div class="sidebar-helper">Large Excel files may require additional memory.</div>',
-            unsafe_allow_html=True,
-        )
-        st.markdown('<div class="sidebar-divider">OR</div>', unsafe_allow_html=True)
-        load_connected_clicked = st.button(
-            "Explore sample workspace",
-            width="stretch",
-            type="secondary",
-            icon=":material/table_view:",
-            key="sidebar_sample",
-            help="Load five related CSV and Excel files containing synthetic data.",
-        )
-        st.markdown(
-            '<div class="sidebar-helper">Five related files · Synthetic data</div>'
-            '<div class="sidebar-session-note">Files are available for this session.</div>',
-            unsafe_allow_html=True,
-        )
+        if is_signed_in():
+            uploaded_files = st.file_uploader(
+                "Upload CSV or Excel files",
+                type=["csv", "xlsx"],
+                accept_multiple_files=True,
+                label_visibility="collapsed",
+                key="data_upload",
+            )
+            st.markdown(
+                '<div class="sidebar-helper">Large Excel files may require additional memory.</div>',
+                unsafe_allow_html=True,
+            )
+            st.markdown('<div class="sidebar-divider">OR</div>', unsafe_allow_html=True)
+            load_connected_clicked = st.button(
+                "Explore sample workspace",
+                width="stretch",
+                type="secondary",
+                icon=":material/table_view:",
+                key="sidebar_sample",
+                help="Load five related CSV and Excel files containing synthetic data.",
+            )
+            st.markdown(
+                '<div class="sidebar-helper">Five related files · Synthetic data</div>'
+                '<div class="sidebar-session-note">Files are available for this session.</div>',
+                unsafe_allow_html=True,
+            )
+        else:
+            uploaded_files = None
+            load_connected_clicked = False
+            st.markdown(
+                '<div class="sidebar-locked"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h1Zm2 0h6V7a3 3 0 0 0-6 0v3Z"/></svg>'
+                '<span>Log in to upload files or explore the sample workspace.</span></div>',
+                unsafe_allow_html=True,
+            )
+    settings_anchor = render_account_panel()
 
 if load_connected_clicked:
     st.session_state["workspace_page"] = "inspection"
@@ -2210,7 +2205,7 @@ for file_error in st.session_state.pop("pending_upload_warnings", []):
     st.warning(file_error)
 
 pending_api_dataset = st.session_state.pop("pending_api_dataset", None)
-if pending_api_dataset is not None:
+if pending_api_dataset is not None and is_signed_in():
     api_label, api_data = pending_api_dataset
     base_label = api_label
     suffix = 2
@@ -2229,17 +2224,94 @@ if pending_api_dataset is not None:
 if st.session_state.get("workspace_page") == "history":
     render_settings(settings_anchor)
     render_history()
-    render_app_footer()
     st.stop()
 
 if not datasets:
     render_settings(settings_anchor)
-    render_motion_control()
+    if is_signed_in():
+        start_title = "Get started with your data"
+        start_copy = "Use the sidebar to upload a file, or connect an API in settings."
+    else:
+        start_title = "Log in to get started"
+        start_copy = "Use Login at the bottom of the sidebar, then upload a file or connect an API."
     welcome_placeholder.markdown(
-        landing_markup(),
+        f"""
+        <section class="welcome-panel" aria-label="Data quality introduction">
+          <div class="welcome-copy">
+            <div class="welcome-eyebrow">Data quality, made clear</div>
+            <h1 class="welcome-title">Turn data into <span class="welcome-accent">decisions.</span></h1>
+            <p class="welcome-description">
+              Find missing values, duplicates, invalid formats and outliers in your data.
+              Review the results, apply safe fixes, and export with confidence.
+            </p>
+            <div class="welcome-start">
+              <span class="welcome-start-icon" aria-hidden="true">↗</span>
+              <div><strong>{start_title}</strong>
+                <span class="welcome-start-copy">{start_copy}</span>
+              </div>
+            </div>
+            <div class="welcome-meta" aria-label="Supported capabilities">
+              <span>CSV &amp; Excel</span><span>API connections</span><span>Configurable checks</span><span>Export options</span>
+            </div>
+            <p class="landing-privacy-note">Your original stays unchanged. Review sensitive columns before sharing or exporting.</p>
+          </div>
+          <div class="welcome-preview" aria-label="Data quality checks included">
+            <div class="welcome-preview-top">
+              <div class="welcome-preview-title">Your workflow</div>
+              <div class="welcome-preview-badge">AT A GLANCE</div>
+            </div>
+            <h2 class="welcome-preview-heading">From data to insight</h2>
+            <p class="welcome-preview-description">A clear path from your source to a more reliable dataset.</p>
+            <div class="journey-visual" aria-label="Import, inspect, improve, and export data">
+              <div class="journey-stage">
+                <span class="journey-stage-label">Import</span>
+                <div class="journey-icon" aria-hidden="true"><span class="journey-grid"><i></i><i></i><i></i><i></i><i></i><i></i></span></div>
+                <small>Files or APIs</small>
+              </div>
+              <div class="journey-link" aria-hidden="true"></div>
+              <div class="journey-stage">
+                <span class="journey-stage-label">Inspect</span>
+                <div class="journey-icon" aria-hidden="true"><span class="journey-scan-mark">✓</span><span class="journey-scan-line"></span></div>
+                <small>Quality checks</small>
+              </div>
+              <div class="journey-link" aria-hidden="true"></div>
+              <div class="journey-stage">
+                <span class="journey-stage-label">Improve</span>
+                <div class="journey-icon" aria-hidden="true"><span class="journey-bars"><i></i><i></i><i></i></span></div>
+                <small>Review findings</small>
+              </div>
+              <div class="journey-link" aria-hidden="true"></div>
+              <div class="journey-stage">
+                <span class="journey-stage-label">Export</span>
+                <div class="journey-icon" aria-hidden="true"><span class="journey-export-arrow">↗</span></div>
+                <small>File or API</small>
+              </div>
+            </div>
+            <div class="journey-checks-label">Quality checks</div>
+            <div class="journey-checks"><span>Missing values</span><span>Duplicates</span><span>Invalid formats</span><span>Outliers</span></div>
+          </div>
+          <div class="welcome-steps" aria-label="How it works">
+            <div class="welcome-step">
+              <span class="welcome-step-number">01</span>
+              <span>Connect<small>Bring in files or connect an API.</small></span>
+            </div>
+            <div class="welcome-step">
+              <span class="welcome-step-number">02</span>
+              <span>Understand<small>Explore quality issues and insights.</small></span>
+            </div>
+            <div class="welcome-step">
+              <span class="welcome-step-number">03</span>
+              <span>Improve<small>Review findings and choose safe fixes.</small></span>
+            </div>
+            <div class="welcome-step">
+              <span class="welcome-step-number">04</span>
+              <span>Export<small>Download your data or send it by API.</small></span>
+            </div>
+          </div>
+        </section>
+        """,
         unsafe_allow_html=True,
     )
-    render_app_footer()
     st.stop()
 
 with st.container(border=True):
@@ -2406,12 +2478,6 @@ else:
     }
 issue_count = len(issues)
 health_score = max(0, round(100 * (1 - issue_count / max(data.shape[0] * data.shape[1], 1))))
-history_run_key = quality_scan_cache[active_dataset].setdefault("run_key", str(uuid4()))
-render_save_summary(
-    build_summary(len(data), len(columns), issues, duplicate_count, health_score,
-                  enabled_checks, bool(custom_rules)),
-    history_run_key,
-)
 batch_row_count = sum(len(frame) for frame in datasets.values())
 
 findings_step = (
@@ -2598,27 +2664,22 @@ with overview_tab:
                 .rename(columns={"size": "Issue Count"})
                 .sort_values("Issue Count", ascending=False)
             )
-            chart = px.bar(
+            chart = px.pie(
                 issue_counts,
-                x="Issue Count",
-                y="Column Name",
-                orientation="h",
-                text="Issue Count",
-                color_discrete_sequence=["#61A9BD"],
+                values="Issue Count",
+                names="Column Name",
+                color_discrete_sequence=["#61A9BD", "#CED14E", "#44986D", "#DD83C9", "#1F74AD", "#E98E2E", "#9267C6", "#8D6C5B"],
             )
             chart.update_traces(
-                textposition="outside",
-                cliponaxis=False,
-                hovertemplate="%{y}<br>%{x:,} " + translate("findings") + "<extra></extra>",
+                textinfo="label+percent", textposition="inside",
+                hovertemplate="%{label}<br>%{value:,} " + translate("findings") + " · %{percent}<extra></extra>",
             )
             chart.update_layout(
                 template="plotly_white",
-                xaxis_title=translate("Findings"),
-                yaxis_title="",
-                yaxis=dict(autorange="reversed", automargin=True),
-                xaxis=dict(rangemode="tozero", gridcolor="#edf2f0"),
-                height=max(260, min(700, 80 + 42 * len(issue_counts))),
-                margin=dict(l=12, r=45, t=15, b=20),
+                height=420,
+                legend=dict(orientation="h", y=-0.1, x=0),
+                uniformtext=dict(minsize=11, mode="hide"),
+                margin=dict(l=12, r=12, t=15, b=20),
                 plot_bgcolor="rgba(0,0,0,0)",
                 paper_bgcolor="rgba(0,0,0,0)",
                 font=dict(color="#526c68"),
@@ -2640,29 +2701,22 @@ with overview_tab:
             )
             type_counts["Share (%)"] = type_counts["Findings"] / type_counts["Findings"].sum() * 100
             type_counts["Issue Type"] = type_counts["Issue Type"].map(translate_issue_type)
-            type_chart = px.bar(
+            type_chart = px.pie(
                 type_counts,
-                x="Findings",
-                y="Issue Type",
-                orientation="h",
-                text="Findings",
-                custom_data=["Share (%)"],
-                color_discrete_sequence=["#61A9BD"],
+                values="Findings",
+                names="Issue Type",
+                color_discrete_sequence=["#61A9BD", "#CED14E", "#44986D", "#DD83C9", "#1F74AD", "#E98E2E", "#9267C6", "#8D6C5B"],
             )
             type_chart.update_traces(
-                textposition="outside",
-                cliponaxis=False,
-                hovertemplate="%{y}<br>%{x:,} " + translate("findings") + " · %{customdata[0]:.1f}%<extra></extra>",
+                textinfo="label+percent", textposition="inside",
+                hovertemplate="%{label}<br>%{value:,} " + translate("findings") + " · %{percent}<extra></extra>",
             )
             type_chart.update_layout(
                 template="plotly_white",
-                showlegend=False,
-                xaxis_title=translate("Findings"),
-                xaxis=dict(rangemode="tozero", gridcolor="#edf2f0"),
-                yaxis_title="",
-                yaxis=dict(autorange="reversed", automargin=True),
-                height=max(260, min(700, 80 + 42 * len(type_counts))),
-                margin=dict(l=8, r=45, t=12, b=20),
+                height=420,
+                legend=dict(orientation="h", y=-0.1, x=0),
+                uniformtext=dict(minsize=11, mode="hide"),
+                margin=dict(l=12, r=12, t=15, b=20),
                 plot_bgcolor="rgba(0,0,0,0)",
                 paper_bgcolor="rgba(0,0,0,0)",
                 font=dict(color="#526c68"),
@@ -3464,5 +3518,3 @@ with assistant_tab:
             except Exception:
                 content = MASK
             st.markdown(mask_text(content))
-
-render_app_footer()

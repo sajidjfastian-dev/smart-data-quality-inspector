@@ -10,6 +10,7 @@ from unittest.mock import patch
 import pandas as pd
 from security_guardrails import mask_dataframe
 from streamlit.testing.v1 import AppTest
+from demo_login import signed_in
 
 import api_connections as api
 import api_settings
@@ -92,7 +93,7 @@ class ApiConnectionTests(unittest.TestCase):
 
 class ApiUiTests(unittest.TestCase):
     def setUp(self):
-        self.app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"), default_timeout=45).run()
+        self.app = signed_in(AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"), default_timeout=45)).run()
         self.assertFalse(self.app.exception)
 
     def find(self, kind, label):
