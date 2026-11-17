@@ -21,7 +21,7 @@
 ## Quick verification
 
 - Open Preview and confirm the upload workspace renders.
-- Select **Explore with 50-row quick sample** to exercise analysis without uploading data.
+- Select **Explore sample workspace** to exercise analysis without uploading data.
 - The Streamlit health endpoint is `/_stcore/health`.
 
 ## Publishing

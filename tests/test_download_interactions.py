@@ -104,7 +104,7 @@ class DownloadInteractionTests(unittest.TestCase):
         self.page = self.context.new_page()
         self.page.set_default_timeout(30000)
         self.page.goto(self.base_url)
-        self.page.get_by_role("button", name="Explore with 50-row quick sample").wait_for()
+        self.page.get_by_role("button", name="Explore sample workspace").wait_for()
 
     def upload(self, files):
         self.page.locator('input[type="file"]').set_input_files(files)

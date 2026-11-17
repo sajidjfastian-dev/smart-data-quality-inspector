@@ -1,3 +1,4 @@
+import base64
 import hashlib
 import html
 import json
@@ -20,9 +21,12 @@ from data_insights import render_data_insights
 from quality_large import scan_large_data
 
 
+APP_LOGO_PATH = Path(__file__).resolve().parent / "assets" / "data-inspector-logo.svg"
+APP_LOGO_DATA = base64.b64encode(APP_LOGO_PATH.read_bytes()).decode("ascii")
+
 st.set_page_config(
     page_title="Smart Data Quality Inspector",
-    page_icon="📊",
+    page_icon=str(APP_LOGO_PATH),
     layout="wide",
 )
 
@@ -83,37 +87,6 @@ SAMPLE_RELATIONSHIPS = pd.DataFrame(
     columns=["Source file", "Source key", "Related file", "Related key"],
 )
 MAX_ASSISTANT_REQUEST_BYTES = 10 * 1024 * 1024
-
-
-def make_sample_data():
-    rng = np.random.default_rng(42)
-    row_count = 50
-    data = pd.DataFrame(
-        {
-            "customer_id": np.arange(1001, 1001 + row_count),
-            "name": [f"Customer {number:02d}" for number in range(1, row_count + 1)],
-            "email": [f"customer{number:02d}@example.com" for number in range(1, row_count + 1)],
-            "signup_date": [
-                (date(2024, 1, 1) + pd.Timedelta(days=int(offset))).strftime("%Y-%m-%d")
-                for offset in rng.integers(0, 300, size=row_count)
-            ],
-            "age": rng.integers(19, 71, size=row_count),
-            "annual_spend": np.round(rng.normal(2400, 650, size=row_count), 2),
-            "region": rng.choice(["North", "South", "East", "West"], size=row_count),
-            "is_active": rng.choice([True, False], size=row_count, p=[0.78, 0.22]),
-        }
-    )
-    data.loc[3, "email"] = "not-an-email"
-    data.loc[8, "email"] = "missing.domain@"
-    data.loc[12, "signup_date"] = "03/18/2024"
-    data.loc[19, "signup_date"] = "not-a-date"
-    data.loc[7, "name"] = None
-    data.loc[15, "annual_spend"] = np.nan
-    data.loc[24, "email"] = ""
-    data.loc[32, "name"] = "   "
-    data.loc[38, "annual_spend"] = 25000
-    data.loc[49] = data.loc[4]
-    return data
 
 
 def is_missing(value):
@@ -1036,20 +1009,6 @@ def column_rule_signature(email_columns, date_columns, numeric_columns, iqr_mult
     )
 
 
-def load_sample_data():
-    signatures = tuple(
-        upload_signature(uploaded_file)
-        for uploaded_file in st.session_state.get("data_upload", [])
-    )
-    st.session_state["inspector_datasets"] = {
-        "Sample messy dataset": make_sample_data()
-    }
-    st.session_state["inspector_upload_signature"] = signatures
-    st.session_state["active_dataset"] = "Sample messy dataset"
-    st.session_state["fixed_datasets"] = {}
-    reset_quality_caches()
-
-
 def load_connected_sample_data():
     signatures = tuple(
         upload_signature(uploaded_file)
@@ -1322,19 +1281,32 @@ st.markdown(
     }
     .sidebar-brand {
         display: flex; align-items: center; gap: 12px;
-        padding: 4px 0 14px; margin-bottom: 7px;
+        padding: 4px 0 20px; margin-bottom: 0;
         border-bottom: 1px solid var(--line);
     }
-    .sidebar-brand .brand-logo {width: 38px; height: 38px; flex-basis: 38px;}
-    .sidebar-brand-title {color: var(--ink); font-size: 1.03rem; font-weight: 730;}
+    .sidebar-brand .brand-logo {width: 42px; height: 42px; flex-basis: 42px;}
+    .sidebar-brand-title {color: var(--ink); font-size: 1.04rem; font-weight: 730; letter-spacing: -.02em;}
     .sidebar-brand-caption {
-        color: var(--muted); font-size: .72rem; margin-top: 2px;
-        letter-spacing: .045em; text-transform: uppercase;
+        color: #627b78; font-size: .69rem; margin-top: 3px;
+        letter-spacing: .08em; text-transform: uppercase;
     }
-    .sidebar-section-label {
-        margin: 18px 0 4px; color: #52716a; font-size: .68rem;
-        font-weight: 760; letter-spacing: .13em; text-transform: uppercase;
+    .st-key-source_panel [data-testid="stVerticalBlock"] {gap: .65rem;}
+    .sidebar-source-heading {padding-top: 16px;}
+    .sidebar-source-kicker {
+        display: block; color: #51736e; font-size: .65rem; font-weight: 750;
+        letter-spacing: .12em; text-transform: uppercase; margin-bottom: 7px;
     }
+    .sidebar-source-heading strong {display: block; color: #193d3c; font-size: 1.07rem; letter-spacing: -.02em;}
+    .sidebar-source-heading span:last-child {display: block; color: #627673; font-size: .80rem; line-height: 1.5; margin-top: 4px;}
+    .sidebar-helper {color: #6d807c; font-size: .73rem; line-height: 1.45;}
+    .sidebar-divider {display: flex; align-items: center; gap: 10px; color: #8a9b97; font-size: .65rem; font-weight: 700; letter-spacing: .09em;}
+    .sidebar-divider::before, .sidebar-divider::after {content: ""; flex: 1; height: 1px; background: #e0ebe7;}
+    .st-key-sidebar_sample button {
+        min-height: 44px; border-color: #cadfd8; color: #135c53;
+        background: #f5fbf8; border-radius: 10px;
+    }
+    .sidebar-session-note {display: flex; align-items: center; gap: 7px; color: #6b807a; font-size: .72rem; padding-top: 8px;}
+    .sidebar-session-note::before {content: ""; width: 7px; height: 7px; flex: 0 0 7px; background: #5baa8c; border-radius: 50%;}
     .st-key-settings_anchor {position: fixed; bottom: 16px; left: 30px; z-index: 20;}
     section[data-testid="stSidebar"] [data-testid="stSidebarContent"] {padding-bottom: 72px;}
     .st-key-settings_button button p {
@@ -1701,23 +1673,10 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-def brand_logo(variant):
-    gradient_id = f"brand-gradient-{variant}"
+def brand_logo(_variant):
     return (
-        f'<svg class="brand-logo" viewBox="0 0 64 64" fill="none" '
-        f'xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'
-        f'<defs><linearGradient id="{gradient_id}" x1="9" y1="7" x2="55" y2="58" '
-        f'gradientUnits="userSpaceOnUse"><stop stop-color="#10BFA9"/>'
-        f'<stop offset="1" stop-color="#006B62"/></linearGradient></defs>'
-        f'<rect x="2" y="2" width="60" height="60" rx="18" fill="url(#{gradient_id})"/>'
-        f'<path d="M11 49H35" stroke="white" stroke-opacity=".8" stroke-width="3" '
-        f'stroke-linecap="round"/>'
-        f'<rect x="13" y="36" width="6" height="10" rx="2" fill="white" fill-opacity=".82"/>'
-        f'<rect x="22" y="29" width="6" height="17" rx="2" fill="white" fill-opacity=".92"/>'
-        f'<rect x="31" y="21" width="6" height="25" rx="2" fill="white"/>'
-        f'<circle cx="47" cy="44" r="10.5" fill="#FFD66B" stroke="white" stroke-width="2.5"/>'
-        f'<path d="M42.5 44.5L46 48L52 40.5" stroke="#075B53" stroke-width="2.8" '
-        f'stroke-linecap="round" stroke-linejoin="round"/></svg>'
+        f'<img class="brand-logo" src="data:image/svg+xml;base64,{APP_LOGO_DATA}" '
+        'alt="" aria-hidden="true" />'
     )
 
 def delete_custom_rule(rules_key, selector_key, index):
@@ -1928,50 +1887,39 @@ with st.sidebar:
         f'</div></div>',
         unsafe_allow_html=True,
     )
-    st.caption("Your data quality command center")
-    st.markdown('<div class="sidebar-section-label">01 &nbsp; Add your data</div>', unsafe_allow_html=True)
-    uploaded_files = st.file_uploader(
-        "Drop your data files here",
-        type=["csv", "xlsx"],
-        accept_multiple_files=True,
-        help="Drop or browse multiple CSV and XLSX files. Analyze each file independently.",
-        key="data_upload",
-    )
-    load_sample_clicked = st.button(
-        "Explore with 50-row quick sample",
-        width="stretch",
-        type="secondary",
-        icon=":material/science:",
-    )
-    load_connected_clicked = st.button(
-        "Load connected big-data sample",
-        width="stretch",
-        type="primary",
-        icon=":material/table_view:",
-        help="Load five related CSV/XLSX demo tables with over 50,000 synthetic rows.",
-    )
-    st.caption("CSV and Excel up to 500 MB per file · Large Excel files may require substantially more memory.")
-    st.caption("Synthetic test data · Session-only processing")
+    with st.container(key="source_panel"):
+        st.markdown(
+            '<div class="sidebar-source-heading"><span class="sidebar-source-kicker">Data sources</span>'
+            '<strong>Add your data</strong><span>Upload files to begin your quality assessment.</span></div>',
+            unsafe_allow_html=True,
+        )
+        uploaded_files = st.file_uploader(
+            "Upload CSV or Excel files",
+            type=["csv", "xlsx"],
+            accept_multiple_files=True,
+            label_visibility="collapsed",
+            key="data_upload",
+        )
+        st.markdown(
+            '<div class="sidebar-helper">Large Excel files may require additional memory.</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown('<div class="sidebar-divider">OR</div>', unsafe_allow_html=True)
+        load_connected_clicked = st.button(
+            "Explore sample workspace",
+            width="stretch",
+            type="secondary",
+            icon=":material/table_view:",
+            key="sidebar_sample",
+            help="Load five related CSV and Excel files containing synthetic data.",
+        )
+        st.markdown(
+            '<div class="sidebar-helper">Five related files · Synthetic data</div>'
+            '<div class="sidebar-session-note">Files are available for this session.</div>',
+            unsafe_allow_html=True,
+        )
     settings_anchor = st.container(key="settings_anchor")
 
-if load_sample_clicked:
-    with st.status(
-        "Preparing the 50-row sample...",
-        expanded=True,
-    ) as sample_status:
-        sample_loader = st.empty()
-        render_inspection_loader(
-            "Preparing your sample",
-            "Building a test workspace with intentional data-quality examples.",
-            sample_loader,
-        )
-        load_sample_data()
-        sample_loader.empty()
-        sample_status.update(
-            label="50-row sample loaded",
-            state="complete",
-            expanded=False,
-        )
 if load_connected_clicked:
     with st.status(
         "Loading the connected sample workspace...",

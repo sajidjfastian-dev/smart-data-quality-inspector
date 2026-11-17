@@ -9,6 +9,7 @@ import pandas as pd
 from pandas.testing import assert_frame_equal
 
 from quality_large import scan_large_data
+from sample_fixtures import make_sample_data
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -18,7 +19,7 @@ def load_helpers():
     path = ROOT / "app.py"
     tree = ast.parse(path.read_text(), filename=str(path))
     functions = {
-        "make_sample_data", "is_missing", "display_value", "parse_date",
+        "is_missing", "display_value", "parse_date",
         "date_shape", "parse_numeric_series", "scan_data", "read_uploaded_file",
     }
     constants = {"EMAIL_PATTERN", "DATE_FORMATS", "DATE_SHAPES", "ISSUE_COLUMNS"}
@@ -48,7 +49,7 @@ class LargeProcessingTests(unittest.TestCase):
         )
 
     def test_chunked_checks_match_existing_results(self):
-        data = HELPERS["make_sample_data"]()
+        data = make_sample_data()
         checks = {"missing", "duplicates", "email", "date", "outliers"}
         rules = [
             {"column": "name", "kind": "Must contain", "expected": "a"},

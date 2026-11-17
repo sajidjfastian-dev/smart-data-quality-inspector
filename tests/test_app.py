@@ -9,6 +9,7 @@ import pandas as pd
 from pandas.testing import assert_frame_equal
 import streamlit as st
 from streamlit.testing.v1 import AppTest
+from sample_fixtures import load_test_fixture
 
 
 APP = Path(__file__).resolve().parents[1] / "app.py"
@@ -57,7 +58,8 @@ class QuickSampleTests(unittest.TestCase):
         self.assert_no_exception()
 
     def load_sample(self):
-        self.click("Explore with 50-row quick sample")
+        load_test_fixture(self.app)
+        self.assert_no_exception()
         return self.app.session_state["inspector_datasets"][SAMPLE]
 
     def issue_keys(self, issues):
@@ -69,8 +71,8 @@ class QuickSampleTests(unittest.TestCase):
 
     def test_initial_screen_and_sample_scan_survive_rerun(self):
         self.assertNotIn("inspector_datasets", self.app.session_state)
-        self.assertFalse(self.widget("button", "Explore with 50-row quick sample").disabled)
-        self.assertFalse(self.widget("button", "Load connected big-data sample").disabled)
+        self.assertNotIn("Explore with 50-row quick sample", [button.label for button in self.app.button])
+        self.assertFalse(self.widget("button", "Explore sample workspace").disabled)
         self.assertNotIn(
             "Download 5-file sample pack",
             [item.proto.label for item in self.app.sidebar.get("download_button")],
@@ -152,7 +154,7 @@ class QuickSampleTests(unittest.TestCase):
 
     def test_connected_sample_loads_all_files(self):
         self.app.default_timeout = 120
-        self.click("Load connected big-data sample")
+        self.click("Explore sample workspace")
         datasets = self.app.session_state["inspector_datasets"]
         self.assertEqual(
             {name: len(frame) for name, frame in datasets.items()},

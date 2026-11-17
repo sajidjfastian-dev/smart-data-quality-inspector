@@ -6,6 +6,7 @@ import pandas as pd
 
 from data_insights import category_counts, date_counts, insight_sample, numeric_relationship, numeric_summary
 from streamlit.testing.v1 import AppTest
+from sample_fixtures import load_test_fixture
 
 
 class DataInsightsTests(unittest.TestCase):
@@ -57,7 +58,7 @@ class DataInsightsTests(unittest.TestCase):
 class DataInsightsUiTests(unittest.TestCase):
     def test_sample_navigation_and_insight_sections(self):
         app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"), default_timeout=30).run()
-        next(button for button in app.button if button.label == "Explore with 50-row quick sample").click().run()
+        load_test_fixture(app)
         app.session_state["dashboard_tabs"] = "6 · Data insights"
         app.run()
         self.assertFalse(app.exception)

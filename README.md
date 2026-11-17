@@ -4,18 +4,18 @@ A standalone Streamlit workspace for reviewing and cleaning common data-quality 
 
 The visual theme uses accent colors offered by the [Central Bank of the UAE's official website](https://centralbank.ae/en/)—gold `#DAAA00`, turquoise `#00C7B1`, and coral `#F87C56`—with a darker teal for readable controls. The app keeps its own product logo and does not reproduce the CBUAE logo.
 
-The product mark is a rising chart with a gold quality-check badge, shown in the page header and sidebar. The sidebar retains Streamlit's collapse control without a separate colored header banner; Streamlit's Deploy control is hidden because deployments are managed locally.
+The product mark combines a data grid, inspection lens, and analytics signal, shown in the page header, sidebar, and browser tab. The sidebar retains Streamlit's collapse control without a separate colored header banner; Streamlit's Deploy control is hidden because deployments are managed locally.
 
 ## Features
 
 - Drag and drop multiple CSV and XLSX files together, with per-file analysis and a batch workspace summary.
-- Load a deterministic 50-row quick sample, or a connected five-file synthetic dataset pack with 57,200 rows across customers, orders, products, support tickets, and web events.
+- Load a connected five-file synthetic dataset pack with 57,200 rows across customers, orders, products, support tickets, and web events.
 - The five sample tables share customer, order, and product keys for join and relationship testing.
 - Scan for missing values, exact duplicate rows, invalid email addresses, inconsistent/invalid dates, and numeric outliers.
 - Use the settings icon at the bottom of the sidebar to turn built-in checks on or off, adjust Email, Date, and Numeric column rules, and tune the IQR outlier multiplier from 1.5 to 3.0.
 - Add, edit, or delete custom per-file rules: required text, allowed values, or minimum and maximum numeric limits. Custom findings are included in scans and issue logs for manual review; empty values are covered separately by the missing-values check. Rules remain in the current session.
 - Explore clickable KPI details, issue and completeness charts, numeric distributions, column profiles, issue filters, and recommendations.
-- Launch a built-in 12-second video demo from the **Watch demo** button; its refreshed logo matches the app and it works offline without an external video link.
+- Launch a built-in 12-second video demo from the **Watch demo** button; it works offline without an external video link and shows an earlier version of the logo.
 - Ask the built-in Data Quality Copilot about findings locally, or optionally connect an OpenAI-compatible Chat Completions endpoint for broader natural-language analysis.
 - Use the settings icon in the sidebar to configure an OpenAI-compatible endpoint URL, model ID, and password-masked API key. Credentials stay in the current app session and are not written to configuration files.
 - In settings → **Data APIs**, load data from a public HTTPS GET endpoint as JSON, CSV, or Excel. JSON can be a top-level array of objects or an array under a dot-separated object path; nested objects are flattened. **Try sample API** reads ten public sample users from JSONPlaceholder.
@@ -55,7 +55,7 @@ The five generated sample files are available individually:
 | [support_tickets.xlsx](./sample_data/support_tickets.xlsx) | Excel | 6,000 | References customers and orders |
 | [web_events.csv](./sample_data/web_events.csv) | CSV | 25,000 | References customers and products |
 
-All records are deterministic synthetic test data. The files include a small number of intentional missing values, duplicates, malformed emails/dates, whitespace-only fields, and numeric outliers so the inspector has issues to find. In the app, select **Load connected big-data sample** to load all five related files together. The files can also be downloaded individually above.
+All records are deterministic synthetic test data. The files include a small number of intentional missing values, duplicates, malformed emails/dates, whitespace-only fields, and numeric outliers so the inspector has issues to find. In the app, select **Explore sample workspace** to load all five related files together. The files can also be downloaded individually above.
 
 ## Run locally
 

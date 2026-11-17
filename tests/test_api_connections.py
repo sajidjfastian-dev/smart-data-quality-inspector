@@ -12,6 +12,7 @@ from streamlit.testing.v1 import AppTest
 
 import api_connections as api
 import api_settings
+from sample_fixtures import load_test_fixture
 
 
 class ApiConnectionTests(unittest.TestCase):
@@ -118,7 +119,7 @@ class ApiUiTests(unittest.TestCase):
             self.assertEqual(push.call_count, 1)
 
     def test_source_error_does_not_replace_existing_data(self):
-        self.find("button", "Explore with 50-row quick sample").click().run()
+        load_test_fixture(self.app)
         self.find("text_input", "Source API URL").set_value("https://example.com/data").run()
         with patch.object(api_settings, "fetch_api_data", side_effect=api.ApiConnectionError("Source failed")):
             self.find("button", "Load data from API").click().run()
@@ -127,7 +128,7 @@ class ApiUiTests(unittest.TestCase):
         self.assertTrue(any("Source failed" in item.value for item in self.app.error))
 
     def test_push_fixed_copy_and_consent_resets(self):
-        self.find("button", "Explore with 50-row quick sample").click().run()
+        load_test_fixture(self.app)
         self.find("text_input", "Destination API URL").set_value("https://example.com/receive").run()
         self.find("checkbox", "I approve sending the selected data to this destination").check().run()
         self.find("button", "Apply selected fixes").click().run()

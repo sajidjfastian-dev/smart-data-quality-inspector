@@ -82,13 +82,12 @@ runtime.
 
 | Responsibility | Main functions in `app.py` |
 |---|---|
-| Quick sample generation | `make_sample_data` |
 | Missing-value, date, and numeric parsing helpers | `is_missing`, `parse_date`, `date_shape`, `parse_numeric_series` |
 | Type inference and profiling | `infer_column_rules`, `build_column_profile` |
 | Finding generation | `scan_data` |
 | Safe transformations | `clean_data`, `standardize_date_value` |
 | Input/output conversion | `read_data_file`, `read_uploaded_file`, `serialize_data_file` |
-| Synthetic workspace and archives | `load_sample_data`, `load_connected_sample_data`, `connected_sample_archive`, `build_cleaned_batch_archive` |
+| Synthetic workspace and archives | `load_connected_sample_data`, `connected_sample_archive`, `build_cleaned_batch_archive` |
 | Local question answering | `answer_data_quality_question` |
 | UI, session-state coordination, and Streamlit callbacks | Remaining top-level Streamlit rendering code |
 
@@ -99,8 +98,7 @@ The application uses a straightforward, single-process Streamlit architecture:
 1. **User interaction:** Streamlit renders the sidebar, workspace controls,
    tabs, metrics, tables, charts, and download buttons.
 2. **File ingestion:** Uploaded file bytes are read into pandas DataFrames.
-   The generated quick sample and bundled sample workspace also become
-   DataFrames.
+   The bundled sample workspace also becomes DataFrames.
 3. **Rule selection:** Column types are inferred as a starting point. Users
    can override Email, Date, and Numeric selections and adjust the outlier
    multiplier.
@@ -121,8 +119,7 @@ Streamlit session.
 ### Sidebar and workspace
 
 - Upload one or more `.csv` or `.xlsx` files using Streamlit's uploader.
-- Load a deterministic 50-row messy sample, or load the five related synthetic
-  files bundled with the project.
+- Load the five related synthetic files bundled with the project.
 - Select the active file from the workspace dropdown. The dashboard, rules,
   findings, review, and per-file exports follow the active file.
 - Change automatically inferred Email, Date, or Numeric column rules.
@@ -441,12 +438,11 @@ the session.
 
 ## 13. Testing and manual verification
 
-There is no dedicated test suite in the current repository. Before a demo or
-deployment, perform these smoke checks:
+Before a demo or deployment, run the automated test suite and perform these
+smoke checks:
 
 1. Start the app and confirm the empty state loads.
-2. Load the 50-row sample and verify missing values, duplicate rows, invalid
-   emails, mixed/invalid dates, and a numeric outlier are reported.
+2. Load the sample workspace and verify its quality findings are reported.
 3. Upload representative CSV and XLSX files and confirm the displayed row and
    column counts.
 4. Change an Email, Date, or Numeric rule and the IQR multiplier; confirm the
