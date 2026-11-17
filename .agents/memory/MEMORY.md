@@ -1,1 +1,2 @@
 - [Intended CBUAE use](intended-cbuae-use.md) — the user says the application will be used by CBUAE.
+- [Upload placement](upload-placement.md) — keep file uploads in the sidebar, not on the landing page.

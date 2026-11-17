@@ -72,7 +72,7 @@ class QuickSampleTests(unittest.TestCase):
     def test_initial_screen_and_sample_scan_survive_rerun(self):
         self.assertNotIn("inspector_datasets", self.app.session_state)
         landing = next(item.value for item in self.app.markdown if 'class="welcome-panel"' in item.value)
-        self.assertIn("Better data.", landing)
+        self.assertIn("Turn data into", landing)
         self.assertIn("Get started with your data", landing)
         for check in ("Missing values", "Duplicates", "Invalid formats", "Outliers"):
             self.assertIn(check, landing)

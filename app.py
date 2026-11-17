@@ -1131,13 +1131,17 @@ st.markdown(
     [data-testid="stHeader"] {background: rgba(246, 248, 246, .94);}
     [data-testid="stAppDeployButton"],
     [data-testid="stDeployButton"] {display: none;}
+    /* Streamlit's collapsed sidebar can leak its contents over RTL mobile pages. */
+    html[dir="rtl"] [data-testid="stSidebar"][data-collapsed="true"] {
+        visibility: hidden; overflow: hidden; pointer-events: none;
+    }
     .block-container {padding-top: 1.35rem; padding-bottom: 3rem; max-width: 1540px;}
     h1, h2, h3, [data-testid="stMarkdownContainer"] p {color: var(--ink);}
     h2 {font-size: 1.28rem; letter-spacing: -.025em;}
     h3 {font-size: 1.08rem; letter-spacing: -.015em;}
     .brand-header {
-        display: flex; align-items: center; gap: 17px; margin-bottom: 1.1rem;
-        padding: 19px 24px; border: 1px solid #17474a; border-bottom: 3px solid var(--brand-gold); border-radius: 18px;
+        display: flex; align-items: center; gap: 14px; margin-bottom: .35rem;
+        padding: 14px 20px; border: 1px solid #17474a; border-bottom: 3px solid var(--brand-gold); border-radius: 16px;
         background:
             radial-gradient(ellipse at 88% 4%, rgba(0, 199, 177, .24), transparent 35%),
             linear-gradient(112deg, #102d35 0%, #16474a 64%, #174e4a 100%);
@@ -1148,7 +1152,7 @@ st.markdown(
         background: #e6f2ef;
     }
     .brand-logo {
-        width: 52px; height: 52px; flex: 0 0 52px;
+        width: 46px; height: 46px; flex: 0 0 46px;
         filter: drop-shadow(0 4px 6px rgba(0, 94, 86, .18));
     }
     .brand-eyebrow {
@@ -1156,7 +1160,7 @@ st.markdown(
         letter-spacing: .16em; text-transform: uppercase; margin-bottom: 5px;
     }
     .brand-title {
-        color: #fff; font-size: clamp(1.45rem, 2.6vw, 1.9rem);
+        color: #fff; font-size: clamp(1.25rem, 2.1vw, 1.6rem);
         line-height: 1.15; font-weight: 740; letter-spacing: -.04em;
     }
     .brand-subtitle {color: #d0dfdc; font-size: .9rem; margin-top: 5px;}
@@ -1165,14 +1169,15 @@ st.markdown(
     text-align: center;
 }
     .welcome-panel {
-        display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(285px, .92fr);
-        align-items: center; gap: 38px clamp(26px, 4vw, 58px);
-        margin-top: 1.35rem; padding: clamp(28px, 4vw, 48px);
-        overflow: hidden; border: 1px solid #dce9e4; border-radius: 22px;
+        position: relative; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(320px, .95fr);
+        align-items: center; gap: 42px clamp(28px, 4vw, 64px);
+        margin-top: 1.15rem; padding: clamp(30px, 4.2vw, 56px);
+        overflow: hidden; border: 1px solid #dce9e7; border-radius: 24px;
         background:
-            radial-gradient(ellipse at 0% 0%, rgba(0, 199, 177, .09), transparent 38%),
-            linear-gradient(125deg, #f8fcfa 0%, #fff 62%, #f4f9f6 100%);
-        box-shadow: 0 18px 45px rgba(23, 52, 58, .06);
+            radial-gradient(ellipse at 0% 0%, rgba(0, 199, 177, .14), transparent 37%),
+            radial-gradient(ellipse at 100% 5%, rgba(71, 139, 189, .12), transparent 36%),
+            linear-gradient(125deg, #f7fcfa 0%, #fff 58%, #f4f9fc 100%);
+        box-shadow: 0 18px 48px rgba(23, 52, 58, .07);
     }
     .welcome-eyebrow {
         display: inline-flex; align-items: center; gap: 8px; color: #08756a;
@@ -1180,19 +1185,23 @@ st.markdown(
     }
     .welcome-eyebrow::before {content: ""; width: 7px; height: 7px; border-radius: 50%; background: #00a996;}
     .welcome-title {
-        max-width: 550px; margin: 18px 0 16px; color: #17343a;
-        font-size: clamp(2.1rem, 3.6vw, 3.05rem); line-height: 1.08;
+        max-width: 580px; margin: 18px 0 18px; color: #17343a;
+        font-size: clamp(2.45rem, 4.3vw, 3.65rem); line-height: 1.07;
         font-weight: 760; letter-spacing: -.05em;
     }
-    .welcome-title .welcome-accent {color: #007c70;}
+    .welcome-title .welcome-accent {
+        color: #006b64;
+        background: linear-gradient(100deg, #006e64, #265e8f);
+        -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
     .welcome-panel p.welcome-description {
         max-width: 480px; margin: 0; color: #526b69;
         font-size: .98rem; line-height: 1.7;
     }
     .welcome-start {
         display: flex; align-items: flex-start; gap: 12px; margin-top: 26px;
-        padding: 15px 16px; border: 1px solid #d7ebe3; border-radius: 13px;
-        background: rgba(239, 249, 245, .8);
+        padding: 16px 17px; border: 1px solid #cfe6e3; border-radius: 14px;
+        background: linear-gradient(105deg, #edf9f5, #f2f7fc);
     }
     .welcome-start-icon {
         display: grid; place-items: center; width: 32px; height: 32px; flex: 0 0 32px;
@@ -1202,11 +1211,11 @@ st.markdown(
     .welcome-start-copy {display: block; color: #526f69; font-size: .76rem; line-height: 1.5; margin-top: 3px;}
     .welcome-meta {display: flex; flex-wrap: wrap; gap: 7px; margin-top: 20px;}
     .welcome-meta span {
-        border: 1px solid #e0ebe6; border-radius: 6px; padding: 5px 8px;
-        color: #56716c; background: #fff; font-size: .67rem; font-weight: 700; letter-spacing: .04em;
+        border: 1px solid #dce9e7; border-radius: 999px; padding: 7px 11px;
+        color: #365c59; background: rgba(255,255,255,.9); font-size: .70rem; font-weight: 700;
     }
     .welcome-steps {
-        display: grid; grid-column: 1 / -1; grid-template-columns: repeat(3, minmax(0, 1fr));
+        display: grid; grid-column: 1 / -1; grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 18px; padding-top: 25px; border-top: 1px solid #e2ece7;
     }
     .welcome-step {
@@ -1223,12 +1232,12 @@ st.markdown(
         font-size: .76rem; font-weight: 450; line-height: 1.5;
     }
     .welcome-preview {
-        position: relative; padding: 25px; overflow: hidden;
+        position: relative; padding: 27px; overflow: hidden;
         border: 1px solid rgba(255,255,255,.13); border-radius: 19px;
         color: #fff;
         background:
-            radial-gradient(ellipse at 100% 0%, rgba(0, 199, 177, .25), transparent 42%),
-            linear-gradient(145deg, #102d35, #16474a 70%, #14504b);
+            radial-gradient(ellipse at 100% 0%, rgba(0, 199, 177, .29), transparent 42%),
+            linear-gradient(145deg, #102d35, #16474a 62%, #174964);
         box-shadow: 0 16px 32px rgba(16, 45, 53, .15);
     }
     .welcome-preview-top {
@@ -1261,7 +1270,7 @@ st.markdown(
     .journey-stage small {display: block; margin-top: 9px; color: #d1e7e1; font-size: .63rem;}
     .journey-icon {
         position: relative; display: flex; justify-content: center; align-items: center;
-        width: 62px; height: 62px; margin: 0 auto; border-radius: 16px;
+        width: 54px; height: 54px; margin: 0 auto; border-radius: 15px;
         border: 1px solid rgba(160, 231, 213, .25); background: rgba(255,255,255,.07);
         overflow: hidden;
     }
@@ -1285,6 +1294,7 @@ st.markdown(
     .journey-bars i:nth-child(1) {height: 13px;}
     .journey-bars i:nth-child(2) {height: 22px; animation-delay: .2s;}
     .journey-bars i:nth-child(3) {height: 30px; background: #ecd06d; animation-delay: .4s;}
+    .journey-export-arrow {color: #d5faf0; font-size: 1.55rem; font-weight: 700; animation: journey-export 3.6s ease-in-out infinite;}
     .journey-link {position: relative; flex: 0 1 26px; height: 2px; background: rgba(141,222,208,.35);}
     .journey-link::after {
         content: ""; position: absolute; top: -3px; left: 0; width: 7px; height: 7px;
@@ -1300,6 +1310,7 @@ st.markdown(
     @keyframes journey-cell {0%, 100% {opacity: .5;} 45% {opacity: 1;}}
     @keyframes journey-scan {0%, 100% {top: 20%;} 50% {top: 78%;}}
     @keyframes journey-grow {0%, 100% {transform: scaleY(.65);} 50% {transform: scaleY(1);}}
+    @keyframes journey-export {0%, 100% {transform: translate(-2px, 2px); opacity: .7;} 50% {transform: translate(2px, -2px); opacity: 1;}}
     @keyframes journey-travel {0% {left: 0; opacity: 0;} 20% {opacity: 1;} 85% {opacity: 1;} 100% {left: calc(100% - 7px); opacity: 0;}}
     .sidebar-brand {
         display: flex; align-items: center; gap: 12px;
@@ -1592,7 +1603,7 @@ st.markdown(
     @keyframes inspection-spin {to {transform: rotate(360deg);}}
     @media (prefers-reduced-motion: reduce) {
         .inspection-loader-spinner, .welcome-panel, .dashboard-intro,
-        .journey-grid i, .journey-scan-line, .journey-bars i, .journey-link::after {animation: none;}
+        .journey-grid i, .journey-scan-line, .journey-bars i, .journey-export-arrow, .journey-link::after {animation: none;}
         .stButton button, .stDownloadButton button,
     [data-testid="stPopoverBody"]:is([aria-label="Settings"], [aria-label="الإعدادات"]) [role="tab"] {transition: none;}
     }
@@ -1682,9 +1693,14 @@ st.markdown(
         .brand-logo {width: 42px; height: 42px; flex-basis: 42px;}
         .brand-subtitle {font-size: .82rem;}
         .welcome-panel {display: flex; flex-direction: column; align-items: stretch; gap: 24px; padding: 26px 21px;}
-        .welcome-title {font-size: 2.25rem;}
+        .welcome-title {font-size: clamp(2.2rem, 9vw, 2.75rem);}
         .welcome-preview {padding: 20px;}
-        .welcome-steps {grid-template-columns: 1fr; gap: 16px; padding-top: 20px;}
+        .welcome-steps {grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; padding-top: 20px;}
+        .journey-visual {gap: 3px; padding-inline: 7px;}
+        .journey-icon {width: 46px; height: 46px;}
+        .journey-link {flex-basis: 10px;}
+        .journey-stage-label {font-size: .55rem; letter-spacing: .02em;}
+        .journey-stage small {font-size: .62rem; line-height: 1.3;}
         .workflow-panel {padding: 15px;}
         .workflow-header {align-items: flex-start; flex-wrap: wrap;}
         .workflow-strip {grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px;}
@@ -1958,10 +1974,8 @@ with demo_button_col:
     ):
         show_product_demo()
 
-# Keep one uploader and one widget key. On an empty workspace its container is
-# in the main page, where it remains accessible when the sidebar is collapsed.
+# Keep one sidebar uploader and one widget key for both empty and active workspaces.
 landing_at_start = not bool(st.session_state.get("inspector_datasets", {}))
-landing_upload_area = st.container(key="landing_upload") if landing_at_start else None
 welcome_placeholder = st.empty()
 
 with st.sidebar:
@@ -1978,12 +1992,7 @@ with st.sidebar:
             '<strong>Add your data</strong><span>Upload files to begin your quality assessment.</span></div>',
             unsafe_allow_html=True,
         )
-        uploader_target = landing_upload_area if landing_at_start else st
-        if landing_at_start:
-            uploader_target.markdown("**Upload your data**")
-            uploader_target.caption("Choose one or more CSV or Excel files to get started.")
-            st.caption("Use the upload area on the main page to add your files.")
-        uploaded_files = uploader_target.file_uploader(
+        uploaded_files = st.file_uploader(
             "Upload CSV or Excel files",
             type=["csv", "xlsx"],
             accept_multiple_files=True,
@@ -2156,19 +2165,19 @@ if not datasets:
         <section class="welcome-panel" aria-label="Data quality introduction">
           <div class="welcome-copy">
             <div class="welcome-eyebrow">Data quality, made clear</div>
-            <h1 class="welcome-title">Better data. <span class="welcome-accent">Better decisions.</span></h1>
+            <h1 class="welcome-title">Turn data into <span class="welcome-accent">decisions.</span></h1>
             <p class="welcome-description">
               Find missing values, duplicates, invalid formats and outliers in your data.
-              Explore the results, review suggested fixes, and move forward with confidence.
+              Review the results, apply safe fixes, and export with confidence.
             </p>
             <div class="welcome-start">
               <span class="welcome-start-icon" aria-hidden="true">↗</span>
               <div><strong>Get started with your data</strong>
-                <span class="welcome-start-copy">Upload files above, or explore the sample workspace.</span>
+                <span class="welcome-start-copy">Use the sidebar to upload a file, or connect an API in settings.</span>
               </div>
             </div>
-            <div class="welcome-meta" aria-label="Supported data sources">
-              <span>CSV</span><span>EXCEL</span><span>API</span>
+            <div class="welcome-meta" aria-label="Supported capabilities">
+              <span>CSV &amp; Excel</span><span>API connections</span><span>Configurable checks</span><span>Export options</span>
             </div>
           </div>
           <div class="welcome-preview" aria-label="Data quality checks included">
@@ -2178,7 +2187,7 @@ if not datasets:
             </div>
             <h2 class="welcome-preview-heading">From data to insight</h2>
             <p class="welcome-preview-description">A clear path from your source to a more reliable dataset.</p>
-            <div class="journey-visual" aria-label="Import data, inspect quality, and explore insights">
+            <div class="journey-visual" aria-label="Import, inspect, improve, and export data">
               <div class="journey-stage">
                 <span class="journey-stage-label">Import</span>
                 <div class="journey-icon" aria-hidden="true"><span class="journey-grid"><i></i><i></i><i></i><i></i><i></i><i></i></span></div>
@@ -2192,9 +2201,15 @@ if not datasets:
               </div>
               <div class="journey-link" aria-hidden="true"></div>
               <div class="journey-stage">
-                <span class="journey-stage-label">Explore</span>
+                <span class="journey-stage-label">Improve</span>
                 <div class="journey-icon" aria-hidden="true"><span class="journey-bars"><i></i><i></i><i></i></span></div>
-                <small>Clear insights</small>
+                <small>Review findings</small>
+              </div>
+              <div class="journey-link" aria-hidden="true"></div>
+              <div class="journey-stage">
+                <span class="journey-stage-label">Export</span>
+                <div class="journey-icon" aria-hidden="true"><span class="journey-export-arrow">↗</span></div>
+                <small>File or API</small>
               </div>
             </div>
             <div class="journey-checks-label">Quality checks</div>
@@ -2211,7 +2226,11 @@ if not datasets:
             </div>
             <div class="welcome-step">
               <span class="welcome-step-number">03</span>
-              <span>Improve<small>Review fixes, then export or send.</small></span>
+              <span>Improve<small>Review findings and choose safe fixes.</small></span>
+            </div>
+            <div class="welcome-step">
+              <span class="welcome-step-number">04</span>
+              <span>Export<small>Download your data or send it by API.</small></span>
             </div>
           </div>
         </section>
