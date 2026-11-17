@@ -1205,6 +1205,105 @@ st.markdown(
         position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
         overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
     }
+    /* The settings popover is rendered in an overlay, outside the sidebar. */
+    [data-testid="stPopoverBody"][aria-label="Settings"] {
+        width: min(660px, calc(100vw - 48px)) !important;
+        max-width: calc(100vw - 48px) !important;
+        max-height: min(790px, 78vh) !important;
+        border: 1px solid #d8e8e2; border-radius: 20px;
+        background: #fbfdfb; box-shadow: 0 24px 70px rgba(13, 46, 45, .22);
+    }
+    [data-testid="stPopoverBody"][aria-label="Settings"] > [data-testid="stVerticalBlock"] {
+        gap: 1rem;
+    }
+    .settings-hero {
+        position: relative; overflow: hidden; padding: 19px 21px;
+        border: 1px solid #1a5753; border-radius: 14px;
+        background: linear-gradient(115deg, #12373d 0%, #15534f 100%);
+        color: #fff;
+    }
+    .settings-hero::after {
+        content: ""; position: absolute; width: 120px; height: 120px;
+        right: -18px; top: -46px; border-radius: 50%;
+        border: 1px solid rgba(144, 226, 207, .2);
+        box-shadow: 0 0 0 22px rgba(132, 224, 203, .06), 0 0 0 44px rgba(132, 224, 203, .04);
+        pointer-events: none;
+    }
+    .settings-hero-eyebrow {
+        color: #e8ca70; font-size: .62rem; letter-spacing: .16em;
+        font-weight: 760; text-transform: uppercase;
+    }
+    .settings-hero-title {
+        margin-top: 6px; color: #fff; font-size: 1.24rem;
+        font-weight: 750; letter-spacing: -.025em; line-height: 1.2;
+    }
+    .settings-hero-description {
+        margin-top: 5px; color: #c6ded8; font-size: .77rem; line-height: 1.45;
+    }
+    .settings-session-badge {
+        display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
+        padding: 4px 8px; border: 1px solid rgba(167, 226, 210, .25);
+        border-radius: 999px; background: rgba(255,255,255,.07);
+        color: #d5f0e8; font-size: .62rem; font-weight: 700; letter-spacing: .04em;
+    }
+    .settings-session-badge::before {
+        content: ""; width: 6px; height: 6px; border-radius: 50%;
+        background: #76d7be;
+    }
+    [data-testid="stPopoverBody"][aria-label="Settings"] [role="tablist"] {
+        position: sticky; top: 0; z-index: 2;
+        display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px; padding: 5px; border: 1px solid #e0ebe6;
+        border-radius: 15px; background: #edf5f1;
+    }
+    [data-testid="stPopoverBody"][aria-label="Settings"] [role="tab"] {
+        position: relative; display: flex; align-items: center; justify-content: flex-start;
+        gap: 9px; min-width: 0; min-height: 56px; padding: 8px 10px;
+        border: 1px solid transparent; border-radius: 11px;
+        color: #58746e; cursor: pointer; transition: background .18s ease, box-shadow .18s ease, transform .18s ease;
+    }
+    [data-testid="stPopoverBody"][aria-label="Settings"] [role="tab"]::before {
+        display: grid; place-items: center; flex: 0 0 31px; width: 31px; height: 31px;
+        border-radius: 9px; background: #dcebe4; color: #286e60;
+        font-size: 1.05rem; font-weight: 750;
+    }
+    [data-testid="stPopoverBody"][aria-label="Settings"] [role="tab"][data-key="0"]::before {content: "✦";}
+    [data-testid="stPopoverBody"][aria-label="Settings"] [role="tab"][data-key="1"]::before {content: "↗";}
+    [data-testid="stPopoverBody"][aria-label="Settings"] [role="tab"][data-key="2"]::before {content: "✓";}
+    [data-testid="stPopoverBody"][aria-label="Settings"] [role="tab"] p {
+        margin: 0; color: inherit; font-size: .75rem; line-height: 1.25; font-weight: 700;
+    }
+    [data-testid="stPopoverBody"][aria-label="Settings"] [role="tab"]:hover {
+        background: rgba(255,255,255,.7); color: #185b52;
+    }
+    [data-testid="stPopoverBody"][aria-label="Settings"] [role="tab"][aria-selected="true"] {
+        color: #0b554b; background: #fff; border-color: #d4e7df;
+        box-shadow: 0 3px 10px rgba(22, 78, 64, .09);
+    }
+    [data-testid="stPopoverBody"][aria-label="Settings"] [role="tab"][aria-selected="true"]::before {
+        color: #fff; background: #087d6f;
+    }
+    [data-testid="stPopoverBody"][aria-label="Settings"] [role="tab"]:focus-visible {
+        outline: 3px solid #d0a319; outline-offset: 2px;
+    }
+    [data-testid="stPopoverBody"][aria-label="Settings"] .react-aria-SelectionIndicator {display: none;}
+    [data-testid="stPopoverBody"][aria-label="Settings"] [role="tabpanel"] {
+        padding: 8px 2px 4px;
+    }
+    [data-testid="stPopoverBody"][aria-label="Settings"] [data-testid="stWidgetLabel"] p {
+        color: #274d48; font-weight: 650;
+    }
+    [data-testid="stPopoverBody"][aria-label="Settings"] [data-baseweb="input"] {
+        background: #fff; border-radius: 10px;
+    }
+    @media (max-width: 560px) {
+        [data-testid="stPopoverBody"][aria-label="Settings"] [role="tab"] {
+            flex-direction: column; justify-content: center; text-align: center;
+            gap: 5px; min-height: 76px; padding: 7px 4px;
+        }
+        [data-testid="stPopoverBody"][aria-label="Settings"] [role="tab"] p {font-size: .68rem;}
+        .settings-hero {padding: 16px;}
+    }
     .dashboard-intro {
         margin: 1rem 0 .25rem; padding: 16px 19px;
         border: 1px solid #dcebe5; border-radius: 15px;
@@ -1347,7 +1446,8 @@ st.markdown(
     @keyframes inspection-spin {to {transform: rotate(360deg);}}
     @media (prefers-reduced-motion: reduce) {
         .inspection-loader-spinner, .welcome-panel, .dashboard-intro, .welcome-signal, .api-flow i::after {animation: none;}
-        .stButton button, .stDownloadButton button {transition: none;}
+        .stButton button, .stDownloadButton button,
+        [data-testid="stPopoverBody"][aria-label="Settings"] [role="tab"] {transition: none;}
     }
     [data-testid="stTabs"] [role="tablist"] {
         gap: 5px; border-bottom: 1px solid var(--line);
@@ -1461,8 +1561,18 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
             help="LLM, API, and inspection settings",
             key="settings_button",
         ):
-            st.subheader("Settings")
-            model_tab, api_tab, checks_tab = st.tabs(["LLM assistant", "Data APIs", "Inspection checks"])
+            st.markdown(
+                '<div class="settings-hero">'
+                '<div class="settings-hero-eyebrow">Workspace controls</div>'
+                '<div class="settings-hero-title">Make it work your way.</div>'
+                '<div class="settings-hero-description">Manage your assistant, data connections, and quality checks in one place.</div>'
+                '<div class="settings-session-badge">SETTINGS STAY IN THIS SESSION</div>'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+            model_tab, api_tab, checks_tab = st.tabs(
+                ["LLM assistant", "Data APIs", "Inspection checks"], key="settings_navigation"
+            )
             with model_tab:
                 st.markdown("**Connect your own LLM**")
                 st.caption(
