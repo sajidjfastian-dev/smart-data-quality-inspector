@@ -1,6 +1,7 @@
 import hashlib
 import html
 import json
+import logging
 import re
 from datetime import date, datetime
 from io import BytesIO, StringIO
@@ -15,6 +16,8 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 from api_settings import render_api_settings
+from data_insights import render_data_insights
+from quality_large import scan_large_data
 
 
 st.set_page_config(
@@ -153,6 +156,12 @@ def date_shape(value):
 
 
 def parse_numeric_series(series):
+    if pd.api.types.is_numeric_dtype(series):
+        return pd.to_numeric(series, errors="coerce")
+    if len(series) >= 100_000 and pd.api.types.is_string_dtype(series.dtype):
+        cleaned = series.astype("string").str.replace(r"[$£€¥,\s]", "", regex=True)
+        cleaned = cleaned.str.replace(r"^\((.*)\)$", r"-\1", regex=True)
+        return pd.to_numeric(cleaned, errors="coerce")
     cleaned = series.map(
         lambda value: re.sub(r"[$£€¥,\s]", "", value).strip()
         if isinstance(value, str)
@@ -216,11 +225,14 @@ def infer_column_rules(data):
     return email_columns, date_columns, numeric_columns
 
 
-def build_column_profile(data, email_columns, date_columns, numeric_columns):
+def build_column_profile(data, email_columns, date_columns, numeric_columns, progress_callback=None):
     profile = []
-    for column in data.columns:
+    for index, column in enumerate(data.columns):
         series = data[column]
-        missing_count = sum(is_missing(value) for value in series)
+        missing = series.isna()
+        if not pd.api.types.is_numeric_dtype(series) and not pd.api.types.is_bool_dtype(series):
+            missing = missing | series.astype("string").str.strip().eq("").fillna(False)
+        missing_count = int(missing.sum())
         detected_types = []
         if column in numeric_columns:
             detected_types.append("Numeric")
@@ -244,6 +256,8 @@ def build_column_profile(data, email_columns, date_columns, numeric_columns):
                 "Unique": int(series.nunique(dropna=True)),
             }
         )
+        if progress_callback:
+            progress_callback((index + 1) / max(len(data.columns), 1), str(column))
     return pd.DataFrame(profile)
 
 
@@ -631,16 +645,10 @@ def scan_data(
     enabled_checks=None,
     custom_rules=None,
 ):
-    issues = []
     enabled_checks = set(enabled_checks) if enabled_checks is not None else {
         "missing", "duplicates", "email", "date", "outliers"
     }
     custom_rules = custom_rules or []
-    duplicate_mask = (
-        data.duplicated(keep="first")
-        if "duplicates" in enabled_checks
-        else pd.Series(False, index=data.index)
-    )
     email_columns = (
         set(email_columns)
         if email_columns is not None
@@ -660,6 +668,18 @@ def scan_data(
             if pd.api.types.is_numeric_dtype(data[column])
             and not pd.api.types.is_bool_dtype(data[column])
         }
+    )
+    if len(data) >= 100_000:
+        return scan_large_data(
+            data, email_columns, date_columns, numeric_columns, iqr_multiplier,
+            progress_callback, enabled_checks, custom_rules, EMAIL_PATTERN,
+            parse_date, date_shape, parse_numeric_series, display_value, ISSUE_COLUMNS,
+        )
+    issues = []
+    duplicate_mask = (
+        data.duplicated(keep="first")
+        if "duplicates" in enabled_checks
+        else pd.Series(False, index=data.index)
     )
     row_count = len(data)
     total_passes = (
@@ -828,28 +848,51 @@ def clean_data(
     trim_whitespace=True,
     fill_numeric_missing=True,
     standardize_dates=False,
+    progress_callback=None,
 ):
+    total_steps = (
+        1 + int(drop_duplicates) + (len(data.columns) if trim_whitespace else 0)
+        + ((len(numeric_columns) if numeric_columns is not None else len(data.columns)) if fill_numeric_missing else 0)
+        + ((len(date_columns) if date_columns is not None else len(data.columns)) if standardize_dates else 0)
+    )
+    completed_steps = 0
+
+    def report(message):
+        nonlocal completed_steps
+        completed_steps += 1
+        if progress_callback:
+            progress_callback(min(completed_steps / max(total_steps, 1), 1.0), message)
+
     cleaned = data.copy()
+    report("Preparing a copy")
     if drop_duplicates:
         cleaned = cleaned.drop_duplicates().reset_index(drop=True)
+        report("Removing duplicate rows")
     if trim_whitespace:
         for column in cleaned.columns:
             if cleaned[column].dtype == object or pd.api.types.is_string_dtype(cleaned[column]):
-                cleaned[column] = cleaned[column].map(
-                    lambda value: value.strip() if isinstance(value, str) else value
-                )
+                if len(cleaned) >= 100_000 and cleaned[column].dtype != object:
+                    cleaned[column] = cleaned[column].str.strip()
+                else:
+                    cleaned[column] = cleaned[column].map(
+                        lambda value: value.strip() if isinstance(value, str) else value
+                    )
+            report(f"Trimming whitespace · {column}")
     if numeric_columns is None:
         numeric_columns = infer_column_rules(cleaned)[2]
     if fill_numeric_missing:
         for column in numeric_columns:
             if column not in cleaned.columns or pd.api.types.is_bool_dtype(cleaned[column]):
+                report(f"Checking numeric values · {column}")
                 continue
             numeric_values = parse_numeric_series(cleaned[column])
             median = numeric_values.median()
             if pd.isna(median):
+                report(f"Checking numeric values · {column}")
                 continue
             missing_mask = cleaned[column].map(is_missing)
             if not missing_mask.any():
+                report(f"Checking numeric values · {column}")
                 continue
             if pd.api.types.is_numeric_dtype(cleaned[column]):
                 if pd.api.types.is_integer_dtype(cleaned[column]) and median % 1:
@@ -857,13 +900,18 @@ def clean_data(
                 cleaned[column] = cleaned[column].fillna(median)
             elif missing_mask.any():
                 cleaned.loc[missing_mask, column] = str(median)
+            report(f"Filling numeric values · {column}")
     if date_columns is None:
         date_columns = infer_column_rules(cleaned)[1]
     if standardize_dates:
         for column in date_columns:
             if column not in cleaned.columns:
+                report(f"Checking date formats · {column}")
                 continue
             cleaned[column] = cleaned[column].map(standardize_date_value)
+            report(f"Standardizing dates · {column}")
+    if progress_callback:
+        progress_callback(1.0, "Finishing the cleaned copy")
     return cleaned
 
 
@@ -920,25 +968,59 @@ def serialize_data_file(filename, data):
     return data.to_csv(index=False).encode("utf-8-sig"), "text/csv", ".csv"
 
 
-def read_uploaded_file(uploaded_file):
-    return read_data_file(uploaded_file.name, uploaded_file.getvalue())
+def read_uploaded_file(uploaded_file, progress_callback=None):
+    """Read directly from the upload buffer, without making a full-size copy."""
+    uploaded_file.seek(0)
+    if uploaded_file.name.lower().endswith(".csv"):
+        class ProgressReader:
+            def __init__(self, source, callback):
+                self.source = source
+                self.callback = callback
+                self.total = source.seek(0, 2)
+                source.seek(0)
+                self.last_reported = 0
+
+            def read(self, size=-1):
+                result = self.source.read(size)
+                position = self.source.tell()
+                if self.callback and (position - self.last_reported >= 4 * 1024 * 1024 or position == self.total):
+                    self.last_reported = position
+                    self.callback(position / max(self.total, 1))
+                return result
+
+            def seek(self, *args):
+                return self.source.seek(*args)
+
+            def tell(self):
+                return self.source.tell()
+
+        return pd.read_csv(ProgressReader(uploaded_file, progress_callback), encoding="utf-8-sig")
+    # Excel readers seek around the ZIP container, so byte position is not a
+    # reliable measure of work. The caller shows an indeterminate status.
+    return pd.read_excel(uploaded_file, engine="openpyxl")
 
 
 def read_data_file(filename, content):
     if filename.lower().endswith(".csv"):
-        return pd.read_csv(StringIO(content.decode("utf-8-sig")))
+        return pd.read_csv(BytesIO(content), encoding="utf-8-sig")
     return pd.read_excel(BytesIO(content), engine="openpyxl")
 
 
 def upload_signature(uploaded_file):
-    content = uploaded_file.getvalue()
-    return uploaded_file.name, len(content), hashlib.sha256(content).hexdigest()
+    content = uploaded_file.getbuffer()
+    try:
+        return uploaded_file.name, len(content), hashlib.sha256(content).hexdigest()
+    finally:
+        content.release()
 
 
 def reset_quality_caches():
     st.session_state["quality_scan_cache"] = {}
     st.session_state["review_scan_cache"] = {}
     st.session_state["batch_export_cache"] = None
+    st.session_state["distribution_cache"] = {}
+    st.session_state["data_insights_cache"] = {}
+    st.session_state["fixed_export_cache"] = {}
 
 
 def column_rule_signature(email_columns, date_columns, numeric_columns, iqr_multiplier,
@@ -1144,6 +1226,60 @@ st.markdown(
         font-size: .61rem; font-weight: 700; letter-spacing: .06em;
         white-space: nowrap;
     }
+    .journey-visual {
+        display: flex; align-items: center; gap: 6px;
+        padding: 18px 12px 16px; border-radius: 14px;
+        border: 1px solid rgba(194, 241, 229, .12);
+        background: rgba(3, 27, 32, .24);
+    }
+    .journey-stage {flex: 1; min-width: 0; text-align: center;}
+    .journey-stage-label {
+        display: block; margin-bottom: 9px; color: #b6e9df;
+        font-size: .58rem; font-weight: 750; letter-spacing: .1em; text-transform: uppercase;
+    }
+    .journey-stage small {display: block; margin-top: 9px; color: #d1e7e1; font-size: .63rem;}
+    .journey-icon {
+        position: relative; display: flex; justify-content: center; align-items: center;
+        width: 62px; height: 62px; margin: 0 auto; border-radius: 16px;
+        border: 1px solid rgba(160, 231, 213, .25); background: rgba(255,255,255,.07);
+        overflow: hidden;
+    }
+    .journey-grid {display: grid; grid-template-columns: repeat(3, 8px); gap: 4px;}
+    .journey-grid i {width: 8px; height: 8px; border-radius: 2px; background: #86d6c5; animation: journey-cell 3.6s ease-in-out infinite;}
+    .journey-grid i:nth-child(2), .journey-grid i:nth-child(5) {animation-delay: .35s;}
+    .journey-grid i:nth-child(3), .journey-grid i:nth-child(6) {animation-delay: .7s;}
+    .journey-scan-mark {
+        display: grid; place-items: center; width: 31px; height: 31px;
+        border: 2px solid #9ce8d6; border-radius: 50%; color: #d5faf0; font-size: 1rem;
+    }
+    .journey-scan-line {
+        position: absolute; width: 80%; height: 2px; top: 20%;
+        background: #e4c45f; box-shadow: 0 0 9px #e4c45f; animation: journey-scan 3.6s ease-in-out infinite;
+    }
+    .journey-bars {display: flex; align-items: end; gap: 4px; height: 30px;}
+    .journey-bars i {
+        display: block; width: 7px; border-radius: 3px 3px 0 0; background: #81dbc7;
+        transform-origin: bottom; animation: journey-grow 3.6s ease-in-out infinite;
+    }
+    .journey-bars i:nth-child(1) {height: 13px;}
+    .journey-bars i:nth-child(2) {height: 22px; animation-delay: .2s;}
+    .journey-bars i:nth-child(3) {height: 30px; background: #ecd06d; animation-delay: .4s;}
+    .journey-link {position: relative; flex: 0 1 26px; height: 2px; background: rgba(141,222,208,.35);}
+    .journey-link::after {
+        content: ""; position: absolute; top: -3px; left: 0; width: 7px; height: 7px;
+        border-radius: 50%; background: #e9d171; animation: journey-travel 2.4s linear infinite;
+    }
+    .journey-link:nth-of-type(4)::after {animation-delay: 1.2s;}
+    .journey-checks {display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px;}
+    .journey-checks span {
+        padding: 5px 8px; border: 1px solid rgba(189, 235, 223, .14); border-radius: 20px;
+        color: #c6e5dc; background: rgba(255,255,255,.05); font-size: .62rem;
+    }
+    .welcome-preview p.journey-caption {margin: 13px 0 0; color: #b7d4cc !important; font-size: .68rem; line-height: 1.45;}
+    @keyframes journey-cell {0%, 100% {opacity: .5;} 45% {opacity: 1;}}
+    @keyframes journey-scan {0%, 100% {top: 20%;} 50% {top: 78%;}}
+    @keyframes journey-grow {0%, 100% {transform: scaleY(.65);} 50% {transform: scaleY(1);}}
+    @keyframes journey-travel {0% {left: 0; opacity: 0;} 20% {opacity: 1;} 85% {opacity: 1;} 100% {left: calc(100% - 7px); opacity: 0;}}
     .welcome-signal {
         display: flex; align-items: center; gap: 12px; padding: 12px 13px;
         border: 1px solid rgba(255,255,255,.09); border-radius: 12px;
@@ -1345,14 +1481,25 @@ st.markdown(
     [data-testid="stMetricLabel"] {color: var(--muted); font-size: .88rem;}
     [data-testid="stMetricValue"] {color: var(--ink); font-weight: 730; letter-spacing: -.025em;}
     .st-key-metric_cards [data-testid="stButton"] button {
-        min-height: 6.5rem; height: 100%; padding: 13px 16px;
+        min-height: 9rem; height: 100%; padding: 18px 20px;
         color: var(--ink); background: var(--panel); border: 1px solid var(--line);
-        border-radius: 14px; box-shadow: 0 3px 12px rgba(27, 43, 69, .035);
-        text-align: left; white-space: pre-line;
+        border-radius: 16px; box-shadow: 0 6px 20px rgba(27, 43, 69, .045);
+        text-align: left; white-space: normal; justify-content: flex-start;
         transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
     }
+    .st-key-metric_cards [data-testid="stButton"] button [data-testid="stMarkdownContainer"] {
+        display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+        width: 100%; overflow: visible;
+    }
     .st-key-metric_cards [data-testid="stButton"] button p {
-        color: var(--ink); text-align: left; line-height: 1.42; font-size: .88rem;
+        color: var(--ink); text-align: left; line-height: 1.3; font-size: .85rem;
+        white-space: normal !important; overflow: visible !important; text-overflow: clip !important;
+    }
+    .st-key-metric_cards [data-testid="stButton"] button p:nth-child(2) {
+        font-size: 1.9rem; font-weight: 750; letter-spacing: -.04em; color: #116b60;
+    }
+    .st-key-metric_cards [data-testid="stButton"] button p:nth-child(3) {
+        color: #69847d; font-size: .71rem; font-weight: 600;
     }
     .st-key-metric_cards [data-testid="stButton"] button:hover {
         color: var(--teal-dark); background: #f2faf8; border-color: var(--teal);
@@ -1445,20 +1592,40 @@ st.markdown(
     .inspection-loader-copy span {display:block; color:var(--muted); font-size:.76rem; margin-top:3px;}
     @keyframes inspection-spin {to {transform: rotate(360deg);}}
     @media (prefers-reduced-motion: reduce) {
-        .inspection-loader-spinner, .welcome-panel, .dashboard-intro, .welcome-signal, .api-flow i::after {animation: none;}
+        .inspection-loader-spinner, .welcome-panel, .dashboard-intro, .welcome-signal, .api-flow i::after,
+        .journey-grid i, .journey-scan-line, .journey-bars i, .journey-link::after {animation: none;}
         .stButton button, .stDownloadButton button,
         [data-testid="stPopoverBody"][aria-label="Settings"] [role="tab"] {transition: none;}
     }
     [data-testid="stTabs"] [role="tablist"] {
         gap: 5px; border-bottom: 1px solid var(--line);
     }
-    [data-testid="stTabs"] button[role="tab"] {
+    [data-testid="stTabs"] [role="tab"] {
         color: var(--muted); font-weight: 620; border-radius: 9px 9px 0 0;
         padding: .62rem .82rem;
     }
-    [data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
+    [data-testid="stTabs"] [role="tab"][aria-selected="true"] {
         color: var(--teal-dark); border-bottom-color: var(--teal);
         background: #eaf7f4;
+    }
+    .st-key-dashboard_tabs [role="tablist"] {
+        display: flex; gap: 6px; padding: 6px; border: 1px solid #dceae4;
+        border-radius: 14px; background: #edf5f1;
+    }
+    .st-key-dashboard_tabs [role="tab"] {
+        flex: 1 0 auto; justify-content: center; padding: 12px 14px;
+        border: 1px solid transparent; border-radius: 10px; color: #5b746d;
+        transition: background .18s ease, box-shadow .18s ease;
+    }
+    .st-key-dashboard_tabs [role="tab"] p {font-weight: 700; font-size: .83rem;}
+    .st-key-dashboard_tabs [role="tab"][aria-selected="true"] {
+        color: #086c5f; background: #fff; border-color: #d6e8df;
+        box-shadow: 0 3px 10px rgba(22,78,64,.08);
+    }
+    .st-key-dashboard_tabs [role="tab"]:focus-visible {outline: 3px solid #d0a319; outline-offset: 2px;}
+    .st-key-dashboard_tabs .react-aria-SelectionIndicator {display: none;}
+    @media (prefers-reduced-motion: reduce) {
+        .st-key-dashboard_tabs [role="tab"] {transition: none;}
     }
     .stButton button, .stDownloadButton button {
         min-height: 2.55rem; border-radius: 10px; font-weight: 640;
@@ -1503,7 +1670,14 @@ st.markdown(
         .brand-header {padding: 16px 14px; gap: 11px; border-radius: 14px;}
         .brand-logo {width: 42px; height: 42px; flex-basis: 42px;}
         .brand-subtitle {font-size: .82rem;}
-        .welcome-panel {grid-template-columns: 1fr; gap: 24px; min-height: 0; padding: 24px 20px;}
+        .welcome-panel {display: flex; flex-direction: column; align-items: stretch; gap: 0; min-height: 0; padding: 24px 20px;}
+        .welcome-copy {display: contents;}
+        .welcome-eyebrow {order: 0;}
+        .welcome-title {order: 1;}
+        .welcome-description {order: 2;}
+        .welcome-preview {order: 3; margin-top: 20px;}
+        .welcome-steps {order: 4;}
+        .api-flow {order: 5;}
         .welcome-steps {grid-template-columns: 1fr; gap: 12px; margin-top: 20px;}
         .welcome-preview {padding: 19px;}
         .workflow-strip {grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; padding: 8px;}
@@ -1513,7 +1687,7 @@ st.markdown(
         .workflow-step small {font-size: .70rem;}
         .workflow-step strong {flex-basis: 26px; width: 26px; height: 26px;}
         [data-testid="stTabs"] [role="tablist"] {overflow-x: auto; flex-wrap: nowrap; scrollbar-width: thin;}
-        [data-testid="stTabs"] button[role="tab"] {flex: 0 0 auto; padding: .5rem .65rem; font-size: .8rem; white-space: nowrap;}
+        [data-testid="stTabs"] [role="tab"] {flex: 0 0 auto; padding: .5rem .65rem; font-size: .8rem; white-space: nowrap;}
         .st-key-metric_cards [data-testid="stHorizontalBlock"] {
             display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem;
         }
@@ -1776,7 +1950,8 @@ with st.sidebar:
         icon=":material/table_view:",
         help="Load five related CSV/XLSX demo tables with over 50,000 synthetic rows.",
     )
-    st.caption("Synthetic test data · CSV and Excel · Session-only processing")
+    st.caption("CSV and Excel up to 500 MB per file · Large Excel files may require substantially more memory.")
+    st.caption("Synthetic test data · Session-only processing")
     settings_anchor = st.container(key="settings_anchor")
 
 if load_sample_clicked:
@@ -1854,7 +2029,13 @@ if uploaded_files and upload_signatures != st.session_state.get(
                 expanded=True,
             )
             try:
-                file_data = read_uploaded_file(uploaded_file)
+                def report_upload_progress(fraction):
+                    progress.progress(
+                        min((index + fraction) / len(uploaded_files), 0.99),
+                        text=f"Reading {uploaded_file.name} · {fraction:.0%} of file",
+                    )
+
+                file_data = read_uploaded_file(uploaded_file, report_upload_progress)
                 if file_data.empty or len(file_data.columns) == 0:
                     file_errors.append(f"{uploaded_file.name}: the file has no rows or columns.")
                     continue
@@ -1871,6 +2052,17 @@ if uploaded_files and upload_signatures != st.session_state.get(
             except ImportError as error:
                 file_errors.append(
                     f"{uploaded_file.name}: a required file-reading dependency is unavailable ({error})."
+                )
+            except MemoryError:
+                file_errors.append(
+                    f"{uploaded_file.name}: there is not enough memory to read this file. "
+                    "Try a smaller file or increase the available memory."
+                )
+            except Exception:
+                logging.exception("Failed to read an uploaded dataset")
+                file_errors.append(
+                    f"{uploaded_file.name}: the file could not be read. "
+                    "Check that it is a valid CSV or Excel file and try again."
                 )
         progress.progress(1.0, text="File batch ready.")
         progress.empty()
@@ -1946,41 +2138,30 @@ if not datasets:
           </div>
           <div class="welcome-preview" aria-label="Data quality checks included">
             <div class="welcome-preview-top">
-              <div class="welcome-preview-title">Your inspection toolkit</div>
-              <div class="welcome-preview-badge">4 QUALITY CHECKS</div>
+              <div class="welcome-preview-title">From data to clarity</div>
+              <div class="welcome-preview-badge">HOW IT WORKS</div>
             </div>
-            <div class="welcome-signal">
-              <span class="welcome-signal-icon" aria-hidden="true">01</span>
-              <span class="welcome-signal-copy">
-                <strong>Missing values</strong>
-                <small>Spot gaps and incomplete fields.</small>
-              </span>
-              <span class="welcome-signal-check" aria-hidden="true">+</span>
+            <div class="journey-visual" aria-label="Import data, inspect quality, and explore insights">
+              <div class="journey-stage">
+                <span class="journey-stage-label">Import</span>
+                <div class="journey-icon" aria-hidden="true"><span class="journey-grid"><i></i><i></i><i></i><i></i><i></i><i></i></span></div>
+                <small>Files or APIs</small>
+              </div>
+              <div class="journey-link" aria-hidden="true"></div>
+              <div class="journey-stage">
+                <span class="journey-stage-label">Inspect</span>
+                <div class="journey-icon" aria-hidden="true"><span class="journey-scan-mark">✓</span><span class="journey-scan-line"></span></div>
+                <small>Quality checks</small>
+              </div>
+              <div class="journey-link" aria-hidden="true"></div>
+              <div class="journey-stage">
+                <span class="journey-stage-label">Explore</span>
+                <div class="journey-icon" aria-hidden="true"><span class="journey-bars"><i></i><i></i><i></i></span></div>
+                <small>Clear insights</small>
+              </div>
             </div>
-            <div class="welcome-signal">
-              <span class="welcome-signal-icon" aria-hidden="true">02</span>
-              <span class="welcome-signal-copy">
-                <strong>Duplicates</strong>
-                <small>Find repeated rows in your data.</small>
-              </span>
-              <span class="welcome-signal-check" aria-hidden="true">+</span>
-            </div>
-            <div class="welcome-signal">
-              <span class="welcome-signal-icon" aria-hidden="true">03</span>
-              <span class="welcome-signal-copy">
-                <strong>Format consistency</strong>
-                <small>Check date and contact fields.</small>
-              </span>
-              <span class="welcome-signal-check" aria-hidden="true">+</span>
-            </div>
-            <div class="welcome-signal">
-              <span class="welcome-signal-icon" aria-hidden="true">04</span>
-              <span class="welcome-signal-copy">
-                <strong>Numeric outliers</strong>
-                <small>Surface unusual values and distributions.</small>
-              </span>
-              <span class="welcome-signal-check" aria-hidden="true">+</span>
-            </div>
+            <div class="journey-checks"><span>Missing values</span><span>Duplicates</span><span>Invalid formats</span><span>Outliers</span></div>
+            <p class="journey-caption">Understand your data, review the findings, and share a cleaner result.</p>
           </div>
         </section>
         """,
@@ -2016,7 +2197,21 @@ column_signature = hashlib.sha256(
         )
     ).encode("utf-8")
 ).hexdigest()[:12]
-email_defaults, date_defaults, numeric_defaults = infer_column_rules(data)
+inference_data = data.head(10_000) if len(data) >= 100_000 else data
+try:
+    email_defaults, date_defaults, numeric_defaults = infer_column_rules(inference_data)
+except MemoryError:
+    st.error("There is not enough memory to prepare this dataset. Try a smaller file or increase the available memory.")
+    st.stop()
+except Exception:
+    logging.exception("Unable to infer dataset column types")
+    st.error("The file was loaded, but its columns could not be prepared for inspection. Check the file and try again.")
+    st.stop()
+if len(data) >= 100_000:
+    st.caption(
+        "Column type suggestions use the first 10,000 rows; all enabled checks "
+        "inspect the complete file. Adjust column types in settings if needed."
+    )
 
 (
     email_columns, date_columns, numeric_columns, iqr_multiplier,
@@ -2055,23 +2250,40 @@ else:
         inspection_progress = st.progress(0.0, text="Preparing quality checks...")
 
         def update_inspection_progress(fraction, message):
-            inspection_progress.progress(fraction, text=message)
+            overall = min(fraction * .85, .85)
+            inspection_progress.progress(overall, text=f"{overall:.0%} · {message}")
             inspection_status.update(
                 label="Inspecting the active file...",
                 state="running",
                 expanded=True,
             )
 
-        issues, duplicate_count = scan_data(
-            data,
-            email_columns=email_columns,
-            date_columns=date_columns,
-            numeric_columns=numeric_columns,
-            iqr_multiplier=iqr_multiplier,
-            progress_callback=update_inspection_progress,
-            enabled_checks=enabled_checks,
-            custom_rules=custom_rules,
-        )
+        try:
+            issues, duplicate_count = scan_data(
+                data,
+                email_columns=email_columns,
+                date_columns=date_columns,
+                numeric_columns=numeric_columns,
+                iqr_multiplier=iqr_multiplier,
+                progress_callback=update_inspection_progress,
+                enabled_checks=enabled_checks,
+                custom_rules=custom_rules,
+            )
+            column_profile = build_column_profile(
+                data, email_columns, date_columns, numeric_columns,
+                progress_callback=lambda fraction, column: inspection_progress.progress(
+                    .85 + .15 * fraction, text=f"{.85 + .15 * fraction:.0%} · Profiling column · {column}"
+                ),
+            )
+        except MemoryError:
+            inspection_status.update(label="Inspection could not finish", state="error", expanded=True)
+            st.error("There is not enough memory to finish inspecting this file. Try a smaller file or increase the available memory.")
+            st.stop()
+        except Exception:
+            logging.exception("Quality inspection failed")
+            inspection_status.update(label="Inspection could not finish", state="error", expanded=True)
+            st.error("The file could not be inspected. Check the data and settings, then try again.")
+            st.stop()
         inspection_progress.empty()
         inspection_loader.empty()
         inspection_status.update(
@@ -2079,12 +2291,6 @@ else:
             state="complete",
             expanded=False,
         )
-    column_profile = build_column_profile(
-        data,
-        email_columns,
-        date_columns,
-        numeric_columns,
-    )
     quality_scan_cache[active_dataset] = {
         "rules": rule_signature,
         "issues": issues,
@@ -2104,16 +2310,17 @@ findings_step = (
 )
 findings_status = "workflow-step-findings" if issue_count else "workflow-step-clear"
 findings_icon = "!" if issue_count else "✓"
-st.markdown(
-    '<div class="workflow-strip" aria-label="File inspection progress">'
-    f'<span class="workflow-step workflow-step-complete"><strong>✓</strong><span><b>File loaded</b><small>{len(data):,} rows · {len(columns):,} columns</small></span></span>'
-    '<span class="workflow-step workflow-step-complete"><strong>✓</strong><span><b>Inspection complete</b><small>Active quality rules applied</small></span></span>'
-    f'<span class="workflow-step {findings_status}"><strong>{findings_icon}</strong><span><b>Findings</b><small>{findings_step}</small></span></span>'
-    '<span class="workflow-step workflow-step-ready"><strong>4</strong><span><b>Review &amp; fix</b><small>Ready when you are</small></span></span>'
-    '<span class="workflow-step workflow-step-ready"><strong>5</strong><span><b>Export</b><small>Use Preview &amp; export</small></span></span>'
-    '</div>',
-    unsafe_allow_html=True,
-)
+with st.expander("Inspection workflow", expanded=False):
+    st.markdown(
+        '<div class="workflow-strip" aria-label="File inspection progress">'
+        f'<span class="workflow-step workflow-step-complete"><strong>✓</strong><span><b>File loaded</b><small>{len(data):,} rows · {len(columns):,} columns</small></span></span>'
+        '<span class="workflow-step workflow-step-complete"><strong>✓</strong><span><b>Inspection complete</b><small>Active quality rules applied</small></span></span>'
+        f'<span class="workflow-step {findings_status}"><strong>{findings_icon}</strong><span><b>Findings</b><small>{findings_step}</small></span></span>'
+        '<span class="workflow-step workflow-step-ready"><strong>4</strong><span><b>Review &amp; fix</b><small>Ready when you are</small></span></span>'
+        '<span class="workflow-step workflow-step-ready"><strong>5</strong><span><b>Export</b><small>Use Preview &amp; export</small></span></span>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
 st.caption(
     f"Workspace · {len(datasets):,} file(s) · {batch_row_count:,} rows total · "
     f"Inspecting **{active_dataset}** · {int(data.memory_usage(deep=True).sum() / 1024):,} KB in memory"
@@ -2214,7 +2421,9 @@ if selected_metric:
                     st.caption("Findings by column")
                     st.dataframe(issue_column_counts, width="stretch", hide_index=True)
                 st.caption("Showing every detected issue:")
-                st.dataframe(issues, width="stretch", hide_index=True)
+                st.dataframe(issues.head(1_000), width="stretch", hide_index=True)
+                if len(issues) > 1_000:
+                    st.caption("Showing the first 1,000 findings. The issue report contains all matching findings.")
         elif selected_metric == "duplicates":
             duplicate_mask = data.duplicated(keep="first").to_numpy()
             duplicate_positions = np.flatnonzero(duplicate_mask)
@@ -2223,22 +2432,27 @@ if selected_metric:
             elif duplicate_count == 0:
                 st.success("No exact duplicate rows are currently detected.")
             else:
-                duplicate_rows = data.iloc[duplicate_positions].copy()
-                duplicate_rows.insert(0, "Row Number", duplicate_positions + 1)
+                duplicate_rows = data.iloc[duplicate_positions[:1_000]].copy()
+                duplicate_rows.insert(0, "Row Number", duplicate_positions[:1_000] + 1)
                 st.markdown(
                     f"**{duplicate_count:,}** exact duplicate row(s) were found. "
                     "These rows match an earlier row across every column."
                 )
                 st.dataframe(duplicate_rows, width="stretch", hide_index=True)
+                if duplicate_count > 1_000:
+                    st.caption("Showing the first 1,000 duplicate rows.")
 
-overview_tab, issues_tab, review_tab, preview_tab, assistant_tab = st.tabs(
+overview_tab, issues_tab, review_tab, preview_tab, assistant_tab, insights_tab = st.tabs(
     [
         "1 · Overview",
         "2 · Issue log",
         "3 · Review & fix",
         "4 · Preview & export",
         "5 · Assistant",
-    ]
+        "6 · Data insights",
+    ],
+    key="dashboard_tabs",
+    on_change="rerun",
 )
 
 with overview_tab:
@@ -2290,7 +2504,7 @@ with overview_tab:
 
     with type_col:
         st.subheader("Findings by type")
-        st.caption("Share of all detected findings, including duplicate rows.")
+        st.caption("Counts and share of all detected findings, including duplicate rows.")
         issue_types = set(issues["Issue Type"]) if not issues.empty else set()
         if issues.empty:
             st.caption("Findings will appear here after a check detects an issue.")
@@ -2301,23 +2515,30 @@ with overview_tab:
                 .rename(columns={"size": "Findings"})
                 .sort_values("Findings", ascending=False)
             )
-            type_chart = px.pie(
+            type_counts["Share (%)"] = type_counts["Findings"] / type_counts["Findings"].sum() * 100
+            type_chart = px.bar(
                 type_counts,
-                names="Issue Type",
-                values="Findings",
-                hole=0.66,
-                color_discrete_sequence=["#61A9BD", "#CED14E", "#44986D", "#DD83C9", "#1F74AD", "#E98E2E", "#9267C6", "#8D6C5B", "#D8524F", "#979797"],
+                x="Findings",
+                y="Issue Type",
+                orientation="h",
+                text="Findings",
+                custom_data=["Share (%)"],
+                color_discrete_sequence=["#61A9BD"],
             )
             type_chart.update_traces(
-                textposition="inside",
-                textinfo="percent",
-                hovertemplate="%{label}<br>%{value} findings<extra></extra>",
+                textposition="outside",
+                cliponaxis=False,
+                hovertemplate="%{y}<br>%{x:,} findings · %{customdata[0]:.1f}%<extra></extra>",
             )
             type_chart.update_layout(
                 template="plotly_white",
-                showlegend=True,
-                legend=dict(orientation="h", y=-0.16, x=0),
-                margin=dict(l=8, r=8, t=12, b=38),
+                showlegend=False,
+                xaxis_title="Findings",
+                xaxis=dict(rangemode="tozero", gridcolor="#edf2f0"),
+                yaxis_title="",
+                yaxis=dict(autorange="reversed", automargin=True),
+                height=max(260, min(700, 80 + 42 * len(type_counts))),
+                margin=dict(l=8, r=45, t=12, b=20),
                 plot_bgcolor="rgba(0,0,0,0)",
                 paper_bgcolor="rgba(0,0,0,0)",
                 font=dict(color="#526c68"),
@@ -2408,57 +2629,14 @@ with overview_tab:
                 "- Use the settings icon at the bottom of the sidebar to adjust checks and column rules."
             )
 
-    st.divider()
-    st.subheader("📊 Explore a numeric distribution")
-    if numeric_columns:
-        numeric_col, distribution_col = st.columns([1, 2])
-        with numeric_col:
-            selected_numeric = st.selectbox(
-                "Choose a numeric column",
-                options=list(numeric_columns),
-                key=f"distribution_column_{column_signature}",
-            )
-            numeric_values = parse_numeric_series(data[selected_numeric]).dropna()
-            st.metric("Valid numeric values", f"{len(numeric_values):,}")
-            if not numeric_values.empty:
-                distribution_metrics = st.columns(2)
-                distribution_metrics[0].metric(
-                    "Median", f"{numeric_values.median():,.2f}"
-                )
-                distribution_metrics[1].metric(
-                    "Range", f"{numeric_values.min():,.2f} – {numeric_values.max():,.2f}"
-                )
-        with distribution_col:
-            if numeric_values.empty:
-                st.info("There are no numeric values to chart in this column.")
-            else:
-                distribution = px.histogram(
-                    numeric_values.to_frame(name=str(selected_numeric)),
-                    x=str(selected_numeric),
-                    marginal="box",
-                    color_discrete_sequence=[CHART_COLORS[0]],
-                    labels={str(selected_numeric): str(selected_numeric)},
-                    opacity=0.86,
-                )
-                distribution.update_layout(
-                    template="plotly_white",
-                    showlegend=False,
-                    xaxis_title=str(selected_numeric),
-                    yaxis_title="Rows",
-                    margin=dict(l=12, r=12, t=20, b=20),
-                    plot_bgcolor="rgba(0,0,0,0)",
-                    paper_bgcolor="rgba(0,0,0,0)",
-                    font=dict(color="#345d56"),
-                )
-                st.plotly_chart(
-                    distribution, width="stretch", config={"displayModeBar": False}
-                )
-    else:
-        st.info("Choose a Numeric column in settings to explore its distribution.")
+    st.caption("For distributions, field profiles, common values and timelines, open **Data insights**.")
 
-    with st.expander("Column profile", expanded=False):
-        st.caption("Automatically inferred types can be adjusted in settings.")
-        st.dataframe(column_profile, width="stretch", hide_index=True)
+with insights_tab:
+    if insights_tab.open:
+        render_data_insights(
+            data, column_profile, numeric_columns, date_columns,
+            active_dataset, column_signature, parse_numeric_series,
+        )
 
 with issues_tab:
     st.subheader("🧾 Issue explorer")
@@ -2515,10 +2693,22 @@ with issues_tab:
         if filtered_issues.empty:
             st.info("No findings match these search and filter choices.")
         else:
-            st.dataframe(filtered_issues, width="stretch", hide_index=True)
+            finding_page = 1
+            if len(filtered_issues) > 1_000:
+                finding_pages = (len(filtered_issues) + 999) // 1_000
+                finding_page_key = f"finding_page_{column_signature}"
+                if st.session_state.get(finding_page_key, 1) > finding_pages:
+                    st.session_state[finding_page_key] = finding_pages
+                finding_page = st.number_input(
+                    "Findings page", min_value=1, max_value=finding_pages,
+                    value=1, step=1, key=finding_page_key,
+                )
+                st.caption(f"Page {finding_page:,} of {finding_pages:,}; the downloaded report includes all matches.")
+            finding_start = (finding_page - 1) * 1_000
+            st.dataframe(filtered_issues.iloc[finding_start:finding_start + 1_000], width="stretch", hide_index=True)
         st.download_button(
             "Download issue report",
-            data=filtered_issues.to_csv(index=False).encode("utf-8-sig"),
+            data=lambda: filtered_issues.to_csv(index=False).encode("utf-8-sig"),
             file_name=f"{Path(active_dataset).stem}_issue_report.csv",
             mime="text/csv",
             width="content",
@@ -2530,7 +2720,7 @@ with issues_tab:
 with review_tab:
     st.subheader("🛠️ Review and fix the active file")
     st.caption(
-        f"All rows in **{active_dataset}** are shown below. Highlighted cells match "
+        f"Review rows in **{active_dataset}** below. Highlighted cells match "
         "the current quality findings; exact duplicate rows are highlighted across the row."
     )
     fixed_datasets = st.session_state.setdefault("fixed_datasets", {})
@@ -2587,15 +2777,32 @@ with review_tab:
                     "Updating a copy while preserving the original file.",
                     fix_loader,
                 )
-                fixed_datasets[active_dataset] = clean_data(
-                    data,
-                    numeric_columns=numeric_columns,
-                    date_columns=date_columns,
-                    drop_duplicates=fix_duplicates,
-                    trim_whitespace=fix_whitespace,
-                    fill_numeric_missing=fix_missing_numeric,
-                    standardize_dates=fix_date_formats,
-                )
+                fix_progress = st.progress(0.0, text="Preparing a copy...")
+                try:
+                    fixed_copy = clean_data(
+                        data,
+                        numeric_columns=numeric_columns,
+                        date_columns=date_columns,
+                        drop_duplicates=fix_duplicates,
+                        trim_whitespace=fix_whitespace,
+                        fill_numeric_missing=fix_missing_numeric,
+                        standardize_dates=fix_date_formats,
+                        progress_callback=lambda fraction, message: fix_progress.progress(
+                            fraction, text=f"{fraction:.0%} · {message}"
+                        ),
+                    )
+                except MemoryError:
+                    fix_status.update(label="Could not apply fixes", state="error", expanded=True)
+                    st.error("There is not enough memory to create the fixed copy. The original data has not changed.")
+                    st.stop()
+                except Exception:
+                    logging.exception("Failed to apply data fixes")
+                    fix_status.update(label="Could not apply fixes", state="error", expanded=True)
+                    st.error("The fixes could not be applied. Check your settings and try again; the original data has not changed.")
+                    st.stop()
+                fixed_datasets[active_dataset] = fixed_copy
+                st.session_state.setdefault("fixed_export_cache", {}).pop(active_dataset, None)
+                fix_progress.empty()
                 fix_loader.empty()
                 fix_status.update(
                     label="Safe fixes applied to a copy",
@@ -2640,23 +2847,33 @@ with review_tab:
                 review_progress = st.progress(0.0, text="Preparing preview checks...")
 
                 def update_review_progress(fraction, message):
-                    review_progress.progress(fraction, text=message)
+                    review_progress.progress(fraction, text=f"{fraction:.0%} · {message}")
                     review_status.update(
                         label="Checking findings in the preview...",
                         state="running",
                         expanded=True,
                     )
 
-                review_issues, _ = scan_data(
-                    review_data,
-                    email_columns=email_columns,
-                    date_columns=date_columns,
-                    numeric_columns=numeric_columns,
-                    iqr_multiplier=iqr_multiplier,
-                    progress_callback=update_review_progress,
-                    enabled_checks=enabled_checks,
-                    custom_rules=custom_rules,
-                )
+                try:
+                    review_issues, _ = scan_data(
+                        review_data,
+                        email_columns=email_columns,
+                        date_columns=date_columns,
+                        numeric_columns=numeric_columns,
+                        iqr_multiplier=iqr_multiplier,
+                        progress_callback=update_review_progress,
+                        enabled_checks=enabled_checks,
+                        custom_rules=custom_rules,
+                    )
+                except MemoryError:
+                    review_status.update(label="Could not check the fixed copy", state="error", expanded=True)
+                    st.error("There is not enough memory to check the fixed copy. The original data has not changed.")
+                    st.stop()
+                except Exception:
+                    logging.exception("Failed to inspect the fixed copy")
+                    review_status.update(label="Could not check the fixed copy", state="error", expanded=True)
+                    st.error("The fixed copy could not be inspected. Check your settings and try again.")
+                    st.stop()
                 review_progress.empty()
                 review_loader.empty()
                 review_status.update(
@@ -2706,8 +2923,6 @@ with review_tab:
             unsafe_allow_html=True,
         )
 
-    review_display = review_data.copy()
-    review_display.insert(0, "Row Number", np.arange(1, len(review_display) + 1))
     review_search_col, review_filter_col = st.columns([1.5, 1])
     with review_search_col:
         review_search = st.text_input(
@@ -2721,53 +2936,86 @@ with review_tab:
             value=False,
             key=f"issue_rows_only_{column_signature}_{int(show_fixed)}",
         )
+    matching_rows = np.ones(len(review_data), dtype=bool)
     if issue_rows_only:
-        if review_issues.empty:
-            review_display = review_display.iloc[0:0]
-        else:
-            review_display = review_display[
-                review_display["Row Number"].isin(review_issues["Row Number"])
-            ]
+        matching_rows[:] = False
+        if not review_issues.empty:
+            finding_positions = review_issues["Row Number"].to_numpy(dtype=np.int64) - 1
+            finding_positions = finding_positions[(finding_positions >= 0) & (finding_positions < len(review_data))]
+            matching_rows[finding_positions] = True
     if review_search.strip():
-        search_mask = review_display.astype(str).apply(
-            lambda column: column.str.contains(
-                review_search.strip(),
-                case=False,
-                regex=False,
-                na=False,
-            )
-        ).any(axis=1)
-        review_display = review_display[search_mask]
+        search_mask = np.zeros(len(review_data), dtype=bool)
+        for column in review_data.columns:
+            search_mask |= review_data[column].astype(str).str.contains(
+                review_search.strip(), case=False, regex=False, na=False
+            ).to_numpy(dtype=bool)
+        matching_rows &= search_mask
+    matching_positions = np.flatnonzero(matching_rows)
+    review_page = 1
+    if len(matching_positions) > 1_000:
+        review_pages = (len(matching_positions) + 999) // 1_000
+        review_page_key = f"review_page_{column_signature}_{int(show_fixed)}"
+        if st.session_state.get(review_page_key, 1) > review_pages:
+            st.session_state[review_page_key] = review_pages
+        review_page = st.number_input(
+            "Review page", min_value=1, max_value=review_pages, value=1,
+            step=1, key=review_page_key,
+        )
+        st.caption(f"Page {review_page:,} of {review_pages:,}; the dataset and exports retain all rows.")
+    review_start = (review_page - 1) * 1_000
+    displayed_positions = matching_positions[review_start:review_start + 1_000]
+    review_display = review_data.iloc[displayed_positions].copy()
+    review_display.insert(0, "Row Number", displayed_positions + 1)
     st.caption(
-        f"Showing {len(review_display):,} of {len(review_data):,} rows"
+        f"Showing {len(review_display):,} of {len(matching_positions):,} matching rows"
         + (" with findings" if issue_rows_only else "")
     )
     if review_display.empty:
         st.info("No rows match these search and filter choices.")
     else:
         st.dataframe(
-            dataframe_styles(review_display, review_issues),
+            dataframe_styles(
+                review_display,
+                review_issues[review_issues["Row Number"].isin(displayed_positions + 1)],
+            ),
             width="stretch",
             height=650,
             hide_index=True,
         )
 
     if has_fixed_data and show_fixed:
-        fixed_payload, fixed_mime, fixed_extension = serialize_data_file(
-            active_dataset,
-            review_data,
-        )
+        fixed_exports = st.session_state.setdefault("fixed_export_cache", {})
+        fixed_export = fixed_exports.get(active_dataset)
+        if fixed_export is None and len(review_data) < 100_000:
+            fixed_export = serialize_data_file(active_dataset, review_data)
+        elif fixed_export is None:
+            st.caption("Prepare the fixed file before downloading; large exports may take some time.")
+            if st.button("Prepare fixed download", key=f"prepare_fixed_{column_signature}"):
+                with st.status("Preparing the fixed file...", expanded=True) as export_status:
+                    try:
+                        fixed_export = serialize_data_file(active_dataset, review_data)
+                        fixed_exports[active_dataset] = fixed_export
+                        export_status.update(label="Fixed file ready", state="complete", expanded=False)
+                    except MemoryError:
+                        export_status.update(label="Could not prepare the fixed file", state="error", expanded=True)
+                        st.error("There is not enough memory to prepare this download. Try a smaller file.")
+                    except Exception:
+                        logging.exception("Failed to prepare fixed export")
+                        export_status.update(label="Could not prepare the fixed file", state="error", expanded=True)
+                        st.error("The fixed file could not be prepared. Please try again.")
         output_stem = Path(active_dataset).stem or "data"
-        st.download_button(
-            f"Download fixed file ({fixed_extension[1:].upper()})",
-            data=fixed_payload,
-            file_name=f"{output_stem}_fixed{fixed_extension}",
-            mime=fixed_mime,
-            type="primary",
-            width="stretch",
-            icon=":material/download:",
-            key=f"download_fixed_{column_signature}",
-        )
+        if fixed_export is not None:
+            fixed_payload, fixed_mime, fixed_extension = fixed_export
+            st.download_button(
+                f"Download fixed file ({fixed_extension[1:].upper()})",
+                data=fixed_payload,
+                file_name=f"{output_stem}_fixed{fixed_extension}",
+                mime=fixed_mime,
+                type="primary",
+                width="stretch",
+                icon=":material/download:",
+                key=f"download_fixed_{column_signature}",
+            )
 
 with preview_tab:
     st.subheader("Your data, ready to explore")
@@ -2826,17 +3074,27 @@ with preview_tab:
                     )
 
                     def update_batch_export_progress(fraction, message):
-                        batch_progress.progress(fraction, text=message)
+                        batch_progress.progress(fraction, text=f"{fraction:.0%} · {message}")
                         batch_status.update(
                             label="Preparing the cleaned batch export...",
                             state="running",
                             expanded=True,
                         )
 
-                    batch_archive = build_cleaned_batch_archive(
-                        datasets,
-                        progress_callback=update_batch_export_progress,
-                    )
+                    try:
+                        batch_archive = build_cleaned_batch_archive(
+                            datasets,
+                            progress_callback=update_batch_export_progress,
+                        )
+                    except MemoryError:
+                        batch_status.update(label="Could not prepare the batch", state="error", expanded=True)
+                        st.error("There is not enough memory to prepare this batch. Try exporting fewer files.")
+                        st.stop()
+                    except Exception:
+                        logging.exception("Failed to prepare the batch export")
+                        batch_status.update(label="Could not prepare the batch", state="error", expanded=True)
+                        st.error("The batch could not be prepared. Check the files and try again.")
+                        st.stop()
                     st.session_state["batch_export_cache"] = batch_archive
                     batch_progress.empty()
                     batch_loader.empty()

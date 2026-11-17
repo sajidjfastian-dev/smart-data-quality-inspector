@@ -113,9 +113,10 @@ class QuickSampleTests(unittest.TestCase):
             report = downloads[-1]
             self.assertEqual(report["file_name"], "Sample messy dataset_issue_report.csv")
             self.assertEqual(report["mime"], "text/csv")
-            self.assertTrue(report["data"].startswith(b"\xef\xbb\xbf"))
+            report_data = report["data"]() if callable(report["data"]) else report["data"]
+            self.assertTrue(report_data.startswith(b"\xef\xbb\xbf"))
             self.assertEqual(report["disabled"], not expected_keys)
-            csv = pd.read_csv(BytesIO(report["data"]), keep_default_na=False)
+            csv = pd.read_csv(BytesIO(report_data), keep_default_na=False)
             self.assertEqual(self.issue_keys(csv), expected_keys)
             self.assertEqual(len(csv), len(expected_keys))
             issue_tab = next(tab for tab in self.app.tabs if tab.label == "2 · Issue log")
