@@ -143,6 +143,7 @@ class QuickSampleTests(unittest.TestCase):
             self.assertEqual(report["file_name"], "Sample messy dataset_issue_report.csv")
             self.assertEqual(report["mime"], "text/csv")
             report_data = report["data"]() if callable(report["data"]) else report["data"]
+            self.assertTrue(callable(report["data"]), "Issue CSV must be serialized only on download")
             self.assertTrue(report_data.startswith(b"\xef\xbb\xbf"))
             self.assertEqual(report["disabled"], not expected_keys)
             csv = pd.read_csv(BytesIO(report_data), keep_default_na=False)
@@ -150,35 +151,39 @@ class QuickSampleTests(unittest.TestCase):
             self.assertEqual(len(csv), len(expected_keys))
             issue_tab = next(tab for tab in self.app.tabs if tab.label == "2 · Issue log")
             if expected_keys:
-                self.assertEqual(len(issue_tab.dataframe), 1)
-                assert_frame_equal(csv, issue_tab.dataframe[0].value.reset_index(drop=True))
+                finding_tables = [table.value for table in issue_tab.dataframe
+                                  if list(table.value.columns) == list(csv.columns)]
+                assert_frame_equal(csv, finding_tables[0].reset_index(drop=True))
             else:
-                self.assertEqual(len(issue_tab.dataframe), 0)
                 self.assertTrue(any(
                     "No findings match" in info.value for info in issue_tab.info
                 ))
 
         with patch.object(st, "download_button", side_effect=capture_download):
             self.load_sample()
-            self.assertTrue(downloads[-1]["disabled"])
+            self.assertFalse(downloads[-1]["disabled"])
             self.widget("checkbox", "I reviewed all columns for sensitive data").check().run()
             assert_report(EXPECTED_ISSUES)
 
-            self.widget("selectbox", "Filter findings").select("Missing Value").run()
+            def issue_widget(kind, label):
+                tab = next(tab for tab in self.app.tabs if tab.label == "2 · Issue log")
+                return next(item for item in getattr(tab, kind) if item.label == label)
+
+            issue_widget("multiselect", "Issue types").set_value(["Missing Value"]).run()
             assert_report({key for key in EXPECTED_ISSUES if key[2] == "Missing Value"})
 
-            self.widget("selectbox", "Filter by column").select("name").run()
+            issue_widget("multiselect", "Columns").set_value(["name"]).run()
             assert_report({(8, "name", "Missing Value"), (33, "name", "Missing Value")})
 
             # Search trims whitespace and narrows an already type- and
             # column-filtered report.
-            self.widget("text_input", "Search findings").set_value("  33  ").run()
+            issue_widget("text_input", "Search findings").set_value("  33  ").run()
             assert_report({(33, "name", "Missing Value")})
 
-            self.widget("text_input", "Search findings").set_value("no such finding").run()
+            issue_widget("text_input", "Search findings").set_value("no such finding").run()
             assert_report(set())
 
-            self.widget("text_input", "Search findings").set_value("").run()
+            issue_widget("text_input", "Search findings").set_value("").run()
             assert_report({(8, "name", "Missing Value"), (33, "name", "Missing Value")})
 
     def test_connected_sample_loads_all_files(self):

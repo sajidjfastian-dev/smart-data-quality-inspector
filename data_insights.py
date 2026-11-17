@@ -1,5 +1,6 @@
 """Interactive, dataset-driven analysis views for the active workspace file."""
 from datetime import date, datetime
+from html import escape
 
 import numpy as np
 import pandas as pd
@@ -11,6 +12,17 @@ from localization import st, translate, display_profile
 
 SAMPLE_LIMIT = 100_000
 CHART_COLOR = "#61A9BD"
+CHART_CONFIG = {"displayModeBar": False, "responsive": True}
+
+
+def _plot_label(value):
+    """Keep dataset labels literal, including Plotly HTML and template syntax."""
+    return escape(str(value), quote=True).replace("%", "&#37;")
+
+
+def _short_label(value, limit=38):
+    text = str(value)
+    return _plot_label(text if len(text) <= limit else text[:limit - 1] + "…")
 
 
 def insight_sample(data, limit=SAMPLE_LIMIT):
@@ -84,18 +96,72 @@ def numeric_relationship(data, x_column, y_column, parser, point_limit=2_000):
     }
 
 
-def _chart_style(figure, x_title, y_title):
+def _chart_style(figure, x_title, y_title, height=390):
     figure.update_layout(
         template="plotly_white",
         xaxis_title=x_title,
         yaxis_title=y_title,
-        margin=dict(l=12, r=24, t=16, b=28),
+        height=height,
+        margin=dict(l=16, r=64, t=24, b=54),
         plot_bgcolor="rgba(0,0,0,0)",
         paper_bgcolor="rgba(0,0,0,0)",
-        font=dict(color="#526c68"),
+        font=dict(family="Tahoma, sans-serif", size=12, color="#526c68"),
+        hoverlabel=dict(bgcolor="#F3F7F6", font=dict(size=13, color="#264C50")),
+        hovermode="closest",
+        bargap=0.24,
         showlegend=False,
     )
+    figure.update_xaxes(
+        automargin=True, zeroline=False, showline=True, linecolor="#D4E1DF",
+        showgrid=False, ticks="outside", tickcolor="#D4E1DF",
+        title_standoff=18, tickfont=dict(size=11),
+    )
+    figure.update_yaxes(
+        automargin=True, zeroline=False, showline=False,
+        gridcolor="#E1EAE8", gridwidth=1, title_standoff=16,
+        tickfont=dict(size=11),
+    )
     return figure
+
+
+def _completeness_chart(data, profile, sensitive_columns):
+    """Rank field coverage without reading or exposing protected values."""
+    protected_names = {str(column) for column in sensitive_columns}
+    safe_names = {
+        str(column) for column in data.columns
+        if column not in sensitive_columns and str(column) not in protected_names
+    }
+    fields = profile.loc[profile["Column"].isin(safe_names)].copy()
+    st.subheader("Completeness by field")
+    st.caption("Filled means not missing, not necessarily valid. Protected fields are excluded from this chart.")
+    if not len(data) or fields.empty:
+        st.info("No unprotected fields with rows are available for a completeness chart.")
+        return
+    fields = fields.sort_values("Missing", ascending=False, kind="stable")
+    total = len(fields)
+    fields = fields.head(20)
+    filled = len(data) - fields["Missing"].to_numpy()
+    percentages = 100 * filled / len(data)
+    positions = list(range(len(fields)))
+    figure = go.Figure(go.Bar(
+        x=percentages, y=positions, orientation="h",
+        marker_color=CHART_COLOR, width=0.62,
+        text=[f"{value:.1f}%" for value in percentages],
+        textposition="outside", cliponaxis=False,
+        customdata=list(zip(fields["Column"].map(_plot_label), filled, fields["Missing"])),
+        hovertemplate="%{customdata[0]}<br>"
+            + _plot_label(translate("Filled cells")) + ": %{customdata[1]:,} (%{x:.2f}%)<br>"
+            + _plot_label(translate("Missing")) + ": %{customdata[2]:,}<extra></extra>",
+    ))
+    _chart_style(figure, translate("Filled cells (%)"), "", height=max(290, 100 + 32 * len(fields)))
+    figure.update_yaxes(
+        tickmode="array", tickvals=positions,
+        ticktext=fields["Column"].map(_short_label).tolist(),
+        autorange="reversed", showgrid=False,
+    )
+    figure.update_xaxes(range=[0, 112], tickvals=[0, 25, 50, 75, 100], ticksuffix="%", showgrid=True, gridcolor="#E1EAE8")
+    st.plotly_chart(figure, width="stretch", config=CHART_CONFIG)
+    st.caption(translate("Showing {0} of {1} unprotected fields, least complete first. Full-file counts; exact missing counts are in the field table below.").format(len(fields), total))
 
 
 def render_data_insights(data, column_profile, numeric_columns, date_columns,
@@ -131,6 +197,7 @@ def render_data_insights(data, column_profile, numeric_columns, date_columns,
             metrics[1].metric("Columns", f"{len(columns):,}")
             metrics[2].metric("Filled cells", f"{complete:.1f}%")
             metrics[3].metric("Numeric columns", f"{len(numeric_columns):,}")
+            _completeness_chart(data, column_profile, sensitive_columns)
             st.subheader("Your fields at a glance")
             st.caption("Detected types are suggestions. Change them in inspection settings if needed.")
             st.dataframe(display_profile(column_profile), width="stretch", hide_index=True)
@@ -167,7 +234,12 @@ def render_data_insights(data, column_profile, numeric_columns, date_columns,
                         marker_color=CHART_COLOR,
                         hovertemplate=translate("Range") + ": %{customdata[0]:,.2f} – %{customdata[1]:,.2f}<br>" + translate("Rows") + ": %{y:,}<extra></extra>",
                     ))
-                    st.plotly_chart(_chart_style(figure, str(selected), translate("Rows")), width="stretch", config={"displayModeBar": False})
+                    _chart_style(figure, _plot_label(selected), translate("Rows"))
+                    figure.update_layout(bargap=0.04)
+                    figure.update_traces(marker_line=dict(color="#3C7686", width=0.5))
+                    figure.update_xaxes(tickformat="~s")
+                    figure.update_yaxes(rangemode="tozero", tickformat="~s")
+                    st.plotly_chart(figure, width="stretch", config=CHART_CONFIG)
                     st.caption("Values are grouped into 40 ranges.")
 
     with categories:
@@ -189,20 +261,26 @@ def render_data_insights(data, column_profile, numeric_columns, date_columns,
                     st.subheader("Most common values")
                     st.caption(translate("Top 10 non-empty values.") + " " + scope)
                     chart_data = counts.copy()
-                    chart_data["Label"] = chart_data["Value"].map(
-                        lambda value: value if len(value) <= 45 else value[:42] + "…"
-                    )
+                    # Numeric positions keep distinct values distinct even when labels truncate.
+                    chart_data["Position"] = np.arange(len(chart_data))
+                    chart_data["Safe value"] = chart_data["Value"].map(_plot_label)
                     figure = px.bar(
-                        chart_data, x="Rows", y="Label", orientation="h", text="Rows",
-                        custom_data=["Value"], color_discrete_sequence=[CHART_COLOR],
+                        chart_data, x="Rows", y="Position", orientation="h", text="Rows",
+                        custom_data=["Safe value"], color_discrete_sequence=[CHART_COLOR],
                     )
                     figure.update_traces(
-                        textposition="outside", cliponaxis=False,
+                        textposition="outside", texttemplate="%{x:,}", cliponaxis=False, width=0.62,
                         hovertemplate="%{customdata[0]}<br>%{x:,} " + translate("rows") + "<extra></extra>",
                     )
-                    figure.update_yaxes(autorange="reversed", automargin=True)
-                    figure.update_xaxes(rangemode="tozero")
-                    st.plotly_chart(_chart_style(figure, translate("Rows"), ""), width="stretch", config={"displayModeBar": False})
+                    _chart_style(figure, translate("Rows"), "", height=max(310, 110 + 34 * len(chart_data)))
+                    figure.update_yaxes(
+                        autorange="reversed", showgrid=False, tickmode="array",
+                        tickvals=chart_data["Position"].tolist(),
+                        ticktext=chart_data["Value"].map(_short_label).tolist(),
+                    )
+                    figure.update_xaxes(range=[0, counts["Rows"].max() * 1.2], tickformat="~s", showgrid=True, gridcolor="#E1EAE8")
+                    st.plotly_chart(figure, width="stretch", config=CHART_CONFIG)
+                    st.caption("Bar lengths show row counts, not percentages. Long labels are shortened; hover or open exact values for the full text.")
                     with st.expander("See exact values"):
                         st.dataframe(counts.rename(columns=translate), width="stretch", hide_index=True)
 
@@ -227,9 +305,14 @@ def render_data_insights(data, column_profile, numeric_columns, date_columns,
                         + " " + translate("Ambiguous dates are interpreted month-first.") + " " + scope)
                     figure = px.bar(counts, x="Month", y="Rows", color_discrete_sequence=[CHART_COLOR])
                     figure.update_traces(hovertemplate="%{x|%Y-%m}<br>%{y:,} " + translate("rows") + "<extra></extra>")
-                    figure.update_xaxes(type="date")
-                    figure.update_yaxes(rangemode="tozero")
-                    st.plotly_chart(_chart_style(figure, translate("Month"), translate("Rows")), width="stretch", config={"displayModeBar": False})
+                    _chart_style(figure, translate("Month"), translate("Rows"))
+                    # Set calendar-aware widths so sparse observations never look continuous.
+                    month_widths = counts["Month"].dt.days_in_month.astype("float64") * 86_400_000 * 0.76
+                    figure.update_traces(width=month_widths)
+                    figure.update_xaxes(type="date", tickformat="%b\n%Y", nticks=8)
+                    figure.update_yaxes(rangemode="tozero", tickformat="~s")
+                    st.plotly_chart(figure, width="stretch", config=CHART_CONFIG)
+                    st.caption("Only months with parseable records are shown. Gaps are not interpolated.")
 
     with relationships:
         if relationships.open:
@@ -264,10 +347,10 @@ def render_data_insights(data, column_profile, numeric_columns, date_columns,
                         result["points"], x="X", y="Y", color_discrete_sequence=[CHART_COLOR],
                     )
                     figure.update_traces(
-                        marker=dict(size=7),
-                        hovertemplate=f"{str(first)}: %{{x:,.3g}}<br>{str(second)}: %{{y:,.3g}}<extra></extra>",
+                        marker=dict(size=6, opacity=0.65, line=dict(width=0.4, color="#3C7686")),
+                        hovertemplate=f"{_plot_label(first)}: %{{x:,.6g}}<br>{_plot_label(second)}: %{{y:,.6g}}<extra></extra>",
                     )
                     st.plotly_chart(
-                        _chart_style(figure, str(first), str(second)),
-                        width="stretch", config={"displayModeBar": False},
+                        _chart_style(figure, _plot_label(first), _plot_label(second)),
+                        width="stretch", config=CHART_CONFIG,
                     )

@@ -9,6 +9,7 @@ from localization import st, translate, language
 from api_connections import ApiConnectionError, SAMPLE_API_URL, fetch_api_data, push_api_data
 from security_guardrails import mask_dataframe
 from demo_session import is_signed_in
+from review_approval import is_approved, guarded_push, ApprovalRequired
 
 
 def _auth_controls(prefix):
@@ -129,19 +130,27 @@ def _render_api_push(active_dataset, data, fixed_data, sensitive_columns, privac
             "I approve sending the selected data to this destination",
             key=consent_key,
         )
+        final_approved = is_approved(st.session_state, active_dataset, send_data, choice)
+        if not final_approved:
+            st.warning(translate("Final demo approval is required for this exact version before sending."))
+            st.caption(translate("Open Review & fix to review changes and approve the selected version."))
         if st.button(
             "Push data to API", key="push_external_api", type="primary",
-            width="stretch", disabled=not approved or not privacy_reviewed,
+            width="stretch", disabled=not approved or not privacy_reviewed or not final_approved,
         ):
             if not destination_url.strip():
                 st.error("Enter a destination API URL.")
             else:
                 with st.spinner("Sending the selected data..."):
                     try:
-                        status = push_api_data(
-                            destination_url, mask_dataframe(send_data, sensitive_columns or ()), method, output_format,
-                            dest_auth, dest_secret, dest_header,
+                        status = guarded_push(
+                            st.session_state, active_dataset, data, send_data, choice,
+                            sensitive_columns or (), privacy_reviewed, approved, push_api_data,
+                            url=destination_url, method=method, data_format=output_format,
+                            auth_mode=dest_auth, secret=dest_secret, header_name=dest_header,
                         )
+                    except ApprovalRequired as error:
+                        st.error(translate(str(error)))
                     except ApiConnectionError as error:
                         st.error(
                             translate("{0} The destination may have received the request; check it before retrying.").format(translate(str(error)))

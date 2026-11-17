@@ -112,11 +112,14 @@ class ApiUiTests(unittest.TestCase):
             self.find("checkbox", "I approve sending the selected data to this destination").check().run()
             self.assertTrue(self.find("button", "Push data to API").disabled)
             self.find("checkbox", "I reviewed all columns for sensitive data").check().run()
+            self.assertTrue(self.find("button", "Push data to API").disabled)
+            self.find("checkbox", "I reviewed the changes and remaining findings").check().run()
+            self.find("button", "Approve reviewed version").click().run()
             self.assertFalse(self.find("button", "Push data to API").disabled)
             self.find("button", "Push data to API").click().run()
             self.assertFalse(self.app.exception)
             self.assertEqual(push.call_count, 1)
-            pd.testing.assert_frame_equal(push.call_args.args[1], mask_dataframe(frame, {"id", "name"}))
+            pd.testing.assert_frame_equal(push.call_args.kwargs["data"], mask_dataframe(frame, {"id", "name"}))
             self.assertTrue(any("HTTP 202" in item.value for item in self.app.success))
             self.find("text_input", "Destination API URL").set_value("https://example.com/other").run()
             self.assertTrue(self.find("button", "Push data to API").disabled)
@@ -141,17 +144,20 @@ class ApiUiTests(unittest.TestCase):
         self.find("selectbox", "Data to send").select("Fixed copy").run()
         self.assertTrue(self.find("button", "Push data to API").disabled)
         self.find("checkbox", "I approve sending the selected data to this destination").check().run()
+        self.assertTrue(self.find("button", "Push data to API").disabled)
+        self.find("checkbox", "I reviewed the changes and remaining findings").check().run()
+        self.find("button", "Approve reviewed version").click().run()
         with patch.object(api_settings, "push_api_data", return_value=200) as push:
             self.find("button", "Push data to API").click().run()
             self.assertFalse(self.app.exception)
             pd.testing.assert_frame_equal(
-                push.call_args.args[1],
+                push.call_args.kwargs["data"],
                 mask_dataframe(
                     self.app.session_state["fixed_datasets"]["Sample messy dataset"],
                     self.app.session_state["privacy_policies"]["Sample messy dataset"]["columns"],
                 ),
             )
-            self.assertEqual(len(push.call_args.args[1]), 49)
+            self.assertEqual(len(push.call_args.kwargs["data"]), 49)
 
 
 if __name__ == "__main__":

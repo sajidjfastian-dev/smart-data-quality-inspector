@@ -14,6 +14,8 @@ from pathlib import Path
 
 import streamlit as native
 from streamlit.delta_generator import DeltaGenerator
+from review_translations import REVIEW_ARABIC
+from insights_translations import INSIGHTS_ARABIC
 
 
 _ROOT = Path(__file__).resolve().parent
@@ -28,6 +30,8 @@ _ARABIC.update({
     "Review missing values in {0} ({1} missing).": "راجع القيم المفقودة في {0} (النسبة المفقودة {1}).",
     "Findings are review candidates, not confirmed errors.": "النتائج مرشحة للمراجعة وليست أخطاء مؤكدة.",
 })
+_ARABIC.update(REVIEW_ARABIC)
+_ARABIC.update(INSIGHTS_ARABIC)
 _REVERSE = {value: key for key, value in _ARABIC.items() if "{" not in key}
 _PATTERNS = []
 for _source, _translation in _ARABIC.items():

@@ -8,3 +8,9 @@ The current Streamlit version does not expose translations for native controls. 
 **Why:** CSS-only replacement would not give screen readers translated labels, and translating arbitrary page text can alter user-provided data.
 
 **How to apply:** Scope any additions to identifiable native control elements and known interface strings; exercise upload, language switching and user-data preservation in browser tests after Streamlit upgrades.
+
+Capture the current locale in option-formatting callbacks rather than looking up session language when the callback is later invoked.
+
+**Why:** Streamlit/AppTest can serialize a previous render's widget after a language switch; live language lookup then produces labels absent from that widget's original options.
+
+**How to apply:** Bind the render-time locale in native selectbox, radio and multiselect formatters while keeping underlying option values unchanged.

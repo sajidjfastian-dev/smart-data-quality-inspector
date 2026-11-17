@@ -19,6 +19,9 @@ from api_connections import ApiConnectionError, request_public_api
 from data_insights import render_data_insights
 from workspace_presentation import install_presentation_styles, remove_legacy_footer, render_account_panel
 from demo_session import is_signed_in
+from review_approval import sync_context, invalidate, change_index, frame_digest
+from review_ui import render_checker_review
+from issue_workspace import render_issue_workspace
 from history_ui import render_history
 from quality_large import scan_large_data
 from security_guardrails import MASK, detect_sensitive_columns, mask_dataframe, mask_findings, mask_text, mask_text_with_dataset
@@ -1096,6 +1099,10 @@ def upload_signature(uploaded_file):
 
 
 def reset_quality_caches():
+    st.session_state["review_contexts"] = {}
+    st.session_state["final_approvals"] = {}
+    st.session_state["review_generations"] = {}
+    st.session_state["fix_change_indexes"] = {}
     st.session_state["quality_scan_cache"] = {}
     st.session_state["review_scan_cache"] = {}
     st.session_state["batch_export_cache"] = None
@@ -1851,6 +1858,7 @@ def brand_logo(_variant):
 def delete_custom_rule(rules_key, selector_key, index):
     st.session_state[rules_key].pop(index)
     st.session_state[selector_key] = 0
+    st.session_state["rule_notice"] = "Quality rule deleted."
 
 
 def render_settings(anchor, columns=None, defaults=None, column_signature=None,
@@ -1963,8 +1971,6 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                     "Clear model settings", on_click=clear_assistant_settings,
                     width="stretch", key="clear_assistant_settings",
                 )
-            with api_tab:
-                render_api_settings(active_dataset, active_data, fixed_data, sensitive_columns, privacy_reviewed)
             with checks_tab:
                 st.markdown("**Built-in checks**")
                 st.caption("Choose which checks run. Changes rescan the active file.")
@@ -1978,8 +1984,16 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                 ):
                     checks[key] = st.checkbox(translate(label), value=True, key=f"check_{key}")
                 enabled_checks = {key for key, enabled in checks.items() if enabled}
+                global_checks = tuple(sorted(enabled_checks))
+                previous_checks = st.session_state.get("approval_global_checks")
+                if previous_checks is not None and previous_checks != global_checks:
+                    for name in list(st.session_state.get("review_contexts", {})):
+                        invalidate(st.session_state, name)
+                st.session_state["approval_global_checks"] = global_checks
                 if columns is None:
                     st.info("Upload a file or load a sample to configure columns and custom rules.")
+                    with api_tab:
+                        render_api_settings()
                     return None
                 email_defaults, date_defaults, numeric_defaults = defaults
                 st.markdown("**Column rules for the active file**")
@@ -2003,7 +2017,11 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                     value=1.5, step=0.1, format="%.1f×",
                     help="Values outside Q1 − multiplier × IQR or Q3 + multiplier × IQR are flagged.",
                 )
-                st.markdown("**Custom column rules**")
+                st.markdown("**Define your data quality rules**")
+                st.caption("Add, edit or delete rules below. Every change requires a new checker approval.")
+                notice = st.session_state.pop("rule_notice", None)
+                if notice:
+                    st.success(translate(notice))
                 st.caption(
                     "Add as many rules as needed for this file. Missing values are handled "
                     "by the missing-values check. Custom findings require manual review."
@@ -2060,6 +2078,7 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                             rules[selected_rule - 1] = rule
                         else:
                             rules.append(rule)
+                        st.session_state["rule_notice"] = "Quality rule saved."
                         st.rerun()
                 if selected_rule:
                     st.button(
@@ -2067,7 +2086,15 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                         width="stretch", on_click=delete_custom_rule,
                         args=(rules_key, f"edit_rule_{column_signature}", selected_rule - 1),
                     )
-                return email_columns, date_columns, numeric_columns, iqr_multiplier, enabled_checks, list(rules), sensitive_columns, privacy_reviewed
+                settings_rules = column_rule_signature(email_columns, date_columns, numeric_columns,
+                                                       iqr_multiplier, enabled_checks, rules)
+                sync_context(st.session_state, active_dataset, active_data, fixed_data,
+                             settings_rules, sensitive_columns, privacy_reviewed)
+            # Render delivery only after the current rules and privacy widgets have
+            # updated the approval context. A stale prior-run context cannot authorize.
+            with api_tab:
+                render_api_settings(active_dataset, active_data, fixed_data, sensitive_columns, privacy_reviewed)
+            return email_columns, date_columns, numeric_columns, iqr_multiplier, enabled_checks, list(rules), sensitive_columns, privacy_reviewed
 
 
 @st.dialog("A quick tour of the inspector", width="large")
@@ -2493,7 +2520,8 @@ rule_signature = column_rule_signature(
 )
 quality_scan_cache = st.session_state.setdefault("quality_scan_cache", {})
 cached_scan = quality_scan_cache.get(active_dataset)
-if cached_scan and cached_scan["rules"] == rule_signature:
+original_digest = frame_digest(data)
+if cached_scan and cached_scan["rules"] == rule_signature and cached_scan.get("digest") == original_digest:
     issues = cached_scan["issues"]
     duplicate_count = cached_scan["duplicates"]
     column_profile = cached_scan["profile"]
@@ -2555,6 +2583,7 @@ else:
         )
     inspection_slot.empty()
     quality_scan_cache[active_dataset] = {
+        "digest": original_digest,
         "run_key": str(uuid4()),
         "rules": rule_signature,
         "issues": issues,
@@ -2562,6 +2591,25 @@ else:
         "profile": column_profile,
     }
 issue_count = len(issues)
+fixed_for_review = st.session_state.get("fixed_datasets", {}).get(active_dataset)
+fixed_findings = None
+if fixed_for_review is not None:
+    fixed_digest = frame_digest(fixed_for_review)
+    cached_fixed = st.session_state.setdefault("review_scan_cache", {}).get(active_dataset)
+    if cached_fixed and cached_fixed["rules"] == rule_signature and cached_fixed.get("digest") == fixed_digest:
+        fixed_findings = cached_fixed["issues"]
+    else:
+        with st.spinner("Rechecking remaining issues in the fixed copy."):
+            fixed_findings, _ = scan_data(
+                fixed_for_review, email_columns=email_columns, date_columns=date_columns,
+                numeric_columns=numeric_columns, iqr_multiplier=iqr_multiplier,
+                enabled_checks=enabled_checks, custom_rules=custom_rules,
+            )
+        st.session_state["review_scan_cache"][active_dataset] = {
+            "rules": rule_signature, "digest": fixed_digest, "issues": fixed_findings,
+        }
+approval_context = sync_context(st.session_state, active_dataset, data, fixed_for_review,
+                                rule_signature, sensitive_columns, privacy_reviewed)
 health_score = max(0, round(100 * (1 - issue_count / max(data.shape[0] * data.shape[1], 1))))
 batch_row_count = sum(len(frame) for frame in datasets.values())
 
@@ -2843,89 +2891,9 @@ with insights_tab:
         )
 
 with issues_tab:
-    st.subheader("🧾 Issue explorer")
-    st.caption(f"Detailed findings for **{active_dataset}**.")
-    if issues.empty:
-        st.success("No issues found. Your dataset passed all checks enabled by the current rules.")
-    else:
-        filter_col, summary_col = st.columns([1, 2])
-        filter_options = ["All issue types"] + sorted(issues["Issue Type"].unique().tolist())
-        with filter_col:
-            selected_type = st.selectbox(
-                "Filter findings", filter_options,
-                format_func=lambda option, locale=language(): translate_issue_type(option, locale),
-            )
-        protected_issues = mask_findings(issues, display_sensitive_columns)
-        filtered_issues = protected_issues if selected_type == "All issue types" else protected_issues[
-            protected_issues["Issue Type"] == selected_type
-        ]
-        with summary_col:
-            st.markdown(
-                f"**{len(filtered_issues):,}** visible · "
-                f"**{issue_count:,}** total findings · "
-                f"**{issues['Column Name'].nunique():,}** affected columns"
-            )
-        search_col, column_filter_col = st.columns([1.5, 1])
-        with search_col:
-            issue_search = st.text_input(
-                "Search findings",
-                placeholder="Search values, columns, or suggested fixes",
-                key=f"issue_search_{column_signature}",
-            )
-        with column_filter_col:
-            issue_column_options = ["All columns"] + sorted(
-                filtered_issues["Column Name"].astype(str).unique().tolist()
-            )
-            selected_issue_column = st.selectbox(
-                "Filter by column",
-                issue_column_options,
-                format_func=lambda value, locale=language(): translate("All columns", locale) if value == "All columns" else value,
-                key=f"issue_column_filter_{column_signature}",
-            )
-        if selected_issue_column != "All columns":
-            filtered_issues = filtered_issues[
-                filtered_issues["Column Name"].astype(str) == selected_issue_column
-            ]
-        if issue_search.strip():
-            search_mask = filtered_issues.astype(str).apply(
-                lambda column: column.str.contains(
-                    issue_search.strip(),
-                    case=False,
-                    regex=False,
-                    na=False,
-                )
-            ).any(axis=1)
-            filtered_issues = filtered_issues[search_mask]
-        st.caption(
-            f"Showing {len(filtered_issues):,} of {len(issues):,} detected findings"
-        )
-        if filtered_issues.empty:
-            st.info("No findings match these search and filter choices.")
-        else:
-            finding_page = 1
-            if len(filtered_issues) > 1_000:
-                finding_pages = (len(filtered_issues) + 999) // 1_000
-                finding_page_key = f"finding_page_{column_signature}"
-                if st.session_state.get(finding_page_key, 1) > finding_pages:
-                    st.session_state[finding_page_key] = finding_pages
-                finding_page = st.number_input(
-                    "Findings page", min_value=1, max_value=finding_pages,
-                    value=1, step=1, key=finding_page_key,
-                )
-                st.caption(f"Page {finding_page:,} of {finding_pages:,}; the downloaded report includes all matches.")
-            finding_start = (finding_page - 1) * 1_000
-            visible_findings = filtered_issues.iloc[finding_start:finding_start + 1_000]
-            st.dataframe(display_findings(visible_findings), width="stretch", hide_index=True)
-        st.download_button(
-            "Download issue report",
-            data=lambda: filtered_issues.to_csv(index=False).encode("utf-8-sig"),
-            file_name=f"{Path(active_dataset).stem}_issue_report.csv",
-            mime="text/csv",
-            width="content",
-            icon=":material/summarize:",
-            key=f"download_issues_{column_signature}",
-            disabled=filtered_issues.empty or not privacy_reviewed,
-        )
+    render_issue_workspace(datasets, active_dataset, data, issues, fixed_for_review,
+                           fixed_findings, display_sensitive_columns, privacy_reviewed,
+                           approval_context["version"])
 
 with review_tab:
     st.subheader("🛠️ Review and fix the active file")
@@ -3010,7 +2978,12 @@ with review_tab:
                     fix_status.update(label="Could not apply fixes", state="error", expanded=True)
                     st.error("The fixes could not be applied. Check your settings and try again; the original data has not changed.")
                     st.stop()
+                changes = change_index(data, fixed_copy, fix_duplicates)
                 fixed_datasets[active_dataset] = fixed_copy
+                st.session_state.setdefault("fix_change_indexes", {})[active_dataset] = {
+                    "original": frame_digest(data), "fixed": frame_digest(fixed_copy), "changes": changes,
+                }
+                invalidate(st.session_state, active_dataset)
                 st.session_state.setdefault("fixed_export_cache", {}).pop(active_dataset, None)
                 fix_progress.empty()
                 fix_loader.empty()
@@ -3027,6 +3000,7 @@ with review_tab:
             st.success(
                 f"Applied fixes to a copy of {active_dataset}. The original workspace data is unchanged."
             )
+            st.rerun()
 
     has_fixed_data = active_dataset in fixed_datasets
     if has_fixed_data:
@@ -3037,6 +3011,29 @@ with review_tab:
         )
     else:
         show_fixed = False
+
+    approval_choices = ["Original data"] + (["Fixed copy"] if has_fixed_data else [])
+    approval_choice = native.selectbox(
+        translate("Version for checker approval"), approval_choices,
+        index=len(approval_choices)-1, format_func=lambda value, locale=language(): translate(value, locale),
+        key=f"checker_choice_{column_signature}_{int(has_fixed_data)}",
+    )
+    approval_data = fixed_datasets[active_dataset] if approval_choice == "Fixed copy" else data
+    changes = pd.DataFrame(columns=["Original row", "Corrected row", "Column position", "Change reason"])
+    change_record = st.session_state.get("fix_change_indexes", {}).get(active_dataset)
+    lineage_valid = approval_choice == "Original data" or (
+        change_record is not None
+        and change_record["original"] == frame_digest(data)
+        and change_record["fixed"] == frame_digest(approval_data)
+    )
+    if lineage_valid:
+        if approval_choice == "Fixed copy":
+            changes = change_record["changes"]
+        render_checker_review(st.session_state, active_dataset, data, approval_data,
+                              changes, fixed_findings if approval_choice == "Fixed copy" else issues,
+                              display_sensitive_columns, approval_choice)
+    else:
+        st.warning("Reapply fixes to build a complete change review before approval.")
 
     review_data = fixed_datasets[active_dataset] if show_fixed else data
     if not show_fixed:

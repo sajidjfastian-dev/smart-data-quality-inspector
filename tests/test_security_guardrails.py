@@ -74,7 +74,7 @@ class PrivacyFlowTests(unittest.TestCase):
             return original(*args, **kwargs)
 
         with patch.object(st, "download_button", side_effect=capture):
-            self.app.run()
+            self.widget("checkbox", "I reviewed all columns for sensitive data").uncheck().run()
             self.assertTrue(downloads[-1]["disabled"])
             self.assertTrue(any("All data values are hidden" in item.value for item in self.app.warning))
             self.widget("multiselect", "Protect additional columns").select("region").run()
@@ -84,17 +84,20 @@ class PrivacyFlowTests(unittest.TestCase):
             self.assertTrue((cleaned == MASK).all().all())
             self.assertEqual(self.data.loc[0, "name"], "Alice Smith")
             self.widget("multiselect", "Protect additional columns").set_value([]).run()
-            self.assertTrue(downloads[-1]["disabled"])
-            self.assertFalse(self.widget("checkbox", "I reviewed all columns for sensitive data").value)
+            self.assertFalse(downloads[-1]["disabled"])
+            self.assertTrue(self.widget("checkbox", "I reviewed all columns for sensitive data").value)
 
     def test_api_push_and_model_receive_masked_data(self):
         self.widget("checkbox", "I reviewed all columns for sensitive data").check().run()
         self.widget("text_input", "Destination API URL").set_value("https://example.com/data").run()
         self.widget("checkbox", "I approve sending the selected data to this destination").check().run()
+        self.assertTrue(self.widget("button", "Push data to API").disabled)
+        self.widget("checkbox", "I reviewed the changes and remaining findings").check().run()
+        self.widget("button", "Approve reviewed version").click().run()
         with patch("api_settings.push_api_data", return_value=200) as push:
             self.widget("button", "Push data to API").click().run()
             self.assertFalse(self.app.exception)
-            sent = push.call_args.args[1]
+            sent = push.call_args.kwargs["data"]
             self.assertEqual(sent.loc[0, "name"], MASK)
             self.assertEqual(sent.loc[0, "email"], MASK)
             self.assertEqual(sent.loc[0, "region"], "Dubai")

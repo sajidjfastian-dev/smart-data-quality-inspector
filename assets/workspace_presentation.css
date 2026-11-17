@@ -163,6 +163,13 @@ section[data-testid="stSidebar"] [data-testid="stSidebarUserContent"] > div > [d
 .st-key-source_panel {margin-top: .75rem;}
 
 /* Overview only: paired analytical panels, shared baselines and exact figures. */
+.checker-comparison {overflow: auto; max-height: 540px; border: 1px solid #d9e5df; border-radius: 10px;}
+.checker-comparison table {width: 100%; border-collapse: collapse; font-size: .85rem;}
+.checker-comparison th {position: sticky; top: 0; background: #edf3ed; color: #194e47; z-index: 1;}
+.checker-comparison :is(th,td) {padding: 12px; border-bottom: 1px solid #d9e5df; text-align: left; vertical-align: top; min-width: 100px;}
+.checker-comparison td:nth-child(3) {background: #fff6e6; white-space: pre-wrap; overflow-wrap: anywhere; min-width: 180px;}
+.checker-comparison td:nth-child(4) {background: #eef7f4; white-space: pre-wrap; overflow-wrap: anywhere; min-width: 180px;}
+[data-testid="stMarkdownContainer"]:has(> .checker-comparison) {margin-bottom: 0 !important;}
 [data-testid="stMarkdownContainer"]:has(> :is(.overview-heading, .overview-table-wrap, .overview-note, .overview-step)) {margin-bottom: 0 !important;}
 .st-key-overview_composition, .st-key-overview_detail {gap: 1rem;}
 .st-key-overview_columns, .st-key-overview_types,
