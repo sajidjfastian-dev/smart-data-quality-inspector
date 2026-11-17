@@ -17,6 +17,8 @@ from streamlit.delta_generator import DeltaGenerator
 from review_translations import REVIEW_ARABIC
 from insights_translations import INSIGHTS_ARABIC
 from ticket_translations import TICKET_ARABIC
+from request_translations import REQUEST_ARABIC
+from request_dashboard_translations import REQUEST_DASHBOARD_ARABIC
 
 
 _ROOT = Path(__file__).resolve().parent
@@ -34,6 +36,8 @@ _ARABIC.update({
 _ARABIC.update(REVIEW_ARABIC)
 _ARABIC.update(INSIGHTS_ARABIC)
 _ARABIC.update(TICKET_ARABIC)
+_ARABIC.update(REQUEST_ARABIC)
+_ARABIC.update(REQUEST_DASHBOARD_ARABIC)
 _REVERSE = {value: key for key, value in _ARABIC.items() if "{" not in key}
 _PATTERNS = []
 for _source, _translation in _ARABIC.items():

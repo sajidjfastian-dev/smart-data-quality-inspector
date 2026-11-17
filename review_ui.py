@@ -7,12 +7,12 @@ from security_guardrails import MASK, mask_dataframe
 from review_approval import approve, is_approved, return_for_revision
 
 
-def render_checker_review(state, dataset, original, corrected, changes, remaining, protected, choice):
+def render_checker_review(state, dataset, original, corrected, changes, remaining, protected, choice, actions=True):
     context = state["review_contexts"][dataset]
     version = context["version"]
     key = f"checker_{version}_{choice}"
     with st.container(border=True):
-        st.subheader(t("Checker review and final approval"))
+        st.subheader(t("Checker review and final approval") if actions else t("Review changes"))
         st.caption(t("Demo only: this is not an independent authenticated checker or a production authorization."))
         st.caption(t("Review version") + ": " + version[:12] + " · " + t(choice))
         changed_cells = int(changes["Column position"].notna().sum())
@@ -77,6 +77,8 @@ def render_checker_review(state, dataset, original, corrected, changes, remainin
         with st.expander(t("Remaining findings")):
             from issue_workspace import render_findings
             render_findings(remaining, protected, key + "_remaining", corrected, downloads=False)
+        if not actions:
+            return
         checked = st.checkbox(t("I reviewed the changes and remaining findings"), key=key + "_ack")
         if is_approved(state, dataset, corrected, choice):
             st.success(t("Final demo approval granted for this version. Destination consent is still required."))

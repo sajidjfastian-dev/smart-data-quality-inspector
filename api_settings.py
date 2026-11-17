@@ -1,9 +1,5 @@
 """Streamlit controls for importing and sending data through public APIs."""
 
-import hashlib
-import json
-
-import pandas as pd
 from localization import st, translate, language
 
 from api_connections import ApiConnectionError, SAMPLE_API_URL, fetch_api_data, push_api_data
@@ -50,7 +46,7 @@ def render_api_settings(active_dataset=None, data=None, fixed_data=None,
     )
     if not is_signed_in():
         st.info("Log in to read data from an API.", icon=":material/lock:")
-    else:
+    elif st.session_state.get("demo_role", "Submitter") == "Submitter":
         _render_api_reader()
 
     _render_api_push(active_dataset, data, fixed_data, sensitive_columns, privacy_reviewed)
@@ -87,77 +83,7 @@ def _render_api_reader():
 
 def _render_api_push(active_dataset, data, fixed_data, sensitive_columns, privacy_reviewed):
     st.divider()
-    st.markdown("**Push data to an API**")
-    st.caption(
-        "Send the active file or its fixed copy using POST or PUT. "
-        "Protected columns are masked before sending."
-    )
-    destination_url = st.text_input(
-        "Destination API URL", placeholder="https://api.example.com/records",
-        key="destination_api_url",
-    )
-    method = st.selectbox("Send method", ["POST", "PUT"], key="destination_api_method")
-    output_format = st.selectbox("Send format", ["JSON", "CSV"], key="destination_api_format")
-    dest_auth, dest_secret, dest_header = _auth_controls("destination_api")
-    if data is None:
-        st.info("Load a file or API source before pushing data.")
-    else:
-        copies = ["Original data"] + (["Fixed copy"] if fixed_data is not None else [])
-        choice = st.selectbox("Data to send", copies, format_func=lambda value, locale=language(): translate(value, locale), key=f"api_export_copy_{active_dataset}")
-        send_data = fixed_data if choice == "Fixed copy" else data
-        if choice == "Original data":
-            st.caption("This sends a masked copy of the original data without applying fixes.")
-        else:
-            st.caption("This sends a masked copy produced by the selected fixes.")
-        if not privacy_reviewed:
-            st.warning("Review sensitive columns in Data privacy before sending data.")
-        st.caption(f"Selected: {active_dataset} · {len(send_data):,} rows · {len(send_data.columns):,} columns")
-        # Bind consent to both the destination and the exact selected data.
-        try:
-            data_digest = hashlib.sha256(
-                pd.util.hash_pandas_object(send_data, index=True).values.tobytes()
-                + repr(tuple(send_data.columns)).encode()
-            ).hexdigest()
-        except TypeError:
-            data_digest = hashlib.sha256(send_data.to_json(orient="split", date_format="iso").encode()).hexdigest()
-        consent_key = "approve_api_push_" + hashlib.sha256(
-            json.dumps(
-                [destination_url, method, output_format, active_dataset, choice, data_digest,
-                 dest_auth, dest_header, sorted(map(str, sensitive_columns or ()))], ensure_ascii=False
-            ).encode()
-        ).hexdigest()
-        approved = st.checkbox(
-            "I approve sending the selected data to this destination",
-            key=consent_key,
-        )
-        final_approved = is_approved(st.session_state, active_dataset, send_data, choice)
-        if not final_approved:
-            st.warning(translate("Final demo approval is required for this exact version before sending."))
-            st.caption(translate("Open Review & fix to review changes and approve the selected version."))
-        if st.button(
-            "Push data to API", key="push_external_api", type="primary",
-            width="stretch", disabled=not approved or not privacy_reviewed or not final_approved,
-        ):
-            if not destination_url.strip():
-                st.error("Enter a destination API URL.")
-            else:
-                with st.spinner("Sending the selected data..."):
-                    try:
-                        status = guarded_push(
-                            st.session_state, active_dataset, data, send_data, choice,
-                            sensitive_columns or (), privacy_reviewed, approved, push_api_data,
-                            url=destination_url, method=method, data_format=output_format,
-                            auth_mode=dest_auth, secret=dest_secret, header_name=dest_header,
-                        )
-                    except ApprovalRequired as error:
-                        st.error(translate(str(error)))
-                    except ApiConnectionError as error:
-                        st.error(
-                            translate("{0} The destination may have received the request; check it before retrying.").format(translate(str(error)))
-                        )
-                    else:
-                        st.success(f"The destination accepted the request (HTTP {status}).")
-    st.caption(
-        "API settings and credentials are kept only in this session. Only public HTTPS "
-        "addresses are supported; redirects and private network addresses are blocked."
-    )
+    st.markdown("**Production changes — demo only**")
+    st.info("Live destination writes are disabled in the demo request workflow.")
+    st.caption("Submit a request, complete data-owner, service-desk and CAB approvals, then simulate production application from Request list.")
+    st.button("Push data to API", key="push_external_api", disabled=True)

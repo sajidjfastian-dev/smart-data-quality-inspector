@@ -22,6 +22,8 @@ def is_signed_in():
 def sign_in():
     native.session_state["demo_user"] = DEMO_USER
     native.session_state["account_notice"] = "signed_in"
+    native.session_state["workspace_page"] = "requests"
+    native.session_state["demo_role"] = "Submitter"
 
 
 def sign_out():

@@ -105,12 +105,12 @@ class ApprovalTests(unittest.TestCase):
         self.accept()
         with self.assertRaises(ApprovalRequired):
             send(False)
-        self.assertEqual(send(), 201)
-        self.assertEqual(sender.call_args.kwargs["data"]["name"].tolist(), ["••••", "••••"])
+        with self.assertRaises(ApprovalRequired):
+            send()
         self.original.loc[0, "amount"] = 9
         with self.assertRaises(ApprovalRequired):
             send()
-        self.assertEqual(sender.call_count, 1)
+        self.assertEqual(sender.call_count, 0)
 
 
 if __name__ == "__main__":

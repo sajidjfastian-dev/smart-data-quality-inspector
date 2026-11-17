@@ -22,6 +22,9 @@ from demo_session import is_signed_in
 from review_approval import sync_context, invalidate, change_index, frame_digest
 from review_ui import render_checker_review
 from issue_workspace import render_issue_workspace
+from request_workflow import bind_draft, current as current_request, save_draft, submit as submit_request, start_new, WorkflowError
+from request_dashboard import render_request_dashboard
+from request_details import render_request_details
 from history_ui import render_history
 from quality_large import scan_large_data
 from security_guardrails import MASK, detect_sensitive_columns, mask_dataframe, mask_findings, mask_text, mask_text_with_dataset
@@ -1861,6 +1864,20 @@ def delete_custom_rule(rules_key, selector_key, index):
     st.session_state["rule_notice"] = "Quality rule deleted."
 
 
+def apply_all_checks():
+    for name in ("missing", "duplicates", "email", "date", "outliers"):
+        st.session_state[f"check_{name}"] = True
+
+
+def request_list_page():
+    st.session_state["workspace_page"] = "requests"
+    st.session_state["request_view"] = None
+
+
+def change_demo_role():
+    st.session_state["workspace_page"] = "requests"
+
+
 def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                     active_dataset=None, active_data=None, fixed_data=None,
                     detected_sensitive=None, dataset_token=None):
@@ -1911,6 +1928,8 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                     policy_digest = hashlib.sha256(
                         repr((dataset_token, tuple(sorted(map(str, sensitive_columns))))).encode()
                     ).hexdigest()[:16]
+                    if "request_restore_reviewed" in st.session_state:
+                        st.session_state[f"privacy_review_{column_signature}_{policy_digest}"] = st.session_state.pop("request_restore_reviewed")
                     privacy_reviewed = st.checkbox(
                         "I reviewed all columns for sensitive data",
                         value=True,
@@ -1974,6 +1993,7 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
             with checks_tab:
                 st.markdown("**Built-in checks**")
                 st.caption("Choose which checks run. Changes rescan the active file.")
+                st.button(translate("Apply all built-in checks"), key="apply_all_quality_checks", on_click=apply_all_checks)
                 checks = {}
                 for key, label in (
                     ("missing", "Missing values"),
@@ -2014,7 +2034,7 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                 )
                 iqr_multiplier = st.slider(
                     "IQR outlier multiplier", min_value=1.5, max_value=3.0,
-                    value=1.5, step=0.1, format="%.1f×",
+                    value=1.5, step=0.1, format="%.1f×", key=f"rule_iqr_{column_signature}",
                     help="Values outside Q1 − multiplier × IQR or Q3 + multiplier × IQR are flagged.",
                 )
                 st.markdown("**Define your data quality rules**")
@@ -2155,13 +2175,24 @@ with st.sidebar:
         f'</div></div>',
         unsafe_allow_html=True,
     )
+    if is_signed_in():
+        native.selectbox(
+            translate("Demo role"), ["Submitter", "Data owner", "Service desk", "CAB"],
+            format_func=lambda value, locale=language(): translate(value, locale),
+            key="demo_role", on_change=change_demo_role,
+        )
+        native.caption(translate("Role switching is a simulation, not authentication."))
+        native.button(translate("Request list"), key="nav_requests", width="stretch", on_click=request_list_page)
+        if st.session_state.get("demo_role", "Submitter") == "Submitter":
+            native.button(translate("New request"), key="nav_new_request", width="stretch",
+                          on_click=start_new, args=(st.session_state,))
     with st.container(key="source_panel"):
         st.markdown(
             '<div class="sidebar-source-heading"><span class="sidebar-source-kicker">Data sources</span>'
             '<strong>Add your data</strong><span>Upload files to begin your quality assessment.</span></div>',
             unsafe_allow_html=True,
         )
-        if is_signed_in():
+        if is_signed_in() and st.session_state.get("demo_role", "Submitter") == "Submitter":
             uploaded_files = st.file_uploader(
                 "Upload CSV or Excel files",
                 type=["csv", "xlsx"],
@@ -2187,6 +2218,10 @@ with st.sidebar:
                 '<div class="sidebar-session-note">Files are available for this session.</div>',
                 unsafe_allow_html=True,
             )
+        elif is_signed_in():
+            uploaded_files = None
+            load_connected_clicked = False
+            native.caption(translate("Switch to Submitter to upload data or create a request."))
         else:
             uploaded_files = None
             load_connected_clicked = False
@@ -2338,6 +2373,17 @@ if st.session_state.get("workspace_page") == "history":
     render_history()
     st.stop()
 
+if is_signed_in() and (
+    st.session_state.get("workspace_page", "requests" if not datasets else "inspection") == "requests"
+    or st.session_state.get("demo_role", "Submitter") != "Submitter"
+):
+    render_settings(settings_anchor)
+    if st.session_state.get("request_view"):
+        render_request_details(st.session_state, st.session_state["request_view"])
+    else:
+        render_request_dashboard(st.session_state)
+    st.stop()
+
 if not datasets:
     render_settings(settings_anchor)
     if is_signed_in():
@@ -2444,16 +2490,35 @@ with st.container(border=True):
         )
 
 data = datasets[active_dataset]
+request_reference = bind_draft(st.session_state, active_dataset, data)
+st.session_state["active_request_ref"] = request_reference
+request_revision = current_request(st.session_state, request_reference)
+if request_revision["status"] != "Draft":
+    render_settings(settings_anchor)
+    render_request_details(st.session_state, request_reference)
+    st.stop()
+native.caption(translate("Draft request") + f": {request_reference} · " + translate("Revision") + f" {request_revision['number']}")
 columns = list(data.columns)
 column_signature = hashlib.sha256(
     (
-        active_dataset
+        request_reference + ":" + str(request_revision["number"]) + ":" + active_dataset
         + "\0"
         + "\0".join(
             f"{column}:{data[column].dtype}" for column in columns
         )
     ).encode("utf-8")
 ).hexdigest()[:12]
+restored_rules = st.session_state.pop("request_restore_rules", None)
+if restored_rules:
+    st.session_state[f"rule_iqr_{column_signature}"] = float(restored_rules["iqr"])
+    for kind in ("email", "date", "numeric"):
+        st.session_state[f"rule_{kind}_columns_{column_signature}"] = list(restored_rules[kind])
+    st.session_state[f"custom_rules_{column_signature}"] = restored_rules["custom"]
+    for check in ("missing", "duplicates", "email", "date", "outliers"):
+        st.session_state[f"check_{check}"] = check in restored_rules["enabled"]
+restored_protected = st.session_state.pop("request_restore_protected", None)
+if restored_protected is not None:
+    st.session_state[f"privacy_manual_{column_signature}"] = list(restored_protected)
 privacy_cache = st.session_state.setdefault("privacy_detection_cache", {})
 cached_privacy = privacy_cache.get(active_dataset)
 if cached_privacy and cached_privacy["data"] is data:
@@ -3031,7 +3096,27 @@ with review_tab:
             changes = change_record["changes"]
         render_checker_review(st.session_state, active_dataset, data, approval_data,
                               changes, fixed_findings if approval_choice == "Fixed copy" else issues,
-                              display_sensitive_columns, approval_choice)
+                              display_sensitive_columns, approval_choice, actions=False)
+        save_draft(st.session_state, request_reference, {
+            "file": active_dataset, "original": data, "selected": approval_data,
+            "choice": approval_choice, "changes": changes, "issues": issues,
+            "remaining": fixed_findings if approval_choice == "Fixed copy" else issues,
+            "protected": set(sensitive_columns), "privacy_reviewed": privacy_reviewed,
+            "rules": {"email": list(email_columns), "date": list(date_columns), "numeric": list(numeric_columns),
+                      "iqr": iqr_multiplier, "enabled": sorted(enabled_checks), "custom": list(custom_rules)},
+        })
+        native.caption(translate("Safe fixes are rule-based. Optional AI advice never applies changes automatically."))
+        submit_ack = native.checkbox(translate("Ready to submit this version to the demo data owner"),
+                                     key=f"submit_ack_{request_reference}_{approval_context['version']}_{approval_choice}")
+        if native.button(translate("Submit for review"), key=f"submit_{request_reference}", type="primary",
+                         disabled=not submit_ack or not privacy_reviewed):
+            try:
+                submit_request(st.session_state, request_reference)
+                st.session_state["request_view"] = request_reference
+                st.session_state["workspace_page"] = "requests"
+                st.rerun()
+            except WorkflowError as error:
+                st.error(translate(str(error)))
     else:
         st.warning("Reapply fixes to build a complete change review before approval.")
 

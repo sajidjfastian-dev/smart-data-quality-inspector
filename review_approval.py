@@ -96,16 +96,7 @@ def return_for_revision(state, dataset):
 def guarded_push(state, dataset, original, selected, choice, protected, privacy_reviewed,
                  destination_consent, sender, *args, **kwargs):
     """Recheck at execution, not just through a disabled button."""
-    context = state.get("review_contexts", {}).get(dataset, {})
-    if (
-        not destination_consent or not privacy_reviewed
-        or context.get("original") != frame_digest(original)
-        or context.get("protected") != sorted(map(str, protected))
-        or not is_approved(state, dataset, selected, choice)
-    ):
-        raise ApprovalRequired("Final demo approval is required for this exact version before sending.")
-    from security_guardrails import mask_dataframe
-    return sender(*args, data=mask_dataframe(selected, protected), **kwargs)
+    raise ApprovalRequired("Live destination writes are disabled in the demo request workflow.")
 
 
 def change_index(original, corrected, drop_duplicates):

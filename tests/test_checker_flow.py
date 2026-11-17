@@ -24,8 +24,11 @@ class CheckerFlowTests(unittest.TestCase):
         self.assert_clean()
 
     def approve(self):
+        self.widget("checkbox", "Ready to submit this version to the demo data owner").check().run()
+        self.widget("button", "Submit for review").click().run()
+        self.widget("selectbox", "Demo role").select("Data owner").run()
         self.widget("checkbox", "I reviewed the changes and remaining findings").check().run()
-        self.widget("button", "Approve reviewed version").click().run()
+        self.widget("button", "Approve as data owner").click().run()
         self.assert_clean()
 
     def test_fixed_review_approval_send_and_reapply(self):
@@ -36,29 +39,40 @@ class CheckerFlowTests(unittest.TestCase):
         self.assertIn("••••", markup)
         self.assertIn("Removed duplicate row", markup)
         self.approve()
-        self.widget("selectbox", "Data to send").select("Fixed copy").run()
-        self.widget("text_input", "Destination API URL").input("https://example.com/records").run()
-        self.widget("checkbox", "I approve sending the selected data to this destination").check().run()
-        self.assertFalse(self.widget("button", "Push data to API").disabled)
-        with patch("api_settings.push_api_data", return_value=201) as push:
-            self.widget("button", "Push data to API").click().run()
+        self.widget("selectbox", "Demo role").select("Service desk").run()
+        self.widget("button", "Approve demo ticket").click().run()
+        self.widget("selectbox", "Demo role").select("CAB").run()
+        self.assertTrue(self.widget("button", "Simulate production application").disabled)
+        self.widget("button", "Approve as demo CAB").click().run()
+        with patch("api_settings.push_api_data") as push:
+            self.widget("button", "Simulate production application").click().run()
         self.assert_clean()
-        push.assert_called_once()
-        protected = push.call_args.kwargs["data"]["name"].dropna()
-        self.assertTrue(protected.map(lambda value: value == "••••" or not str(value).strip()).all())
+        push.assert_not_called()
+        ref = self.app.session_state["active_request_ref"]
+        self.assertEqual(self.app.session_state["demo_requests"][ref]["revisions"][-1]["status"], "Simulated")
+        self.widget("selectbox", "Demo role").select("Submitter").run()
+        self.widget("button", "Create new draft revision").click().run()
+        self.assert_clean()
         self.fix()
-        self.assertFalse(self.app.session_state["final_approvals"])
+        self.assertEqual(self.app.session_state["demo_requests"][ref]["revisions"][-1]["status"], "Draft")
         self.assertTrue(self.widget("button", "Push data to API").disabled)
 
     def test_original_review_return_and_rule_invalidation(self):
-        self.approve()
-        self.assertTrue(self.app.session_state["final_approvals"])
-        self.widget("button", "Return for revision").click().run()
-        self.assertFalse(self.app.session_state["final_approvals"])
-        self.approve()
+        self.widget("checkbox", "Ready to submit this version to the demo data owner").check().run()
+        self.widget("button", "Submit for review").click().run()
+        self.widget("selectbox", "Demo role").select("Data owner").run()
+        self.widget("button", "Reject request").click().run()
+        self.assertIn("Enter a rejection reason.", [e.value for e in self.app.error])
+        self.widget("text_area", "Rejection reason").input("Check the source").run()
+        self.widget("button", "Reject request").click().run()
+        self.widget("selectbox", "Demo role").select("Submitter").run()
+        self.widget("button", "Create new draft revision").click().run()
         self.widget("checkbox", "Missing values").uncheck().run()
+        self.widget("button", "Apply all built-in checks").click().run()
         self.assert_clean()
-        self.assertFalse(self.app.session_state["final_approvals"])
+        self.assertTrue(self.widget("checkbox", "Missing values").value)
+        ref = self.app.session_state["active_request_ref"]
+        self.assertEqual(self.app.session_state["demo_requests"][ref]["revisions"][0]["status"], "Rejected")
 
     def test_rule_crud_and_validation(self):
         self.widget("selectbox", "Rule type").select("Minimum number")
@@ -81,33 +95,29 @@ class CheckerFlowTests(unittest.TestCase):
         self.fix()
         self.app.segmented_control(key="language_choice").set_value("AR").run()
         self.assert_clean()
-        self.assertIn("اعتماد النسخة المراجعة", [b.label for b in self.app.button])
-        self.assertIn("مراجعة المدقق والاعتماد النهائي", [s.value for s in self.app.subheader])
+        self.assertIn("تقديم للمراجعة", [b.label for b in self.app.button])
+        self.assertIn("مراجعة التغييرات", [s.value for s in self.app.subheader])
         self.widget("button", "تسجيل الخروج").click().run()
         self.assert_clean()
         self.assertNotIn("review_contexts", self.app.session_state)
 
     def test_ticket_flow_bilingual_stale_and_logout(self):
-        self.assertTrue(self.widget("button", "Generate demo ticket").disabled)
         self.fix()
         self.approve()
         with patch("api_settings.push_api_data") as push:
-            self.widget("button", "Generate demo ticket").click().run()
-            ticket = next(iter(self.app.session_state["demo_change_tickets"].values())).copy()
-            self.widget("button", "Generate demo ticket").click().run()
-            self.assertEqual(ticket, next(iter(self.app.session_state["demo_change_tickets"].values())))
+            ref = self.app.session_state["active_request_ref"]
+            ticket = self.app.session_state["demo_requests"][ref]["revisions"][-1]["ticket"]
+            self.app.run()
+            self.assertEqual(ticket, self.app.session_state["demo_requests"][ref]["revisions"][-1]["ticket"])
             push.assert_not_called()
         self.assertTrue(self.widget("button", "Push data to API").disabled)
         self.assertIn(ticket["version"], "\n".join(x.value for x in self.app.text))
         self.app.segmented_control(key="language_choice").set_value("AR").run()
-        self.assertIn("إنشاء تذكرة تجريبية", [b.label for b in self.app.button])
-        self.assertIn("معاينة التذكرة التجريبية — لم تُرسل", [s.value for s in self.app.success])
-        self.widget("button", "إعادة للمراجعة").click().run()
-        self.assertTrue(self.widget("button", "إنشاء تذكرة تجريبية").disabled)
-        self.assertTrue(any("تذكرة تجريبية قديمة" in x.value for x in self.app.warning))
+        self.assertIn(ticket["reference"], "\n".join(x.value for x in self.app.text))
+        self.assertTrue(any("تذكرة" in s.value for s in self.app.subheader))
         self.widget("button", "تسجيل الخروج").click().run()
         self.assert_clean()
-        self.assertNotIn("demo_change_tickets", self.app.session_state)
+        self.assertNotIn("demo_requests", self.app.session_state)
 
 
 if __name__ == "__main__":

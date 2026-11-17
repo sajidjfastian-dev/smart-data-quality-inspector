@@ -99,7 +99,7 @@ class ApiUiTests(unittest.TestCase):
     def find(self, kind, label):
         return next(widget for widget in getattr(self.app, kind) if widget.label == label)
 
-    def test_sample_load_and_approved_push_only(self):
+    def test_sample_load_with_live_push_disabled(self):
         frame = pd.DataFrame({"id": [1, 2], "name": ["Ada", "Sam"]})
         with patch.object(api_settings, "fetch_api_data", return_value=frame) as fetch, \
              patch.object(api_settings, "push_api_data", return_value=202) as push:
@@ -108,22 +108,13 @@ class ApiUiTests(unittest.TestCase):
             self.assertEqual(fetch.call_count, 1)
             self.assertEqual(len(self.app.session_state["inspector_datasets"]["API sample"]), 2)
             self.assertTrue(self.find("button", "Push data to API").disabled)
-            self.find("text_input", "Destination API URL").set_value("https://example.com/receive").run()
-            self.find("checkbox", "I approve sending the selected data to this destination").check().run()
-            self.assertTrue(self.find("button", "Push data to API").disabled)
             self.find("checkbox", "I reviewed all columns for sensitive data").check().run()
             self.assertTrue(self.find("button", "Push data to API").disabled)
-            self.find("checkbox", "I reviewed the changes and remaining findings").check().run()
-            self.find("button", "Approve reviewed version").click().run()
-            self.assertFalse(self.find("button", "Push data to API").disabled)
-            self.find("button", "Push data to API").click().run()
+            self.find("checkbox", "Ready to submit this version to the demo data owner").check().run()
+            self.find("button", "Submit for review").click().run()
             self.assertFalse(self.app.exception)
-            self.assertEqual(push.call_count, 1)
-            pd.testing.assert_frame_equal(push.call_args.kwargs["data"], mask_dataframe(frame, {"id", "name"}))
-            self.assertTrue(any("HTTP 202" in item.value for item in self.app.success))
-            self.find("text_input", "Destination API URL").set_value("https://example.com/other").run()
             self.assertTrue(self.find("button", "Push data to API").disabled)
-            self.assertEqual(push.call_count, 1)
+            push.assert_not_called()
 
     def test_source_error_does_not_replace_existing_data(self):
         load_test_fixture(self.app)
@@ -134,30 +125,16 @@ class ApiUiTests(unittest.TestCase):
         self.assertIn("Sample messy dataset", self.app.session_state["inspector_datasets"])
         self.assertTrue(any("Source failed" in item.value for item in self.app.error))
 
-    def test_push_fixed_copy_and_consent_resets(self):
+    def test_fixed_copy_keeps_live_push_disabled(self):
         load_test_fixture(self.app)
         self.find("checkbox", "I reviewed all columns for sensitive data").check().run()
-        self.find("text_input", "Destination API URL").set_value("https://example.com/receive").run()
-        self.find("checkbox", "I approve sending the selected data to this destination").check().run()
         self.find("button", "Apply selected fixes").click().run()
-        self.app.run()
-        self.find("selectbox", "Data to send").select("Fixed copy").run()
         self.assertTrue(self.find("button", "Push data to API").disabled)
-        self.find("checkbox", "I approve sending the selected data to this destination").check().run()
-        self.assertTrue(self.find("button", "Push data to API").disabled)
-        self.find("checkbox", "I reviewed the changes and remaining findings").check().run()
-        self.find("button", "Approve reviewed version").click().run()
         with patch.object(api_settings, "push_api_data", return_value=200) as push:
-            self.find("button", "Push data to API").click().run()
+            self.app.run()
             self.assertFalse(self.app.exception)
-            pd.testing.assert_frame_equal(
-                push.call_args.kwargs["data"],
-                mask_dataframe(
-                    self.app.session_state["fixed_datasets"]["Sample messy dataset"],
-                    self.app.session_state["privacy_policies"]["Sample messy dataset"]["columns"],
-                ),
-            )
-            self.assertEqual(len(push.call_args.kwargs["data"]), 49)
+            push.assert_not_called()
+            self.assertEqual(len(self.app.session_state["fixed_datasets"]["Sample messy dataset"]), 49)
 
 
 if __name__ == "__main__":

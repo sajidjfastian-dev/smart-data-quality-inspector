@@ -89,18 +89,11 @@ class PrivacyFlowTests(unittest.TestCase):
 
     def test_api_push_and_model_receive_masked_data(self):
         self.widget("checkbox", "I reviewed all columns for sensitive data").check().run()
-        self.widget("text_input", "Destination API URL").set_value("https://example.com/data").run()
-        self.widget("checkbox", "I approve sending the selected data to this destination").check().run()
         self.assertTrue(self.widget("button", "Push data to API").disabled)
-        self.widget("checkbox", "I reviewed the changes and remaining findings").check().run()
-        self.widget("button", "Approve reviewed version").click().run()
         with patch("api_settings.push_api_data", return_value=200) as push:
-            self.widget("button", "Push data to API").click().run()
+            self.app.run()
             self.assertFalse(self.app.exception)
-            sent = push.call_args.kwargs["data"]
-            self.assertEqual(sent.loc[0, "name"], MASK)
-            self.assertEqual(sent.loc[0, "email"], MASK)
-            self.assertEqual(sent.loc[0, "region"], "Dubai")
+            push.assert_not_called()
 
         self.widget("text_input", "Chat Completions URL").set_value("https://example.com/v1/chat/completions")
         self.widget("text_input", "Model ID").set_value("test-model")
