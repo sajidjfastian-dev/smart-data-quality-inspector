@@ -9,3 +9,4 @@
 - [Streamlit markdown margin](streamlit-markdown-margin.md) — non-paragraph HTML in st.markdown collapses via -1rem margin; markup must be literal/f-string to translate.
 - [Synthetic persistence boundary](synthetic-persistence-boundary.md) — trust server-issued source provenance, not matching filenames or data; canonicalize shared writes.
 - [Presentation readability](presentation-readability.md) — the user will demonstrate this application on big screens and projectors.
+- [Charts-only quality overview](quality-overview-scope.md) — uploaded-file Overview should visualize actual findings under configured controls, not tables or recommendations.

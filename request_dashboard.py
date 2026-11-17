@@ -63,6 +63,15 @@ def _filter_status_card(statuses):
     st.session_state["rd_statuses"] = [] if selected == set(statuses) else list(statuses)
     st.session_state["rd_page"] = 1
 
+def _toggle_status_option(status, widget_key):
+    selected = set(st.session_state.get("rd_statuses", []))
+    if st.session_state[widget_key]:
+        selected.add(status)
+    else:
+        selected.discard(status)
+    st.session_state["rd_statuses"] = [s for s in request_workflow.STATUSES if s in selected]
+    st.session_state["rd_page"] = 1
+
 
 def _cell(label, value, css=""):
     return (
@@ -133,12 +142,16 @@ def render_request_dashboard(state):
                     label_visibility="collapsed",
                 )
             with right:
-                statuses = st.multiselect(
-                    localization.translate("Statuses"), request_workflow.STATUSES,
-                    key="rd_statuses", format_func=lambda value, locale=localization.language(): localization.translate(value, locale),
-                    placeholder=localization.translate("All statuses"),
-                    label_visibility="collapsed",
-                )
+                statuses = list(st.session_state.get("rd_statuses", []))
+                status_label = (localization.translate("All statuses") if not statuses else
+                                localization.translate(statuses[0]) if len(statuses) == 1 else
+                                localization.translate("Statuses ({0})").format(len(statuses)))
+                with st.popover(status_label, use_container_width=True, key="rd_status_filter"):
+                    for index, status in enumerate(request_workflow.STATUSES):
+                        widget_key = f"rd_status_option_{index}"
+                        st.session_state[widget_key] = status in statuses
+                        st.checkbox(localization.translate(status), key=widget_key,
+                                    on_change=_toggle_status_option, args=(status, widget_key))
             with sessions:
                 session_ids = sorted({item.get("session_id", "Current private session") for item in records})
                 if st.session_state.get("rd_session") not in [None, *session_ids]:

@@ -4,7 +4,7 @@
 
 - Runtime: Python 3.12 (the existing app and pinned dependencies work with it).
 - Dependencies: `requirements.txt`, installed into Replit's managed Python environment.
-- Explicit transitive security pins in `requirements.txt` keep fresh installs on patched versions. Run `python -m unittest discover -s tests -v` and `python -m pip check` after dependency changes, then rerun the dependency audit.
+- Explicit transitive security pins in `requirements.txt` keep fresh installs on patched versions. Reserve unit-test runs for pre-publish verification; check dependency consistency after dependency changes.
 - Use the **Run** button to start the **Start application** workflow.
 - Command: `python -m streamlit run serve.py --server.corsAllowedOrigins "https://${REPLIT_DEV_DOMAIN}"`
 - Streamlit binds to `0.0.0.0:5000` through `.streamlit/config.toml`.
@@ -41,4 +41,4 @@
 - Shared samples use catalog-validated standard checks and safe fixes. For custom rules, the UI offers a private session-only copy rather than persisting free text.
 - Shared requests are accessible to all demo sessions. They are not real customer records or authenticated history.
 - `inspection_history` and its fail-closed SSO ownership gate are separate and unchanged.
-- Run focused request, database-demo, API and privacy tests; do not run the full suite for this change.
+- User instruction: do unit testing at publish time; do not spend time running unnecessary unit tests during routine changes. Use proportionate browser/manual checks while editing.

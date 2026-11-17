@@ -17,6 +17,7 @@ from localization import language, native, st, translate, translate_issue_type, 
 from api_settings import render_api_settings
 from api_connections import ApiConnectionError, request_public_api
 from data_insights import render_data_insights
+from quality_overview import overview_translate, render_quality_overview
 from workspace_presentation import install_presentation_styles, remove_legacy_footer, render_account_panel, render_signed_out_sidebar, render_signed_in_sidebar
 from demo_session import is_signed_in
 from review_approval import sync_context, invalidate, change_index, frame_digest
@@ -2494,10 +2495,11 @@ if not datasets:
     )
     st.stop()
 
-with st.container(border=True):
-    workspace_file_col, workspace_guidance_col = st.columns([1.1, 2])
+with native.container(key="inspection_workspace"):
+    workspace_file_col, workspace_guidance_col = native.columns([1.1, 1.5], gap="large")
     with workspace_file_col:
-        st.markdown("**Current workspace**")
+        native.markdown('<div class="inspection-kicker">'
+                        + html.escape(overview_translate("Inspection workspace")) + '</div>', unsafe_allow_html=True)
         active_dataset = st.selectbox(
             "Active file",
             options=list(datasets),
@@ -2505,10 +2507,14 @@ with st.container(border=True):
             help="Choose a file in the workspace to inspect its data quality.",
         )
     with workspace_guidance_col:
-        st.markdown("**Inspect one file at a time**")
-        st.caption(
-            "Choose a file to refresh its quality score, issue log, row review, "
-            "and exports. Workspace files remain available in this list."
+        native.markdown(
+            '<div class="inspection-context"><h2>' + html.escape(overview_translate("One file. A complete quality picture."))
+            + '</h2><p>' + html.escape(overview_translate("Inspect the original, review proposed corrections, then preview what you share."))
+            + '</p><div class="inspection-context__facts"><span>'
+            + html.escape(overview_translate("{0} workspace files").format(len(datasets)))
+            + '</span><span>' + html.escape(overview_translate("{0} rows across the workspace").format(f"{sum(len(frame) for frame in datasets.values()):,}"))
+            + '</span></div><small><strong>' + html.escape(overview_translate("Original data stays unchanged."))
+            + '</strong></small></div>', unsafe_allow_html=True,
         )
 
 data = datasets[active_dataset]
@@ -2590,12 +2596,22 @@ if len(data) >= 100_000:
     detected_sensitive, dataset_token,
 )
 display_sensitive_columns = sensitive_columns if privacy_reviewed else set(columns)
-st.caption(
-    "Sensitive-data masking is active. Review all columns in Settings → Data privacy "
-    "before downloading or sending data; detection cannot identify every sensitive value."
-)
-if not privacy_reviewed:
-    st.warning("All data values are hidden until you review the columns in Data privacy.")
+with native.container(key="inspection_privacy"):
+    privacy_title = "Privacy review recorded" if privacy_reviewed else "Privacy review needed"
+    privacy_class = "inspection-privacy--reviewed" if privacy_reviewed else "inspection-privacy--pending"
+    native.markdown(
+        f'<div class="inspection-privacy {privacy_class}"><div class="inspection-privacy__top"><strong>'
+        + html.escape(overview_translate(privacy_title)) + '</strong><span>'
+        + html.escape(overview_translate("{0} of {1} columns masked").format(len(display_sensitive_columns), len(columns)))
+        + '</span></div><p>'
+        + html.escape(translate(
+            "Sensitive-data masking is active. Review all columns in Settings → Data privacy "
+            "before downloading or sending data; detection cannot identify every sensitive value."
+        )) + '</p>'
+        + ('' if privacy_reviewed else '<p><strong>' + html.escape(translate(
+            "All data values are hidden until you review the columns in Data privacy."
+        )) + '</strong></p>') + '</div>', unsafe_allow_html=True,
+    )
 
 rule_signature = column_rule_signature(
     email_columns,
@@ -2700,6 +2716,13 @@ approval_context = sync_context(st.session_state, active_dataset, data, fixed_fo
 health_score = max(0, round(100 * (1 - issue_count / max(data.shape[0] * data.shape[1], 1))))
 batch_row_count = sum(len(frame) for frame in datasets.values())
 
+has_applicable_controls = bool(
+    ({"missing", "duplicates"} & set(enabled_checks) and columns)
+    or ("email" in enabled_checks and email_columns)
+    or ("date" in enabled_checks and date_columns)
+    or ("outliers" in enabled_checks and numeric_columns)
+    or any(rule.get("column") in columns for rule in custom_rules)
+)
 findings_step = (
     translate("{0} finding · {1}" if issue_count == 1 else "{0} findings · {1}").format(
         f"{issue_count:,}",
@@ -2709,22 +2732,38 @@ findings_step = (
     if issue_count
     else translate("No findings under enabled checks")
 )
-findings_status = "workflow-step-findings" if issue_count else "workflow-step-clear"
-findings_icon = "!" if issue_count else "✓"
-st.markdown(
-    '<section class="workflow-panel" aria-label="Inspection workflow">'
-    '<div class="workflow-header"><div><div class="workflow-heading">Inspection workflow</div>'
-    '<div class="workflow-subheading">Your file’s journey from inspection to export</div></div>'
-    '<span class="workflow-badge">Inspection complete</span></div>'
-    '<div class="workflow-strip" role="list" aria-label="File inspection progress">'
-    f'<div role="listitem" class="workflow-step workflow-step-complete"><strong>✓</strong><span><b>File loaded</b><small>{translate("{0} rows · {1} columns").format(f"{len(data):,}", f"{len(columns):,}")}</small></span></div>'
-    '<div role="listitem" class="workflow-step workflow-step-complete"><strong>✓</strong><span><b>Inspection complete</b><small>Active quality rules applied</small></span></div>'
-    f'<div role="listitem" class="workflow-step {findings_status}"><strong>{findings_icon}</strong><span><b>Findings</b><small>{findings_step}</small></span></div>'
-    '<div role="listitem" class="workflow-step workflow-step-ready"><strong>4</strong><span><b>Review &amp; fix</b><small>Ready when you are</small></span></div>'
-    '<div role="listitem" class="workflow-step workflow-step-ready"><strong>5</strong><span><b>Export</b><small>Use Preview &amp; export</small></span></div>'
-    '</div></section>',
+if not has_applicable_controls:
+    findings_step = overview_translate("Not assessed")
+findings_status = "workflow-step-findings" if issue_count or not has_applicable_controls else "workflow-step-clear"
+with native.container(key="inspection_workflow"):
+    native.markdown(
+    '<section class="workflow-panel" aria-label="' + html.escape(translate("Inspection workflow"), quote=True) + '">'
+    '<div class="workflow-header"><div><div class="workflow-heading">' + html.escape(translate("Inspection workflow"))
+    + '</div><div class="workflow-subheading">'
+    + html.escape(overview_translate("From the original file to a reviewed copy"))
+    + '</div></div><span class="workflow-badge">'
+    + html.escape(overview_translate("Inspection complete" if has_applicable_controls else "No applicable controls"))
+    + '</span></div><div class="workflow-strip" role="list" aria-label="' + html.escape(translate("File inspection progress"), quote=True) + '">'
+    + '<div role="listitem" class="workflow-step workflow-step-complete"><strong>1</strong><span><b>'
+    + html.escape(translate("File loaded")) + '</b><small>'
+    + html.escape(translate("{0} rows · {1} columns").format(f"{len(data):,}", f"{len(columns):,}"))
+    + '</small></span></div><div role="listitem" class="workflow-step '
+    + ('workflow-step-complete' if has_applicable_controls else 'workflow-step-ready')
+    + '"><strong>2</strong><span><b>'
+    + html.escape(overview_translate("Controls evaluated" if has_applicable_controls else "Not assessed")) + '</b><small>'
+    + html.escape(overview_translate("{0} built-in controls · {1} custom rules").format(len(enabled_checks), len(custom_rules)))
+    + f'</small></span></div><div role="listitem" class="workflow-step {findings_status}"><strong>3</strong><span><b>'
+    + html.escape(translate("Findings")) + '</b><small>' + html.escape(findings_step)
+    + '</small></span></div><div role="listitem" class="workflow-step workflow-step-ready"><strong>4</strong><span><b>'
+    + html.escape(translate("Review & fix")) + '</b><small>' + html.escape(overview_translate("Choose proposed corrections"))
+    + '</small></span></div><div role="listitem" class="workflow-step workflow-step-ready"><strong>5</strong><span><b>'
+    + html.escape(translate("Export")) + '</b><small>'
+    + html.escape(overview_translate("Preview before sharing" if privacy_reviewed else "Privacy review required"))
+    + '</small></span></div></div><p class="inspection-workflow-note">'
+    + html.escape(overview_translate("Findings are review candidates, not confirmed errors. Open Issue log for details, then Review & fix to choose corrections."))
+    + '</p></section>',
     unsafe_allow_html=True,
-)
+    )
 st.caption(
     f"Workspace · {len(datasets):,} file(s) · {batch_row_count:,} rows total · "
     f"Inspecting **{active_dataset}** · {int(data.memory_usage(deep=True).sum() / 1024):,} KB in memory"
@@ -2863,112 +2902,10 @@ overview_tab, issues_tab, review_tab, preview_tab, assistant_tab, insights_tab =
 )
 
 with overview_tab:
-    st.markdown(
-        '<div class="dashboard-intro"><strong>Start with your quality overview</strong>'
-        '<span>See where findings are concentrated, review the recommendations, '
-        'then use the tabs above to inspect individual issues and apply safe fixes.</span></div>',
-        unsafe_allow_html=True,
+    render_quality_overview(
+        data, issues, enabled_checks, custom_rules, email_columns, date_columns,
+        numeric_columns, iqr_multiplier, column_signature,
     )
-    issue_types = set(issues["Issue Type"]) if not issues.empty else set()
-    with st.container(key="overview_composition"):
-        chart_col, type_col = st.columns(2, gap="medium")
-    with chart_col, st.container(key="overview_columns"):
-        overview_heading("Findings by column", "Column-level findings and duplicate rows, ranked by count.")
-        if issues.empty:
-            st.success("No findings were found by the enabled checks.")
-        else:
-            issue_counts = (
-                issues.assign(**{"Column Name": issues["Column Name"].where(
-                    issues["Issue Type"] != "Duplicate Row", translate("Entire row")
-                )}).groupby("Column Name", as_index=False)
-                .size()
-                .rename(columns={"size": "Issue Count"})
-                .sort_values("Issue Count", ascending=False)
-            )
-            overview_pie(issue_counts, "Column Name", "overview_column_pie")
-
-    with type_col, st.container(key="overview_types"):
-        overview_heading("Findings by type", "Each share is measured against all detected findings.")
-        if issues.empty:
-            st.success("No findings were found by the enabled checks.")
-        else:
-            type_counts = (
-                issues.groupby("Issue Type", as_index=False)
-                .size()
-                .rename(columns={"size": "Issue Count"})
-                .sort_values("Issue Count", ascending=False)
-            )
-            type_counts["Issue Type"] = type_counts["Issue Type"].map(translate_issue_type)
-            overview_pie(type_counts, "Issue Type", "overview_type_pie")
-
-    with st.container(key="overview_detail"):
-        missing_col, recommendations_col = st.columns(2, gap="medium")
-    with missing_col, st.container(key="overview_missing"):
-        overview_heading("Missing values by column", "Exact counts and share of rows; all columns are listed.")
-        missing_profile = column_profile.sort_values("Missing", ascending=False, kind="stable")
-        if "missing" not in enabled_checks:
-            st.info("The missing-values check is turned off in settings.")
-        elif int(missing_profile["Missing"].sum()) == 0:
-            st.success("Every column is complete under the current missing-value check.")
-        else:
-            overview_table(
-                missing_profile["Column"].tolist(), missing_profile["Missing"].tolist(),
-                len(data), "Column", "Missing rows (%)",
-            )
-
-    with recommendations_col, st.container(key="overview_recommendations"):
-        overview_heading("Recommended next steps", "Use these suggestions to prioritize review; no changes are made automatically.")
-        recommendations = []
-        if duplicate_count:
-            recommendations.append(
-                (f"Remove {duplicate_count} exact duplicate row(s).", "Duplicate Row")
-            )
-        if "Missing Value" in issue_types:
-            top_missing = missing_profile.iloc[0]
-            recommendations.append(
-                (
-                    translate("Review missing values in {0} ({1} missing).").format(
-                        top_missing["Column"],
-                        overview_percentage(int(top_missing["Missing"]), len(data)),
-                    ),
-                    "Missing Value",
-                )
-            )
-        if "Invalid Email" in issue_types:
-            recommendations.append(
-                ("Validate malformed email addresses before sending communications.", "Invalid Email")
-            )
-        if {"Invalid Date", "Inconsistent Date Format"} & issue_types:
-            recommendations.append(
-                ("Standardize mixed date formats and review unparseable values.", "Invalid Date")
-            )
-        if "Numeric Outlier" in issue_types:
-            recommendations.append(
-                ("Check statistical outliers against the source before changing values.", "Numeric Outlier")
-            )
-        if any(issue_type.startswith("Custom: ") for issue_type in issue_types):
-            recommendations.append(
-                ("Review values that do not meet your custom column rules in the issue log.", "Custom")
-            )
-        if not recommendations:
-            st.success("No findings were detected by the enabled checks.")
-            st.markdown("Preview the dataset or export a cleaned copy whenever you’re ready.")
-        else:
-            for index, (recommendation, _) in enumerate(recommendations, start=1):
-                # The missing-value sentence is already localized around the raw column name.
-                copy = recommendation if _ == "Missing Value" else translate(recommendation)
-                native.markdown(
-                    f'<div class="overview-step"><span class="overview-step-number">{index:02d}</span>'
-                    '<span class="overview-step-copy">' + html.escape(copy) + "</span></div>",
-                    unsafe_allow_html=True,
-                )
-            st.info("Next: open **Issue log** for details, then **Review & fix** to choose safe changes.")
-        with st.expander("How to interpret this report"):
-            st.markdown(translate("- Each finding represents a detected value or duplicate row, not a confirmed business error.\n"
-                "- Statistical outliers are review candidates, not automatic corrections.\n"
-                "- Use the settings icon at the bottom of the sidebar to adjust checks and column rules."))
-
-    st.caption("For distributions, field profiles, common values and timelines, open **Data insights**.")
 
 with insights_tab:
     if insights_tab.open:
@@ -2980,7 +2917,8 @@ with insights_tab:
 with issues_tab:
     render_issue_workspace(datasets, active_dataset, data, issues, fixed_for_review,
                            fixed_findings, display_sensitive_columns, privacy_reviewed,
-                           approval_context["version"])
+                           approval_context["version"], enabled_checks=enabled_checks,
+                           custom_rules=custom_rules)
 
 with review_tab:
     st.subheader("🛠️ Review and fix the active file")

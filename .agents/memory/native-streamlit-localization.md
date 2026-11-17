@@ -14,3 +14,9 @@ Capture the current locale in option-formatting callbacks rather than looking up
 **Why:** Streamlit/AppTest can serialize a previous render's widget after a language switch; live language lookup then produces labels absent from that widget's original options.
 
 **How to apply:** Bind the render-time locale in native selectbox, radio and multiselect formatters while keeping underlying option values unchanged.
+
+Check the visible selected state after switching languages, not only the stored selection.
+
+**Why:** Native controls can retain an old display label or lose their visible checked indicator even when canonical session values remain correct.
+
+**How to apply:** Preserve canonical choices independently of locale-specific presentation widgets when needed, and verify both language directions in a real browser.

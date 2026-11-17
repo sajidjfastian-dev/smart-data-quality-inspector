@@ -486,3 +486,89 @@ section[data-testid="stSidebar"]:has(.signed-in-guide[data-nav="inspection"]) .s
     section[data-testid="stSidebar"] .signed-out-guide p {font-size: 13px;}
     section[data-testid="stSidebar"] .signed-out-guide ol {gap: 8px;}
 }
+
+/* Uploaded-file workspace: one quiet frame, with explicit privacy/review states. */
+.st-key-inspection_workspace, .st-key-inspection_privacy, .st-key-inspection_workflow {
+    border: 1px solid #d2e3dd; border-radius: 16px; padding: 22px;
+    background: #f7fbf9; min-width: 0;
+}
+.st-key-inspection_workspace {border-block-start: 3px solid #17796b;}
+.inspection-kicker {color: #38675f; font-size: .78rem; font-weight: 700; letter-spacing: .06em;}
+.inspection-context h2 {font-size: clamp(22px, 1.5vw, 30px); color: #194d45; margin: 5px 0 10px; padding: 0; line-height: 1.4;}
+.inspection-context p, .inspection-context small {color: #49675f; font-size: clamp(14px, .9vw, 18px); line-height: 1.7; margin: 0; display: block; max-width: 64ch;}
+.inspection-context strong {color: #194d45;}
+.inspection-context__facts {display: flex; gap: 8px 20px; flex-wrap: wrap; margin-block: 15px 10px; color: #38675f; font-size: .88rem;}
+.st-key-inspection_workspace [data-testid="stWidgetLabel"] p {font-weight: 650; color: #194d45;}
+.st-key-inspection_privacy {padding: 18px 22px; background: #fcf8ee; border-color: #e5d7af;}
+.inspection-privacy__top {display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 18px; margin-bottom: 7px;}
+.inspection-privacy__top strong {color: #72541b; font-size: clamp(16px, 1vw, 20px);}
+.inspection-privacy__top span {color: #675b3e; font-size: .88rem;}
+.inspection-privacy p {color: #665a40; margin: 0; font-size: clamp(14px, .88vw, 18px); line-height: 1.7; max-width: 110ch;}
+.st-key-inspection_privacy:has(.inspection-privacy--reviewed) {background: #eef7f2; border-color: #c4ded2;}
+.inspection-privacy--reviewed .inspection-privacy__top strong {color: #235e4e;}
+.st-key-inspection_workflow {background: #f9fbf9; padding: 22px;}
+.st-key-inspection_workflow .workflow-panel {padding: 0; background: transparent; border: 0; box-shadow: none;}
+.st-key-inspection_workflow .workflow-heading {font-size: clamp(18px, 1.2vw, 24px);}
+.st-key-inspection_workflow .workflow-subheading {font-size: clamp(14px, .85vw, 17px); line-height: 1.6;}
+.st-key-inspection_workflow .workflow-step b {font-size: clamp(14px, .9vw, 18px); line-height: 1.5;}
+.st-key-inspection_workflow .workflow-step small {font-size: clamp(13px, .8vw, 16px); color: #4b665d; line-height: 1.7;}
+.st-key-inspection_workflow .workflow-badge {font-size: .82rem;}
+.inspection-workflow-note {margin: 16px 0 0; color: #4b665d; font-size: clamp(13px, .85vw, 17px); line-height: 1.7;}
+/* Six analytical views; Plotly keeps its own responsive canvas dimensions. */
+.st-key-quality_overview {gap: 18px;}
+.st-key-quality_overview [data-testid="stColumn"] {min-width: 0;}
+.st-key-quality_overview [class*="st-key-qo_panel_"] {
+    padding: 12px 6px 4px; border: 1px solid #d5e4dd;
+    border-radius: 15px; background: #fcfdf9; min-width: 0; overflow: hidden;
+}
+.st-key-quality_overview [class*="st-key-qo_panel_"]:nth-child(2) {border-block-start-color: #cfb361;}
+.st-key-quality_overview [data-testid="stPlotlyChart"] {width: 100%; min-width: 0;}
+.st-key-quality_overview [data-testid="stWidgetLabel"] p {color: #285d52; font-weight: 600;}
+/* Real sidebar navigation: a distinct new-request action and a strong,
+   shared active state. No generated labels or substitute controls. */
+section[data-testid="stSidebar"] :is(.st-key-nav_requests, .st-key-nav_new_request) button {
+    min-height: 56px; padding: 10px 13px; gap: 12px;
+    background: #f7fbf8; border: 1px solid #cfdfd6; border-radius: 12px;
+    color: #245f4e; transform: none !important; box-shadow: 0 2px 3px rgba(28, 72, 56, .025);
+}
+section[data-testid="stSidebar"] .st-key-nav_new_request button {background: #e8f3ec; border-color: #bcd6c6;}
+section[data-testid="stSidebar"] :is(.st-key-nav_requests, .st-key-nav_new_request) button p {
+    font-size: clamp(15px, .95vw, 19px); font-weight: 650;
+}
+section[data-testid="stSidebar"] :is(.st-key-nav_requests, .st-key-nav_new_request) button [data-testid="stIconMaterial"] {
+    display: inline-flex; align-items: center; justify-content: center; flex: 0 0 34px;
+    width: 34px; height: 34px; border-radius: 9px; background: #dcece1; font-size: 22px;
+}
+section[data-testid="stSidebar"]:has(.signed-in-guide[data-nav="requests"]) .st-key-nav_requests button,
+section[data-testid="stSidebar"]:has(.signed-in-guide[data-nav="inspection"]) .st-key-nav_new_request button {
+    background: #155f50; color: #f2faf4; border-color: #155f50;
+    box-shadow: inset 4px 0 #d2b45e, 0 3px 6px rgba(21, 95, 80, .08);
+}
+[dir="rtl"] section[data-testid="stSidebar"]:has(.signed-in-guide[data-nav="requests"]) .st-key-nav_requests button,
+[dir="rtl"] section[data-testid="stSidebar"]:has(.signed-in-guide[data-nav="inspection"]) .st-key-nav_new_request button {
+    box-shadow: inset -4px 0 #d2b45e, 0 3px 6px rgba(21, 95, 80, .08);
+}
+section[data-testid="stSidebar"]:has(.signed-in-guide[data-nav="requests"]) .st-key-nav_requests button [data-testid="stIconMaterial"],
+section[data-testid="stSidebar"]:has(.signed-in-guide[data-nav="inspection"]) .st-key-nav_new_request button [data-testid="stIconMaterial"] {
+    color: #f2faf4; background: rgba(235, 249, 239, .14);
+}
+section[data-testid="stSidebar"] :is(.st-key-nav_requests, .st-key-nav_new_request) button:focus-visible {
+    outline: 3px solid #b08a22; outline-offset: 3px;
+}
+@media (max-height: 740px) {
+    section[data-testid="stSidebar"] :is(.st-key-nav_requests, .st-key-nav_new_request) button {min-height: 48px; padding-block: 7px;}
+}
+@media (max-width: 1100px) {
+    .st-key-inspection_workflow .workflow-strip {grid-template-columns: repeat(3, minmax(0, 1fr));}
+}
+@media (max-width: 767px) {
+    .st-key-inspection_workspace, .st-key-inspection_privacy, .st-key-inspection_workflow {padding: 16px;}
+    .st-key-inspection_workflow .workflow-strip {grid-template-columns: 1fr;}
+    .st-key-inspection_workflow .workflow-step:last-child {grid-column: auto;}
+    .st-key-inspection_workflow .workflow-header {align-items: flex-start; flex-direction: column;}
+    .st-key-quality_overview [data-testid="stHorizontalBlock"] {flex-wrap: wrap;}
+    .st-key-quality_overview [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+        flex: 1 1 100% !important; width: 100% !important;
+    }
+    .st-key-quality_overview [class*="st-key-qo_panel_"] {padding: 8px 0 0;}
+}

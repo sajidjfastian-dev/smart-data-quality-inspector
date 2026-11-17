@@ -118,8 +118,12 @@
 .st-key-rd_summary [class*="st-key-rd_status_click_"] {
     position: absolute; inset: 0; z-index: 2; height: 100%;
 }
+.st-key-rd_summary [class*="st-key-rd_status_click_"] > [data-testid="stButton"] {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+}
 .st-key-request_dashboard .st-key-rd_summary [class*="st-key-rd_status_click_"] button {
-    width: 100%; height: 100%; border-radius: 12px;
+    position: absolute; inset: 0; margin: 0; box-sizing: border-box;
+    width: 100%; height: 100%; border-radius: 12px; transform: none !important;
     background: transparent !important; border: 2px solid transparent; cursor: pointer;
 }
 .st-key-rd_summary [class*="st-key-rd_status_click_"] button p {
@@ -127,6 +131,9 @@
 }
 .st-key-request_dashboard .st-key-rd_summary [class*="st-key-rd_status_click_"] button:is(:hover, :focus-visible, [kind="primary"]) {
     border-color: var(--status-ink); box-shadow: 0 0 0 2px var(--status-icon);
+}
+.st-key-request_dashboard .st-key-rd_summary [class*="st-key-rd_status_click_"] button:focus-visible {
+    outline: 2px solid var(--status-ink); outline-offset: 3px;
 }
 .st-key-rd_summary [data-testid="stTooltipIcon"] {position: relative; z-index: 3;}
 .st-key-rd_summary [data-testid="stColumn"]:nth-child(1) {
@@ -191,5 +198,45 @@
 @media (max-width: 767px) {
     .st-key-request_dashboard .st-key-rd_summary [data-testid="stMetric"] {
         min-height: 116px; padding: 15px 18px;
+    }
+}
+
+/* The current Streamlit multiselect uses React Aria, not Base Web.
+   Let the real tags wrap and grow rather than scroll behind clipped chips. */
+.st-key-rd_statuses .react-aria-ComboBox > [role="group"] {
+    height: auto; max-height: none; min-height: 40px; align-items: flex-start;
+    border-color: var(--rd-line); border-radius: 5px; background: #f7f7fb;
+}
+.st-key-rd_statuses [data-testid="stMultiSelectTagsContainer"] {
+    flex-wrap: wrap; gap: 6px; height: auto; min-height: 38px;
+    min-width: 0; overflow: visible; padding: 6px;
+}
+.st-key-rd_statuses [data-tag] {
+    flex: 0 1 auto; max-width: 100%; height: auto; min-height: 28px;
+    gap: 4px; padding: 3px 6px; border: 1px solid #cbd5dc;
+    border-radius: 6px; background: #e9edf0; color: #354c5c;
+    white-space: normal; overflow: visible;
+}
+.st-key-rd_statuses [data-tag] > span[title] {
+    white-space: normal; overflow: visible; overflow-wrap: anywhere;
+    max-width: none; font-size: clamp(13px, .85vw, 17px); line-height: 1.5;
+}
+.st-key-rd_statuses:dir(rtl) [data-tag] > span[title] {line-height: 1.9;}
+.st-key-request_dashboard .st-key-rd_statuses [data-tag] button {
+    flex: 0 0 22px; width: 22px; height: 22px; min-height: 22px; padding: 4px;
+    margin: 0; border: 0; background: transparent; color: #354c5c;
+}
+.st-key-rd_statuses [data-testid="stMultiSelectTagsContainer"] > input {
+    flex: 1 1 6ch; width: 6ch; min-width: 6ch; min-height: 28px;
+}
+.st-key-rd_filters [data-testid="stHorizontalBlock"] {align-items: flex-start;}
+@media (min-width: 768px) {
+    /* Multiple selected stages deserve a wider field, without reordering
+       native controls or changing their tab order. */
+    .st-key-rd_filters:has(.st-key-rd_statuses [data-tag-index="1"]) [data-testid="stHorizontalBlock"] {
+        display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;
+    }
+    .st-key-rd_filters:has(.st-key-rd_statuses [data-tag-index="1"]) [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+        width: 100% !important; min-width: 0 !important;
     }
 }

@@ -103,7 +103,7 @@ class DashboardTests(unittest.TestCase):
         self.assertEqual(len([b for b in app.button if str(b.key).startswith("rd_view_")]), 10)
         app.button(key="rd_next").click().run()
         self.assertEqual(len([b for b in app.button if str(b.key).startswith("rd_view_")]), 2)
-        app.multiselect(key="rd_statuses").set_value(["Draft"]).run()
+        app.checkbox(key="rd_status_option_0").check().run()
         self.assertNotIn("rd_scope", [radio.key for radio in app.radio])
         self.assertNotIn("refresh_shared_requests", [button.key for button in app.button])
         self.assertEqual([m.value for m in app.metric], ["4", "0", "0", "0"])
@@ -132,10 +132,10 @@ class DashboardTests(unittest.TestCase):
                                ("rejected", ["Rejected"])):
             app.button(key=f"rd_status_click_{slug}").click().run()
             self.clean(app)
-            self.assertEqual(set(app.multiselect(key="rd_statuses").value), set(expected))
+            self.assertEqual(set(app.session_state["rd_statuses"]), set(expected))
             self.assertEqual(len([b for b in app.button if str(b.key).startswith("rd_view_")]), len(expected))
         app.button(key="rd_status_click_rejected").click().run()
-        self.assertEqual(app.multiselect(key="rd_statuses").value, [])
+        self.assertEqual(app.session_state["rd_statuses"], [])
 
 
 if __name__ == "__main__":

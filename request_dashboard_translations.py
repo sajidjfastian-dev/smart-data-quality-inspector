@@ -16,6 +16,7 @@ REQUEST_DASHBOARD_ARABIC = {
     "Submitter": "مقدّم الطلب",
     "All submitters": "جميع مقدّمي الطلبات",
     "Statuses": "الحالات",
+    "Statuses ({0})": "الحالات ({0})",
     "Submission date": "تاريخ التقديم",
     "Action": "الإجراء",
     "All statuses": "جميع الحالات",
