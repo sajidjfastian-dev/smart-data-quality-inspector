@@ -145,10 +145,13 @@ not perform cross-file referential-integrity checks or joins.
    dataset and its current inspection results.
 
 The **Watch demo** button in the page header opens a locally bundled, silent
-12-second MP4 walkthrough of the upload, scan, dashboard, review, and export
-flow. The walkthrough's product mark matches the current rising-chart and
-gold-check logo. It includes native playback controls and does not require an
-internet connection. The source GIF is also included for direct preview.
+MP4 walkthrough of the landing page, connected sample workspace, findings,
+review, and export screens. It includes native playback controls and does not
+require an internet connection. A GIF version is also included for direct
+preview. To refresh both versions from a running app, install the test
+requirements, install Playwright's Chromium and FFmpeg with
+`python -m playwright install chromium ffmpeg`, and run
+`python scripts/record_demo.py` with FFmpeg also available on PATH.
 
 ## 6. Input handling and type inference
 

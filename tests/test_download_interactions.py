@@ -113,6 +113,25 @@ class DownloadInteractionTests(unittest.TestCase):
     def click_tab(self, name):
         self.page.get_by_role("tab", name=name).click()
 
+    def test_watch_demo_loads_and_plays_local_video(self):
+        self.page.get_by_role("button", name="Watch demo").click()
+        dialog = self.page.get_by_role("dialog", name="A quick tour of the inspector")
+        video = dialog.locator("video")
+        video.wait_for()
+        video.evaluate("""async video => {
+            video.muted = true;
+            await video.play();
+        }""")
+        self.page.wait_for_function(
+            """() => {
+                const video = document.querySelector('[role="dialog"] video');
+                return video && video.readyState >= 2 && video.currentTime > 0;
+            }""",
+            timeout=30000,
+        )
+        self.assertGreater(video.evaluate("video => video.duration"), 0)
+        self.assertIsNone(video.evaluate("video => video.error"))
+
     def download(self, label):
         with self.page.expect_download(timeout=30000) as pending:
             self.page.get_by_role("button", name=label, exact=True).click()

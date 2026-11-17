@@ -1,0 +1,16 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "DnTIjAHtqeb667Yjdd30O"
+uri = "file://demo_media/smart_data_quality_demo.mp4"
+type = "video"
+title = "Updated product demo"
+description = "A silent walkthrough of the current app and its connected sample workspace."
+logical_id = "e4a430a9-ec67-473d-a3ff-398880aac465"
+content_hash = "sha256:d49c58d603fd5f4c0d7e2afedd0e93df97b27d552f661662ba61babef07ef547"
+size = 1306191
+mtime_ms = 1794903748348
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:c6580a21-09fe-4762-bb04-2899d2de9424/e4a430a9-ec67-473d-a3ff-398880aac465/9c4d9713-993b-4263-bdfe-d31cd8945dcb"
+storage_version_token = "1794903852301013"
+content_type = "video/mp4"

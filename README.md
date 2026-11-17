@@ -15,7 +15,7 @@ The product mark combines a data grid, inspection lens, and analytics signal, sh
 - Use the settings icon at the bottom of the sidebar to turn built-in checks on or off, adjust Email, Date, and Numeric column rules, and tune the IQR outlier multiplier from 1.5 to 3.0.
 - Add, edit, or delete custom per-file rules: required text, allowed values, or minimum and maximum numeric limits. Custom findings are included in scans and issue logs for manual review; empty values are covered separately by the missing-values check. Rules remain in the current session.
 - Explore clickable KPI details, issue and completeness charts, numeric distributions, column profiles, issue filters, and recommendations.
-- Launch a built-in 12-second video demo from the **Watch demo** button; it works offline without an external video link and shows an earlier version of the logo.
+- Launch a built-in silent video demo from the **Watch demo** button; it works offline and shows the current landing page and connected sample workspace.
 - Ask the built-in Data Quality Copilot about findings locally, or optionally connect an OpenAI-compatible Chat Completions endpoint for broader natural-language analysis.
 - Use the settings icon in the sidebar to configure an OpenAI-compatible endpoint URL, model ID, and password-masked API key. Credentials stay in the current app session and are not written to configuration files.
 - In settings → **Data APIs**, load data from a public HTTPS GET endpoint as JSON, CSV, or Excel. JSON can be a top-level array of objects or an array under a dot-separated object path; nested objects are flattened. **Try sample API** reads ten public sample users from JSONPlaceholder.

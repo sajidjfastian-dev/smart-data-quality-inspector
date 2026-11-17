@@ -1835,7 +1835,7 @@ def show_product_demo():
         return
     st.video(str(DEMO_VIDEO_PATH))
     st.caption(
-        "A short, silent walkthrough with player controls: load → inspect → understand → review → export."
+        "A short, silent walkthrough with player controls: explore the sample workspace → inspect → review → export."
     )
 
 
