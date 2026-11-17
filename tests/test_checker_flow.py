@@ -87,6 +87,28 @@ class CheckerFlowTests(unittest.TestCase):
         self.assert_clean()
         self.assertNotIn("review_contexts", self.app.session_state)
 
+    def test_ticket_flow_bilingual_stale_and_logout(self):
+        self.assertTrue(self.widget("button", "Generate demo ticket").disabled)
+        self.fix()
+        self.approve()
+        with patch("api_settings.push_api_data") as push:
+            self.widget("button", "Generate demo ticket").click().run()
+            ticket = next(iter(self.app.session_state["demo_change_tickets"].values())).copy()
+            self.widget("button", "Generate demo ticket").click().run()
+            self.assertEqual(ticket, next(iter(self.app.session_state["demo_change_tickets"].values())))
+            push.assert_not_called()
+        self.assertTrue(self.widget("button", "Push data to API").disabled)
+        self.assertIn(ticket["version"], "\n".join(x.value for x in self.app.text))
+        self.app.segmented_control(key="language_choice").set_value("AR").run()
+        self.assertIn("إنشاء تذكرة تجريبية", [b.label for b in self.app.button])
+        self.assertIn("معاينة التذكرة التجريبية — لم تُرسل", [s.value for s in self.app.success])
+        self.widget("button", "إعادة للمراجعة").click().run()
+        self.assertTrue(self.widget("button", "إنشاء تذكرة تجريبية").disabled)
+        self.assertTrue(any("تذكرة تجريبية قديمة" in x.value for x in self.app.warning))
+        self.widget("button", "تسجيل الخروج").click().run()
+        self.assert_clean()
+        self.assertNotIn("demo_change_tickets", self.app.session_state)
+
 
 if __name__ == "__main__":
     unittest.main()

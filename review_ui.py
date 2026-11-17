@@ -89,3 +89,5 @@ def render_checker_review(state, dataset, original, corrected, changes, remainin
             return_for_revision(state, dataset)
             state[key + "_ack"] = False
         return_col.button(t("Return for revision"), key=key + "_return", on_click=return_action)
+        from demo_change_ticket import render_demo_ticket
+        render_demo_ticket(state, dataset, original, corrected, choice, changes)

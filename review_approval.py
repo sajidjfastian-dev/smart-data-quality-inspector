@@ -29,6 +29,13 @@ def invalidate(state, dataset):
     """Explicit reapplication invalidates even byte-identical fixes."""
     state.setdefault("review_generations", {})[dataset] = uuid4().hex
     state.setdefault("final_approvals", {}).pop(dataset, None)
+    mark_ticket_outdated(state, dataset)
+
+
+def mark_ticket_outdated(state, dataset):
+    ticket = state.get("demo_change_tickets", {}).get(dataset)
+    if ticket:
+        ticket["outdated"] = True
 
 
 def sync_context(state, dataset, original, fixed, rules, protected, privacy_reviewed):
@@ -46,6 +53,7 @@ def sync_context(state, dataset, original, fixed, rules, protected, privacy_revi
     previous = state.setdefault("review_contexts", {}).get(dataset)
     if previous != context:
         state.setdefault("final_approvals", {}).pop(dataset, None)
+        mark_ticket_outdated(state, dataset)
     state["review_contexts"][dataset] = context
     return context
 
@@ -70,16 +78,19 @@ def approve(state, dataset, frame, choice, remaining):
     if not context["privacy_reviewed"] or expected != frame_digest(frame):
         raise ApprovalRequired("The reviewed version changed. Review it again before approval.")
     record = {
+        "approval_id": uuid4().hex,
         "version": context["version"], "choice": choice, "digest": expected,
         "status": "approved", "mode": "demo", "remaining_findings": int(remaining),
         "approved_at": datetime.now(timezone.utc).isoformat(),
     }
+    mark_ticket_outdated(state, dataset)
     state.setdefault("final_approvals", {})[dataset] = record
     return record
 
 
 def return_for_revision(state, dataset):
     state.setdefault("final_approvals", {}).pop(dataset, None)
+    mark_ticket_outdated(state, dataset)
 
 
 def guarded_push(state, dataset, original, selected, choice, protected, privacy_reviewed,

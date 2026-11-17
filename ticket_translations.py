@@ -1,0 +1,23 @@
+"""Arabic text for simulated production change requests."""
+TICKET_ARABIC = {
+    "Demo production-change ticket": "تذكرة تجريبية لتغيير بيانات الإنتاج",
+    "Simulation only. No service desk request is submitted and no production data is changed.": "محاكاة فقط. لا يُرسل أي طلب إلى مكتب الخدمة ولا تتغير أي بيانات إنتاج.",
+    "Current final demo approval is required to generate a ticket.": "يلزم اعتماد تجريبي نهائي ساري لإنشاء تذكرة.",
+    "Generate demo ticket": "إنشاء تذكرة تجريبية",
+    "Outdated demo ticket — review and approve the current version, then generate a new ticket.": "تذكرة تجريبية قديمة — راجع النسخة الحالية واعتمدها ثم أنشئ تذكرة جديدة.",
+    "Demo ticket preview — not submitted": "معاينة التذكرة التجريبية — لم تُرسل",
+    "Demo reference": "المرجع التجريبي",
+    "Approved dataset version": "نسخة البيانات المعتمدة",
+    "Approved data fingerprint": "بصمة البيانات المعتمدة",
+    "Aggregate summary only: filenames, column names, row identifiers and cell values are omitted.": "ملخص إجمالي فقط: تُحذف أسماء الملفات والأعمدة ومعرّفات الصفوف وقيم الخلايا.",
+    "Original rows": "الصفوف الأصلية",
+    "Proposed rows": "الصفوف المقترحة",
+    "Proposed fixes": "الإصلاحات المقترحة",
+    "No fixes proposed; the approved version is unchanged.": "لا توجد إصلاحات مقترحة؛ النسخة المعتمدة دون تغيير.",
+    "Fix counts are changed cells, except duplicate removal which counts rows. Affected rows are counted once.": "أعداد الإصلاحات هي الخلايا المعدّلة، باستثناء إزالة التكرار التي تُحسب بالصفوف. يُحسب كل صف متأثر مرة واحدة.",
+    "Proposed validation": "التحقق المقترح",
+    "Before any real change, independently authorize the request and confirm the dataset version. Test the fixes in staging, compare row counts and changed cells, rerun the approved quality rules, and review every remaining finding. Stop if results differ from the approved summary.": "قبل أي تغيير فعلي، احصل على تفويض مستقل للطلب وتحقق من نسخة البيانات. اختبر الإصلاحات في بيئة الاختبار وقارن أعداد الصفوف والخلايا المعدّلة وأعد تشغيل قواعد الجودة المعتمدة وراجع كل نتيجة متبقية. توقف إذا اختلفت النتائج عن الملخص المعتمد.",
+    "Proposed rollback": "التراجع المقترح",
+    "Before execution, take an access-controlled backup and verify restoration in staging. If validation fails, stop the change, restore the pre-change snapshot using the approved operational procedure, and rerun integrity and quality checks. This demo creates no backup and performs no rollback.": "قبل التنفيذ، أنشئ نسخة احتياطية مقيّدة الوصول وتحقق من استعادتها في بيئة الاختبار. إذا فشل التحقق، أوقف التغيير واستعد النسخة السابقة باستخدام الإجراء التشغيلي المعتمد وأعد فحوص السلامة والجودة. هذا العرض التجريبي لا ينشئ نسخة احتياطية ولا ينفّذ التراجع.",
+    "Session only; cleared on logout. Destination sending still requires current final approval and separate destination consent. Generating a ticket sends nothing.": "لجلسة العمل فقط؛ تُحذف عند تسجيل الخروج. ما زال الإرسال إلى الوجهة يتطلب اعتماداً نهائياً سارياً وموافقة منفصلة للوجهة. إنشاء التذكرة لا يرسل شيئاً.",
+}
