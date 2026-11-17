@@ -1848,6 +1848,13 @@ with demo_button_col:
         help="Play the short visual tour for your presentation.",
     ):
         show_product_demo()
+
+# Keep one uploader and one widget key. On an empty workspace its container is
+# in the main page, where it remains accessible when the sidebar is collapsed.
+landing_at_start = not bool(st.session_state.get("inspector_datasets", {}))
+landing_upload_area = st.container(key="landing_upload") if landing_at_start else None
+welcome_placeholder = st.empty()
+
 with st.sidebar:
     st.markdown(
         f'<div class="sidebar-brand">{brand_logo("sidebar")}<div>'
@@ -1862,7 +1869,12 @@ with st.sidebar:
             '<strong>Add your data</strong><span>Upload files to begin your quality assessment.</span></div>',
             unsafe_allow_html=True,
         )
-        uploaded_files = st.file_uploader(
+        uploader_target = landing_upload_area if landing_at_start else st
+        if landing_at_start:
+            uploader_target.markdown("**Upload your data**")
+            uploader_target.caption("Choose one or more CSV or Excel files to get started.")
+            st.caption("Use the upload area on the main page to add your files.")
+        uploaded_files = uploader_target.file_uploader(
             "Upload CSV or Excel files",
             type=["csv", "xlsx"],
             accept_multiple_files=True,
@@ -1907,6 +1919,8 @@ if load_connected_clicked:
             state="complete",
             expanded=False,
         )
+    if landing_at_start:
+        st.rerun()
 
 uploaded_files = uploaded_files or []
 upload_signatures = tuple(upload_signature(file) for file in uploaded_files)
@@ -1997,12 +2011,18 @@ if uploaded_files and upload_signatures != st.session_state.get(
         st.session_state["active_dataset"] = next(iter(datasets))
         st.session_state["fixed_datasets"] = {}
         reset_quality_caches()
+        if landing_at_start:
+            st.session_state["pending_upload_warnings"] = file_errors
+            st.rerun()
     for file_error in file_errors:
         st.warning(file_error)
     if not loaded_datasets:
         st.error("No files could be analyzed. Check the file format and try again.")
         render_settings(settings_anchor)
         st.stop()
+
+for file_error in st.session_state.pop("pending_upload_warnings", []):
+    st.warning(file_error)
 
 pending_api_dataset = st.session_state.pop("pending_api_dataset", None)
 if pending_api_dataset is not None:
@@ -2022,7 +2042,7 @@ if pending_api_dataset is not None:
 
 if not datasets:
     render_settings(settings_anchor)
-    st.markdown(
+    welcome_placeholder.markdown(
         """
         <section class="welcome-panel" aria-label="Data quality introduction">
           <div class="welcome-copy">
@@ -2035,7 +2055,7 @@ if not datasets:
             <div class="welcome-start">
               <span class="welcome-start-icon" aria-hidden="true">↗</span>
               <div><strong>Get started with your data</strong>
-                <span class="welcome-start-copy">Upload a file in the sidebar, or explore the sample workspace.</span>
+                <span class="welcome-start-copy">Upload files above, or explore the sample workspace.</span>
               </div>
             </div>
             <div class="welcome-meta" aria-label="Supported data sources">

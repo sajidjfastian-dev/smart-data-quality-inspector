@@ -124,6 +124,61 @@ class DownloadInteractionTests(unittest.TestCase):
         expected = pd.DataFrame(rows, columns=["id", "name", "amount", "signup_date"])
         assert_frame_equal(actual, expected, check_dtype=False)
 
+    def test_mobile_landing_upload_preserves_csv_and_excel_in_workspace(self):
+        self.page.set_viewport_size({"width": 390, "height": 844})
+        self.page.reload()
+        uploader = self.page.get_by_test_id("stMain").get_by_test_id("stFileUploader")
+        uploader.wait_for(state="visible")
+        self.assertIn("500MB", uploader.inner_text().replace(" ", ""))
+        with self.page.expect_file_chooser() as chooser:
+            uploader.get_by_role("button", name="Upload", exact=True).click()
+        chooser.value.set_files([
+            {"name": "customers.csv", "mimeType": "text/csv", "buffer": CSV_INPUT},
+            {
+                "name": "orders.xlsx",
+                "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "buffer": excel_bytes(),
+            },
+        ])
+        self.page.get_by_role("tab", name="3 · Review & fix").wait_for()
+        self.page.get_by_text("Workspace · 2 file(s)", exact=False).wait_for()
+        self.assertEqual(self.page.get_by_test_id("stMain").get_by_test_id("stFileUploader").count(), 0)
+        self.page.get_by_role("tab", name="2 · Issue log").click()
+        self.page.get_by_text("Workspace · 2 file(s)", exact=False).wait_for()
+
+        # The same widget has moved to the sidebar without losing its files.
+        self.page.get_by_role("button", name="Expand sidebar").click()
+        sidebar_uploader = self.page.get_by_test_id("stSidebar").get_by_test_id("stFileUploader")
+        sidebar_uploader.wait_for(state="visible")
+        self.assertIn("customers.csv", sidebar_uploader.inner_text())
+        self.assertIn("orders.xlsx", sidebar_uploader.inner_text())
+
+    def test_landing_upload_keeps_valid_file_and_reports_invalid_excel(self):
+        uploader = self.page.get_by_test_id("stMain").get_by_test_id("stFileUploader")
+        uploader.locator('input[type="file"]').set_input_files([
+            {"name": "valid.csv", "mimeType": "text/csv", "buffer": CSV_INPUT},
+            {
+                "name": "invalid.xlsx",
+                "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "buffer": b"not an excel workbook",
+            },
+        ])
+        self.page.get_by_role("tab", name="3 · Review & fix").wait_for()
+        self.page.get_by_text("Workspace · 1 file(s)", exact=False).wait_for()
+        self.page.get_by_text("invalid.xlsx:", exact=False).wait_for()
+
+    def test_landing_rejects_empty_csv_and_can_retry(self):
+        uploader = self.page.get_by_test_id("stMain").get_by_test_id("stFileUploader")
+        uploader.locator('input[type="file"]').set_input_files([
+            {"name": "empty.csv", "mimeType": "text/csv", "buffer": b""},
+        ])
+        self.page.get_by_text("No files could be analyzed", exact=False).wait_for()
+        uploader.locator('input[type="file"]').set_input_files([
+            {"name": "valid.csv", "mimeType": "text/csv", "buffer": CSV_INPUT},
+        ])
+        self.page.get_by_role("tab", name="3 · Review & fix").wait_for()
+        self.page.get_by_text("Workspace · 1 file(s)", exact=False).wait_for()
+
     def test_fixed_csv_download_reflects_applied_fixes(self):
         self.upload([{"name": "customer records.csv", "mimeType": "text/csv", "buffer": CSV_INPUT}])
         self.click_tab("3 · Review & fix")
