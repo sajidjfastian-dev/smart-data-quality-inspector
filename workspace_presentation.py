@@ -45,9 +45,9 @@ def render_signed_out_sidebar():
         return html.escape(translate(value))
 
     steps = (
-        ("Data security", "Review changes before any production action."),
-        ("Privacy first", "Mask sensitive columns before sharing."),
-        ("Compliance-aware review", "Check data against your organisation’s quality rules."),
+        ("Controlled changes", "Review and approval steps keep proposed changes separate from your original data."),
+        ("Privacy protection", "Detected and selected sensitive columns are masked in previews and exports."),
+        ("Configurable quality checks", "The application checks your data against the quality rules you select."),
     )
     guide = "".join(
         '<li><span class="signed-out-guide__marker" aria-hidden="true"></span>'
@@ -72,8 +72,44 @@ def render_signed_out_sidebar():
         '<circle cx="40" cy="65" r="3" fill="#d6e6dc"/>'
         '<path d="M183 19v8m-4-4h8" stroke="#cbb56f" stroke-width="1.3" stroke-linecap="round"/>'
         '</svg>'
-        f'<h3>{text("Handle your data responsibly")}</h3>'
+        f'<h3>{text("Built-in safeguards for your data")}</h3>'
         f'<ol>{guide}</ol></div>',
+        unsafe_allow_html=True,
+    )
+
+
+def render_signed_in_sidebar(state):
+    """Non-interactive workflow and privacy guide beneath the native navigation."""
+    if not signed_in_user():
+        return
+
+    def text(value):
+        return html.escape(translate(value))
+
+    page = state.get(
+        "workspace_page",
+        "inspection" if state.get("inspector_datasets") else "requests",
+    )
+    # Restrict the attribute to known values; the marker only styles real buttons.
+    selected = page if page in ("requests", "inspection") else ""
+    steps = (
+        ("Prepare a dataset", "Choose a synthetic example or upload a private file in the workspace."),
+        ("Inspect findings", "Check quality issues and compare proposed changes."),
+        ("Review before sharing", "Check the result and mask sensitive columns before sharing."),
+    )
+    workflow = "".join(
+        '<li><span class="signed-in-guide__number" aria-hidden="true">'
+        f'{number:02d}</span><div><strong>{text(title)}</strong>'
+        f'<p>{text(description)}</p></div></li>'
+        for number, (title, description) in enumerate(steps, start=1)
+    )
+    native.markdown(
+        f'<div class="signed-in-guide" data-nav="{selected}">'
+        f'<h3>{text("Request workflow")}</h3><ol>{workflow}</ol>'
+        '<div class="signed-in-guide__privacy">'
+        f'<h4>{text("What stays where")}</h4>'
+        f'<p>{text("Shared synthetic examples are saved. Private uploads stay in this session.")}</p>'
+        '</div></div>',
         unsafe_allow_html=True,
     )
 

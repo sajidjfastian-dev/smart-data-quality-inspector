@@ -7,3 +7,6 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 python -m pip install --disable-pip-version-check --no-input \
   --target .pythonlibs/lib/python3.12/site-packages --upgrade \
   -r requirements.txt
+
+# Development database only; production schema remains managed by Publish.
+python scripts/seed_demo.py --development-schema

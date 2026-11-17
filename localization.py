@@ -19,6 +19,8 @@ from insights_translations import INSIGHTS_ARABIC
 from ticket_translations import TICKET_ARABIC
 from request_translations import REQUEST_ARABIC
 from request_dashboard_translations import REQUEST_DASHBOARD_ARABIC
+from demo_sidebar_translations import DEMO_SIDEBAR_ARABIC
+from persistent_demo_translations import PERSISTENT_DEMO_ARABIC
 
 
 _ROOT = Path(__file__).resolve().parent
@@ -38,6 +40,8 @@ _ARABIC.update(INSIGHTS_ARABIC)
 _ARABIC.update(TICKET_ARABIC)
 _ARABIC.update(REQUEST_ARABIC)
 _ARABIC.update(REQUEST_DASHBOARD_ARABIC)
+_ARABIC.update(DEMO_SIDEBAR_ARABIC)
+_ARABIC.update(PERSISTENT_DEMO_ARABIC)
 _REVERSE = {value: key for key, value in _ARABIC.items() if "{" not in key}
 _PATTERNS = []
 for _source, _translation in _ARABIC.items():

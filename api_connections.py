@@ -13,7 +13,6 @@ from zipfile import BadZipFile
 import pandas as pd
 
 MAX_API_BYTES = 10 * 1024 * 1024
-SAMPLE_API_URL = "https://jsonplaceholder.typicode.com/users"
 
 
 class ApiConnectionError(ValueError):

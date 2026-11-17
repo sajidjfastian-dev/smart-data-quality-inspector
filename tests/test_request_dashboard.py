@@ -13,6 +13,7 @@ class DashboardTests(unittest.TestCase):
         app = AppTest.from_file(APP, default_timeout=45)
         app.session_state["demo_user"] = "Sajid"
         app.session_state["workspace_page"] = "requests"
+        app.session_state["_persistent_demo_ready"] = True
         return app.run()
 
     def clean(self, app):
@@ -38,7 +39,8 @@ class DashboardTests(unittest.TestCase):
         app = self.app()
         self.clean(app)
         self.assertIn("No requests yet", "\n".join(m.value for m in app.markdown))
-        app.button(key="rd_new").click().run()
+        self.assertNotIn("rd_new", [button.key for button in app.button])
+        app.button(key="nav_new_request").click().run()
         self.clean(app)
         ref = app.session_state["active_request_ref"]
         app.button(key="nav_requests").click().run()
@@ -102,7 +104,8 @@ class DashboardTests(unittest.TestCase):
         app.button(key="rd_next").click().run()
         self.assertEqual(len([b for b in app.button if str(b.key).startswith("rd_view_")]), 2)
         app.multiselect(key="rd_statuses").set_value(["Draft"]).run()
-        app.radio(key="rd_scope").set_value("filtered").run()
+        self.assertNotIn("rd_scope", [radio.key for radio in app.radio])
+        self.assertNotIn("refresh_shared_requests", [button.key for button in app.button])
         self.assertEqual([m.value for m in app.metric], ["4", "0", "0", "0"])
         app.checkbox(key="rd_use_dates").check().run()
         self.clean(app)

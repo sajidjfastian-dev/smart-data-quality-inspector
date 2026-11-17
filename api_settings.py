@@ -2,7 +2,7 @@
 
 from localization import st, translate, language
 
-from api_connections import ApiConnectionError, SAMPLE_API_URL, fetch_api_data, push_api_data
+from api_connections import ApiConnectionError, fetch_api_data, push_api_data
 from security_guardrails import mask_dataframe
 from demo_session import is_signed_in
 from review_approval import is_approved, guarded_push, ApprovalRequired
@@ -55,10 +55,20 @@ def render_api_settings(active_dataset=None, data=None, fixed_data=None,
 def _render_api_reader():
     if st.button(
         "Try sample API", key="sample_external_api", icon=":material/science:",
-        help="Fetch ten public sample users from JSONPlaceholder.",
+        help="Load 520 synthetic database records with deliberate data-quality issues.",
         width="stretch",
+        disabled=not st.session_state.get("_persistent_demo_ready"),
     ):
-        _queue_import(SAMPLE_API_URL, "JSON", "", "None", "", "", "API sample")
+        from sample_client import fetch_sample
+        from persistent_demo import register_source
+        try:
+            data = fetch_sample()
+            register_source(st.session_state, data)
+            st.session_state["pending_api_dataset"] = ("Synthetic quality sample", data)
+            st.rerun()
+        except ApiConnectionError as error:
+            st.error(translate(str(error)))
+    st.caption(translate("Synthetic sample API: 520 stored records. Shared sample requests persist; private imports do not."))
 
     source_url = st.text_input(
         "Source API URL", placeholder="https://api.example.com/records", key="source_api_url",

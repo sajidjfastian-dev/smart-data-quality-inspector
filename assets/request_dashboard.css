@@ -76,3 +76,105 @@
     .st-key-rd_table [data-testid="stHorizontalBlock"] {gap: 12px;}
     .st-key-rd_filters {padding-block: 12px;}
 }
+
+/* Reading-first desktop scale; retain the existing ledger and mobile cards. */
+@media (min-width: 1100px) {
+    .st-key-request_dashboard {--rd-muted: #55586f; --rd-type: clamp(14px, .92vw, 19px); gap: 1rem;}
+    .request-register-heading h2 {font-size: clamp(26px, 1.7vw, 36px);}
+    .request-register-heading p {font-size: var(--rd-type); max-width: 72ch;}
+    .request-register-notice {font-size: clamp(13px, .85vw, 17px); color: #514d6a;}
+    .request-register-cell, .request-register-date {font-size: var(--rd-type); color: #41455b;}
+    .request-register-reference {color: #4b4482;}
+    .request-register-status {font-size: clamp(12px, .8vw, 16px);}
+    .request-register-header span, .request-register-action-label {font-size: clamp(13px, .85vw, 17px); color: #55586f;}
+    .request-register-header time {font-size: clamp(12px, .78vw, 16px);}
+    .request-register-section h3 {font-size: clamp(18px, 1.15vw, 24px);}
+    .request-register-section span,
+    .st-key-request_dashboard [data-testid="stCaptionContainer"],
+    .st-key-request_dashboard [data-testid="stMetricLabel"],
+    .st-key-rd_summary [data-testid="stRadio"] p {font-size: clamp(14px, .9vw, 18px);}
+    .st-key-request_dashboard [data-testid="stMetricValue"] {font-size: clamp(28px, 2vw, 42px);}
+    .st-key-rd_filters :is(input, [data-baseweb="select"]),
+    .st-key-request_dashboard button p {font-size: var(--rd-type);}
+    .st-key-request_dashboard button {min-height: 40px;}
+    .st-key-rd_table button {min-height: 36px; padding: 5px 10px;}
+    .st-key-rd_table button p {font-size: clamp(13px, .85vw, 17px);}
+    .st-key-rd_table [class*="st-key-rd_record_"] {padding-block: clamp(9px, .65vw, 15px);}
+    .request-register-row {min-height: 38px;}
+    .st-key-rd_table_header {padding-block: 12px;}
+}
+/* Six narrow filters become two readable rows on laptop/projector widths. */
+@media (min-width: 768px) and (max-width: 1399px) {
+    .st-key-rd_filters [data-testid="stHorizontalBlock"] {flex-wrap: wrap;}
+    .st-key-rd_filters [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+        flex: 1 1 calc(33.333% - 12px) !important; width: calc(33.333% - 12px) !important;
+        min-width: 0 !important;
+    }
+}
+
+/* Status summary only: native metrics retain their real counts and help text.
+   Decorative SVG masks supplement, never replace, the written status labels. */
+.st-key-rd_summary [data-testid="stColumn"]:nth-child(1) {
+    --status-surface: #f3f6f8; --status-border: #d4dfe4;
+    --status-ink: #354c5c; --status-icon: #e3ebef;
+    --status-symbol: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6M8 13h8M8 17h5'/%3E%3C/svg%3E");
+}
+.st-key-rd_summary [data-testid="stColumn"]:nth-child(2) {
+    --status-surface: #fff8e8; --status-border: #ead7a5;
+    --status-ink: #78540d; --status-icon: #f7e8bf;
+    --status-symbol: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E");
+}
+.st-key-rd_summary [data-testid="stColumn"]:nth-child(3) {
+    --status-surface: #edf7f3; --status-border: #badbce;
+    --status-ink: #1b6152; --status-icon: #d6ece2;
+    --status-symbol: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='m8 12 3 3 5-6'/%3E%3C/svg%3E");
+}
+.st-key-rd_summary [data-testid="stColumn"]:nth-child(4) {
+    --status-surface: #fcf1f0; --status-border: #e8c8c4;
+    --status-ink: #903f3b; --status-icon: #f4dedb;
+    --status-symbol: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='m9 9 6 6m0-6-6 6'/%3E%3C/svg%3E");
+}
+.st-key-request_dashboard .st-key-rd_summary [data-testid="stMetric"] {
+    padding: 18px 20px; min-height: 134px;
+    border: 1px solid var(--status-border);
+    border-inline-start: 3px solid var(--status-ink);
+    border-radius: 12px; background: var(--status-surface);
+    box-shadow: 0 2px 4px rgba(41, 43, 67, .025);
+}
+.st-key-rd_summary [data-testid="stMetricLabel"] {
+    position: relative; display: flex; align-items: center; justify-content: flex-start;
+    min-height: 36px; height: auto; gap: 9px;
+    color: var(--status-ink); font-size: clamp(14px, .92vw, 19px);
+    font-weight: 600; line-height: 1.5; overflow: visible;
+}
+.st-key-rd_summary [data-testid="stMetricLabel"] p {
+    white-space: normal; overflow: visible; text-overflow: clip;
+}
+.st-key-rd_summary [data-testid="stMetricLabel"] > div {min-width: 0;}
+.st-key-request_dashboard .st-key-rd_summary [data-testid="stTooltipHoverTarget"] button {
+    min-height: 24px; width: 24px; height: 24px; padding: 3px;
+    border: 0; background: transparent; color: var(--status-ink);
+}
+.st-key-rd_summary [data-testid="stMetricLabel"]::before {
+    content: ""; flex: 0 0 34px; display: block;
+    width: 34px; height: 34px; border-radius: 9px;
+    background: var(--status-icon); pointer-events: none;
+}
+.st-key-rd_summary [data-testid="stMetricLabel"]::after {
+    content: ""; position: absolute; inset-inline-start: 6px; top: 50%;
+    transform: translateY(-50%); width: 22px; height: 22px; pointer-events: none;
+    background: var(--status-ink);
+    mask: var(--status-symbol) center / contain no-repeat;
+    -webkit-mask: var(--status-symbol) center / contain no-repeat;
+}
+.st-key-request_dashboard .st-key-rd_summary [data-testid="stMetricValue"] {
+    margin-block-start: 8px; padding-inline-start: 43px;
+    color: var(--status-ink); font-size: clamp(30px, 2vw, 42px);
+    font-weight: 650; line-height: 1.15; font-variant-numeric: tabular-nums;
+    letter-spacing: -.035em;
+}
+@media (max-width: 767px) {
+    .st-key-request_dashboard .st-key-rd_summary [data-testid="stMetric"] {
+        min-height: 116px; padding: 15px 18px;
+    }
+}

@@ -7,6 +7,7 @@ from copy import deepcopy
 from datetime import datetime
 from secrets import randbelow
 import hashlib
+import json
 from zoneinfo import ZoneInfo
 
 import pandas as pd
@@ -59,7 +60,8 @@ def new_request(state, number_factory=None):
            "rejection_reason": "", "timeline": [], "snapshot": None, "approval_state": {}}
     event(rev, "Draft created", state["demo_user"])
     all_requests[reference] = {"reference": reference, "submitted_by": state["demo_user"],
-                               "created_at": timestamp(), "revisions": [rev], "file": ""}
+                               "created_at": timestamp(), "revisions": [rev], "file": "",
+                               "session_id": state.get("demo_session_id", "Current private session")}
     state["active_request_ref"] = reference
     return reference
 
@@ -85,11 +87,17 @@ def save_draft(state, reference, payload):
     revision = current(state, reference)
     if revision["status"] != "Draft":
         raise WorkflowError("This version is frozen. Create a new draft revision to change it.")
+    from persistent_demo import save_working
+    if save_working(state, reference, payload):
+        return
     # Working references only. A detached snapshot is taken exactly once on submission.
     revision["working"] = payload
 
 
 def submit(state, reference):
+    if requests(state)[reference].get("_db_version") and not state.get("_db_transaction"):
+        from persistent_demo import transaction
+        return transaction(state, reference, lambda local: submit(local, reference))
     require_role(state, "Submitter")
     rev = current(state, reference)
     if rev["status"] != "Draft":
@@ -118,7 +126,7 @@ def snapshot_seal(snap):
     return hashlib.sha256(repr((
         frame_digest(snap["original"]), frame_digest(snap["selected"]),
         frame_digest(snap["issues"]), frame_digest(snap["remaining"]), frame_digest(snap["changes"]),
-        snap["rules"], sorted(map(str, snap["protected"])), snap["privacy_reviewed"], snap["choice"],
+        json.dumps(snap["rules"], sort_keys=True), sorted(map(str, snap["protected"])), snap["privacy_reviewed"], snap["choice"],
     )).encode()).hexdigest()
 
 
@@ -130,6 +138,11 @@ def valid_snapshot(revision):
 
 
 def owner_decision(state, reference, approved, reason=""):
+    if requests(state)[reference].get("_db_version") and not state.get("_db_transaction"):
+        from persistent_demo import transaction, REASONS
+        if not approved and reason not in REASONS:
+            raise WorkflowError("Choose a predefined reason for a shared demo request.")
+        return transaction(state, reference, lambda local: owner_decision(local, reference, approved, reason))
     require_role(state, "Approver")
     rev = current(state, reference)
     if rev["status"] == "Approved" and approved:
@@ -157,6 +170,9 @@ def owner_decision(state, reference, approved, reason=""):
 
 
 def advance(state, reference, stage):
+    if requests(state)[reference].get("_db_version") and not state.get("_db_transaction"):
+        from persistent_demo import transaction
+        return transaction(state, reference, lambda local: advance(local, reference, stage))
     stages = {
         "ticket": ("Approver", "Approved", "Ticket approved"),
         "cab": ("Approver", "Ticket approved", "CAB approved"),
@@ -183,6 +199,9 @@ def advance(state, reference, stage):
 
 
 def revise(state, reference):
+    if requests(state)[reference].get("_db_version") and not state.get("_db_transaction"):
+        from persistent_demo import transaction
+        return transaction(state, reference, lambda local: revise(local, reference))
     require_role(state, "Submitter")
     old = current(state, reference)
     if old["status"] == "Draft":
@@ -192,6 +211,8 @@ def revise(state, reference):
                 "rejected_by": "", "rejection_reason": "", "timeline": [], "snapshot": None,
                 "approval_state": {}, "working": deepcopy(snap)}
     revision["working"].pop("seal", None)
+    if "variant" in old:
+        revision["variant"] = old["variant"]
     event(revision, "New draft revision", state["demo_user"])
     requests(state)[reference]["revisions"].append(revision)
     state["active_request_ref"] = reference
@@ -253,7 +274,8 @@ def demo_review_action(state, reference, number, action, reason=""):
     record = requests(state)[reference]
     if record["submitted_by"] != state["demo_user"] or current(state, reference)["number"] != number:
         raise WorkflowError("This request changed. Reopen it before confirming.")
-    simulated = {"demo_user": state["demo_user"], "demo_role": "Approver", "demo_requests": requests(state)}
+    simulated = {"demo_user": state["demo_user"], "demo_role": "Approver", "demo_requests": requests(state),
+                 "demo_catalog": state.get("demo_catalog")}
     if action in ("approve", "reject"):
         return owner_decision(simulated, reference, action == "approve", reason)
     return advance(simulated, reference, action)

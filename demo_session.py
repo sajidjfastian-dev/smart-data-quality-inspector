@@ -24,6 +24,8 @@ def sign_in():
     native.session_state["account_notice"] = "signed_in"
     native.session_state["workspace_page"] = "requests"
     native.session_state["demo_role"] = "Submitter"
+    # A new database session is allocated by the signed-in application on first render.
+    native.session_state.pop("demo_session_id", None)
 
 
 def sign_out():

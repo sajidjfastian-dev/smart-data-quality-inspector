@@ -17,6 +17,7 @@ _APPROVED = {"Approved", "Ticket approved", "CAB approved", "Simulated"}
 _FILTER_DEFAULTS = {
     "rd_reference": "",
     "rd_submitter": None,
+    "rd_session": None,
     "rd_statuses": [],
     "rd_use_dates": False,
     "rd_dates": (),
@@ -74,30 +75,12 @@ def render_request_dashboard(state):
         user = state.get("demo_user")
         role = state.get("demo_role", "Submitter")
         with st.container(key="rd_heading"):
-            title, action = st.columns([4, 1.2], vertical_alignment="center")
-            with title:
-                st.markdown(
-                    '<div class="request-register-heading"><h2>'
-                    + escape(localization.translate("Request dashboard"))
-                    + "</h2><p>"
-                    + escape(localization.translate("Track the latest revision of each demo request."))
-                    + "</p></div>",
-                    unsafe_allow_html=True,
-                )
-            with action:
-                if user and role == "Submitter":
-                    st.button(
-                        localization.translate("New request"), key="rd_new", type="primary",
-                        on_click=_new_request, args=(state,), use_container_width=True,
-                    )
-        st.markdown(
-            '<div class="request-register-notice">'
-            + escape(localization.translate(
-                "Demo session only. Requests and uploaded data are cleared on logout."
-            ))
-            + "</div>",
-            unsafe_allow_html=True,
-        )
+            st.markdown(
+                '<div class="request-register-heading"><h2>'
+                + escape(localization.translate("Request dashboard"))
+                + "</h2></div>",
+                unsafe_allow_html=True,
+            )
         if not user:
             st.warning(localization.translate("Sign in to view this session's requests."))
             return
@@ -109,7 +92,13 @@ def render_request_dashboard(state):
         if st.session_state.get("rd_identity") != identity:
             _clear_filters()
             st.session_state["rd_identity"] = identity
-            st.session_state["rd_scope"] = "all"
+        if state.get("_persistent_demo_ready") and state.get("demo_session_id"):
+            from persistent_demo import refresh
+            from demo_store import DemoStoreError
+            try:
+                refresh(state)
+            except DemoStoreError as error:
+                st.error(localization.translate(str(error)))
         records = list(request_workflow.requests(state).values())
         if role == "Submitter":
             records = [item for item in records if item["submitted_by"] == user]
@@ -121,7 +110,7 @@ def render_request_dashboard(state):
         # Render metrics above the toolbar after the matching set is calculated.
         summary_panel = st.container(key="rd_summary")
         with st.container(key="rd_filters"):
-            left, middle, right, dates, clear = st.columns([2.3, 1.5, 1.8, 1.2, 1.1])
+            left, middle, right, sessions, dates, clear = st.columns([2.3, 1.5, 1.8, 1.8, 1.2, 1.1])
             with left:
                 reference = st.text_input(
                     localization.translate("Reference contains"), key="rd_reference",
@@ -143,6 +132,16 @@ def render_request_dashboard(state):
                     localization.translate("Statuses"), request_workflow.STATUSES,
                     key="rd_statuses", format_func=lambda value, locale=localization.language(): localization.translate(value, locale),
                     placeholder=localization.translate("All statuses"),
+                    label_visibility="collapsed",
+                )
+            with sessions:
+                session_ids = sorted({item.get("session_id", "Current private session") for item in records})
+                if st.session_state.get("rd_session") not in [None, *session_ids]:
+                    st.session_state["rd_session"] = None
+                selected_session = st.selectbox(
+                    localization.translate("Session"), [None, *session_ids], key="rd_session",
+                    placeholder=localization.translate("All sessions"),
+                    format_func=lambda value, locale=localization.language(): localization.translate("All sessions", locale) if value is None else value,
                     label_visibility="collapsed",
                 )
             with dates:
@@ -178,6 +177,8 @@ def render_request_dashboard(state):
                 continue
             if statuses and revision["status"] not in statuses:
                 continue
+            if selected_session is not None and item.get("session_id", "Current private session") != selected_session:
+                continue
             if date_filter:
                 if submitted is None:
                     continue
@@ -186,17 +187,7 @@ def render_request_dashboard(state):
             filtered.append(item)
 
         with summary_panel:
-            scope = st.radio(
-                localization.translate("Metric scope"), ["all", "filtered"], key="rd_scope", horizontal=True,
-                label_visibility="collapsed",
-                help=localization.translate("Metrics use your session requests before filters.")
-                + " " + localization.translate("Metrics use all matching requests across every page."),
-                format_func=lambda value, locale=localization.language(): localization.translate(
-                    "All visible session requests" if value == "all" else "Filtered requests", locale
-                ),
-            )
-            metric_records = records if scope == "all" else filtered
-            counts = [item["revisions"][-1]["status"] for item in metric_records]
+            counts = [item["revisions"][-1]["status"] for item in filtered]
             metrics = st.columns(4)
             for column, label, count in zip(
                 metrics,

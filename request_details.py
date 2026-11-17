@@ -41,7 +41,10 @@ def render_request_details(state, reference):
         st.warning(t("Request not found in this session."))
         return
     st.header(reference)
-    st.caption(t("Session-only demo. No real service-desk request or production change is performed."))
+    st.caption(t("Shared synthetic example stored in the database.") if record.get("synthetic")
+               else t("Private request: cleared on logout."))
+    st.caption(t("No real service-desk request or production change is performed."))
+    st.text(t("Session") + ": " + record.get("session_id", t("Current private session")))
     number = st.selectbox(t("Revision"), list(range(1, len(record["revisions"])+1)),
                           index=len(record["revisions"])-1, key="detail_revision_"+reference)
     rev = record["revisions"][number-1]
@@ -118,7 +121,12 @@ def render_request_details(state, reference):
         st.caption(t("Request review → ticket approval → CAB approval → simulated application"))
         if latest and rev["status"] == "Submitted":
             checked = st.checkbox(t("I reviewed the changes and remaining findings"), key=f"owner_ack_{reference}_{number}")
-            reason = st.text_area(t("Rejection reason"), key=f"reject_reason_{reference}_{number}")
+            if record.get("synthetic"):
+                from persistent_demo import REASONS
+                reason = st.selectbox(t("Rejection reason"), REASONS,
+                                      format_func=t, key=f"reject_reason_{reference}_{number}")
+            else:
+                reason = st.text_area(t("Rejection reason"), key=f"reject_reason_{reference}_{number}")
             left, right = st.columns(2)
             decision = None
             if left.button(t("Approve request"), disabled=not checked, key=f"owner_yes_{reference}_{number}"):
@@ -127,7 +135,7 @@ def render_request_details(state, reference):
                 decision = False
             if decision is not None:
                 try:
-                    safe_reason = mask_text_with_dataset(reason, snap["original"], snap["protected"])
+                    safe_reason = reason if record.get("synthetic") else mask_text_with_dataset(reason, snap["original"], snap["protected"])
                     if decision:
                         confirm_demo_action(state, reference, number, "approve")
                     else:

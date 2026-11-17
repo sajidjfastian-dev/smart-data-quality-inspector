@@ -17,7 +17,7 @@ from localization import language, native, st, translate, translate_issue_type, 
 from api_settings import render_api_settings
 from api_connections import ApiConnectionError, request_public_api
 from data_insights import render_data_insights
-from workspace_presentation import install_presentation_styles, remove_legacy_footer, render_account_panel, render_signed_out_sidebar
+from workspace_presentation import install_presentation_styles, remove_legacy_footer, render_account_panel, render_signed_out_sidebar, render_signed_in_sidebar
 from demo_session import is_signed_in
 from review_approval import sync_context, invalidate, change_index, frame_digest
 from review_ui import render_checker_review
@@ -2168,6 +2168,14 @@ with st.container(key="app_header"):
 # Keep one sidebar uploader and one widget key for both empty and active workspaces.
 landing_at_start = not bool(st.session_state.get("inspector_datasets", {}))
 welcome_placeholder = st.empty()
+if is_signed_in() and not st.session_state.get("_persistent_demo_ready"):
+    from persistent_demo import initialize
+    from demo_store import DemoStoreError
+    try:
+        initialize(st.session_state)
+    except DemoStoreError as error:
+        st.warning(translate(str(error)))
+        st.caption(translate("Private uploads are still available. Shared demo requests cannot be loaded until the database recovers."))
 
 with st.sidebar:
     st.markdown(
@@ -2184,6 +2192,7 @@ with st.sidebar:
         if st.session_state.get("demo_role", "Submitter") == "Submitter":
             native.button(translate("New request"), key="nav_new_request", width="stretch",
                           icon=":material/add_circle:", on_click=start_new, args=(st.session_state,))
+        render_signed_in_sidebar(st.session_state)
     if not is_signed_in():
         render_signed_out_sidebar()
     settings_anchor = render_account_panel()
@@ -3110,19 +3119,28 @@ with review_tab:
         render_checker_review(st.session_state, active_dataset, data, approval_data,
                               changes, fixed_findings if approval_choice == "Fixed copy" else issues,
                               display_sensitive_columns, approval_choice, actions=False)
-        save_draft(st.session_state, request_reference, {
+        draft_payload = {
             "file": active_dataset, "original": data, "selected": approval_data,
             "choice": approval_choice, "changes": changes, "issues": issues,
             "remaining": fixed_findings if approval_choice == "Fixed copy" else issues,
             "protected": set(sensitive_columns), "privacy_reviewed": privacy_reviewed,
             "rules": {"email": list(email_columns), "date": list(date_columns), "numeric": list(numeric_columns),
                       "iqr": iqr_multiplier, "enabled": sorted(enabled_checks), "custom": list(custom_rules)},
-        })
+        }
+        draft_saved = True
+        try:
+            save_draft(st.session_state, request_reference, draft_payload)
+        except WorkflowError as error:
+            draft_saved = False
+            st.warning(translate(str(error)))
+            from persistent_demo import make_private
+            native.button(translate("Continue as a private request"), key="private_sample_copy",
+                          on_click=make_private, args=(st.session_state, request_reference, draft_payload))
         native.caption(translate("Safe fixes are rule-based. Optional AI advice never applies changes automatically."))
         submit_ack = native.checkbox(translate("Ready to submit this version to the demo approver"),
                                      key=f"submit_ack_{request_reference}_{approval_context['version']}_{approval_choice}")
         if native.button(translate("Submit for review"), key=f"submit_{request_reference}", type="primary",
-                         disabled=not submit_ack or not privacy_reviewed):
+                         disabled=not submit_ack or not privacy_reviewed or not draft_saved):
             try:
                 submit_request(st.session_state, request_reference)
                 st.session_state["request_view"] = request_reference

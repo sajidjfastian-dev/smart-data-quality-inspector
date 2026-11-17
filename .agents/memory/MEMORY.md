@@ -7,3 +7,5 @@
 - [Native Streamlit localization](native-streamlit-localization.md) — native control translations must not alter uploaded values or filenames.
 - [Demo login](demo-login.md) — pretend "Sajid" session gates uploads; no credentials, no history; login/logout at sidebar bottom.
 - [Streamlit markdown margin](streamlit-markdown-margin.md) — non-paragraph HTML in st.markdown collapses via -1rem margin; markup must be literal/f-string to translate.
+- [Synthetic persistence boundary](synthetic-persistence-boundary.md) — trust server-issued source provenance, not matching filenames or data; canonicalize shared writes.
+- [Presentation readability](presentation-readability.md) — the user will demonstrate this application on big screens and projectors.
