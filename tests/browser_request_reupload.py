@@ -40,8 +40,7 @@ def run():
 
         page.goto("https://" + os.environ["REPLIT_DEV_DOMAIN"])
         settle()
-        click("Login")
-        click("Continue without signing in")
+        click("Continue with SSO")
         page.locator(".st-key-nav_new_request button").click()
         settle()
         first = submit_file()

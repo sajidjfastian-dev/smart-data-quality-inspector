@@ -2178,14 +2178,7 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
     if is_signed_in():
-        if st.session_state.get("demo_role") in ("Data owner", "Service desk", "CAB"):
-            st.session_state["demo_role"] = "Approver"
-        native.selectbox(
-            translate("Demo role"), list(ROLES),
-            format_func=lambda value, locale=language(): translate(value, locale),
-            key="demo_role", on_change=change_demo_role,
-        )
-        native.caption(translate("Role switching is a simulation, not authentication."))
+        st.session_state["demo_role"] = "Submitter"
         native.button(translate("Request list"), key="nav_requests", width="stretch",
                       icon=":material/table_rows:", on_click=request_list_page)
         if st.session_state.get("demo_role", "Submitter") == "Submitter":

@@ -3,14 +3,35 @@ import pandas as pd
 from localization import native as st, translate as t, language, display_findings
 from request_workflow import (
     requests, current, open_draft, revise, owner_decision, advance,
-    WorkflowError, valid_snapshot,
+    WorkflowError, valid_snapshot, demo_review_action,
 )
 from review_ui import render_checker_review
 from issue_workspace import render_findings
 from security_guardrails import mask_text_with_dataset
 
 
+def confirm_demo_action(state, reference, number, action):
+    @st.dialog(t("Confirm approval"))
+    def confirmation():
+        st.write(t("Confirm this action for request {0}, revision {1}?").format(reference, number))
+        st.caption(t("This is a demo approval. No external ticket or production change will be sent."))
+        yes, no = st.columns(2)
+        def apply_confirmation():
+            try:
+                demo_review_action(state, reference, number, action)
+            except WorkflowError as error:
+                state["approval_confirmation_error"] = str(error)
+        if yes.button(t("Confirm"), key="confirm_demo_approval", type="primary", on_click=apply_confirmation):
+            st.rerun()
+        if no.button(t("Cancel"), key="cancel_demo_approval"):
+            st.rerun()
+    confirmation()
+
+
 def render_request_details(state, reference):
+    error = state.pop("approval_confirmation_error", None)
+    if error:
+        st.error(t(error))
     record = requests(state).get(reference)
     if not record:
         st.warning(t("Request not found in this session."))
@@ -95,7 +116,7 @@ def render_request_details(state, reference):
     with st.container(border=True):
         st.subheader(t("Demo approval steps"))
         st.caption(t("Request review → ticket approval → CAB approval → simulated application"))
-        if latest and role == "Approver" and rev["status"] == "Submitted":
+        if latest and rev["status"] == "Submitted":
             checked = st.checkbox(t("I reviewed the changes and remaining findings"), key=f"owner_ack_{reference}_{number}")
             reason = st.text_area(t("Rejection reason"), key=f"reject_reason_{reference}_{number}")
             left, right = st.columns(2)
@@ -107,27 +128,27 @@ def render_request_details(state, reference):
             if decision is not None:
                 try:
                     safe_reason = mask_text_with_dataset(reason, snap["original"], snap["protected"])
-                    owner_decision(state, reference, decision, safe_reason)
-                    st.rerun()
+                    if decision:
+                        confirm_demo_action(state, reference, number, "approve")
+                    else:
+                        demo_review_action(state, reference, number, "reject", safe_reason)
+                        st.rerun()
                 except WorkflowError as error:
                     st.error(t(str(error)))
-        elif latest and role == "Approver":
+        elif latest and rev["status"] in ("Approved", "Ticket approved", "CAB approved"):
             for stage, expected_role, expected_status, label in [
                 ("ticket", "Approver", "Approved", "Approve demo ticket"),
                 ("cab", "Approver", "Ticket approved", "Approve CAB step"),
                 ("simulate", "Approver", "CAB approved", "Simulate production application"),
             ]:
-                if role != expected_role:
-                    continue
                 if st.button(t(label), disabled=rev["status"] != expected_status,
                              key=f"{stage}_{reference}_{number}", type="primary"):
                     try:
-                        advance(state, reference, stage)
-                        st.rerun()
+                        confirm_demo_action(state, reference, number, stage)
                     except WorkflowError as error:
                         st.error(t(str(error)))
         else:
-            st.info(t("Switch demo role in the sidebar to perform the next approval step."))
+            st.info(t("Submit the current draft to begin approval."))
         if rev["status"] == "Simulated":
             st.success(t("Simulation completed. No production data was changed."))
     st.subheader(t("Request timeline"))

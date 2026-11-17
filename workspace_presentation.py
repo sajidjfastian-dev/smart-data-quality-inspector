@@ -61,8 +61,11 @@ def render_account_panel():
                     translate("Log out"), key="sidebar_logout", icon=":material/logout:",
                     width="stretch", on_click=sign_out,
                 )
-            elif native.button(translate("Login"), key="sidebar_login", icon=":material/login:", type="primary", width="stretch"):
-                show_login_notice()
+            else:
+                native.button(translate("Continue with SSO"), key="sidebar_login",
+                              icon=":material/login:", type="primary", width="stretch", on_click=sign_in)
+        if not user:
+            native.caption(translate("Demo sign-in · no credentials required"))
     # Toasts render after the panel so they never shift the panel's position between reruns.
     notice = native.session_state.pop("account_notice", None)
     if notice == "signed_in":

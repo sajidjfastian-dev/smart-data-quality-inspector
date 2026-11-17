@@ -247,6 +247,18 @@ def upload_widget_key(state):
     return f"data_upload_{state.get('request_upload_epoch', 0)}"
 
 
+def demo_review_action(state, reference, number, action, reason=""):
+    """Explicit simulation from the signed-in user's own request, not real authorization."""
+    require_role(state, "Submitter")
+    record = requests(state)[reference]
+    if record["submitted_by"] != state["demo_user"] or current(state, reference)["number"] != number:
+        raise WorkflowError("This request changed. Reopen it before confirming.")
+    simulated = {"demo_user": state["demo_user"], "demo_role": "Approver", "demo_requests": requests(state)}
+    if action in ("approve", "reject"):
+        return owner_decision(simulated, reference, action == "approve", reason)
+    return advance(simulated, reference, action)
+
+
 def reset_uploader(state):
     """Reset both server import tracking and the browser's file selection."""
     state.pop(upload_widget_key(state), None)

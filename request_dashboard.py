@@ -93,7 +93,7 @@ def render_request_dashboard(state):
         st.markdown(
             '<div class="request-register-notice">'
             + escape(localization.translate(
-                "Demo session only. Roles are unverified. Requests and uploaded data are cleared on logout."
+                "Demo session only. Requests and uploaded data are cleared on logout."
             ))
             + "</div>",
             unsafe_allow_html=True,
@@ -115,11 +115,6 @@ def render_request_dashboard(state):
             records = [item for item in records if item["submitted_by"] == user]
         records.sort(key=lambda item: (item.get("created_at", ""), item["reference"]), reverse=True)
 
-        st.caption(localization.translate(
-            "Your requests only. Other submitters' requests are not shown."
-            if role == "Submitter" else
-            "Demo review view: all requests in this session are visible."
-        ))
         if st.session_state.pop("rd_creation_error", False):
             st.error(localization.translate("The request could not be created. Please try again."))
 
@@ -194,7 +189,7 @@ def render_request_dashboard(state):
             scope = st.radio(
                 localization.translate("Metric scope"), ["all", "filtered"], key="rd_scope", horizontal=True,
                 label_visibility="collapsed",
-                help=localization.translate("Metrics use your role-visible session requests before filters.")
+                help=localization.translate("Metrics use your session requests before filters.")
                 + " " + localization.translate("Metrics use all matching requests across every page."),
                 format_func=lambda value, locale=localization.language(): localization.translate(
                     "All visible session requests" if value == "all" else "Filtered requests", locale

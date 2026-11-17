@@ -26,9 +26,9 @@ class CheckerFlowTests(unittest.TestCase):
     def approve(self):
         self.widget("checkbox", "Ready to submit this version to the demo approver").check().run()
         self.widget("button", "Submit for review").click().run()
-        self.widget("selectbox", "Demo role").select("Approver").run()
         self.widget("checkbox", "I reviewed the changes and remaining findings").check().run()
         self.widget("button", "Approve request").click().run()
+        self.widget("button", "Confirm").click().run()
         self.assert_clean()
 
     def test_fixed_review_approval_send_and_reapply(self):
@@ -39,17 +39,19 @@ class CheckerFlowTests(unittest.TestCase):
         self.assertIn("••••", markup)
         self.assertIn("Removed duplicate row", markup)
         self.approve()
-        self.assertEqual(self.widget("selectbox", "Demo role").options, ["Submitter", "Approver"])
+        self.assertNotIn("Demo role", [w.label for w in self.app.selectbox])
         self.widget("button", "Approve demo ticket").click().run()
+        self.widget("button", "Confirm").click().run()
         self.assertTrue(self.widget("button", "Simulate production application").disabled)
         self.widget("button", "Approve CAB step").click().run()
+        self.widget("button", "Confirm").click().run()
         with patch("api_settings.push_api_data") as push:
             self.widget("button", "Simulate production application").click().run()
+            self.widget("button", "Confirm").click().run()
         self.assert_clean()
         push.assert_not_called()
         ref = self.app.session_state["active_request_ref"]
         self.assertEqual(self.app.session_state["demo_requests"][ref]["revisions"][-1]["status"], "Simulated")
-        self.widget("selectbox", "Demo role").select("Submitter").run()
         self.widget("button", "Create new draft revision").click().run()
         self.assert_clean()
         self.fix()
@@ -59,12 +61,10 @@ class CheckerFlowTests(unittest.TestCase):
     def test_original_review_return_and_rule_invalidation(self):
         self.widget("checkbox", "Ready to submit this version to the demo approver").check().run()
         self.widget("button", "Submit for review").click().run()
-        self.widget("selectbox", "Demo role").select("Approver").run()
         self.widget("button", "Reject request").click().run()
         self.assertIn("Enter a rejection reason.", [e.value for e in self.app.error])
         self.widget("text_area", "Rejection reason").input("Check the source").run()
         self.widget("button", "Reject request").click().run()
-        self.widget("selectbox", "Demo role").select("Submitter").run()
         self.widget("button", "Create new draft revision").click().run()
         self.widget("checkbox", "Missing values").uncheck().run()
         self.widget("button", "Apply all built-in checks").click().run()
