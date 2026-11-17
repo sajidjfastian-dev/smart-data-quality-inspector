@@ -433,7 +433,7 @@ def answer_data_quality_question(
                 f"**{duplicate_count:,} duplicate row(s)** were found in **{active_dataset}** "
                 f"({percentage:.2f}% of {len(data):,} rows). These are repeated occurrences "
                 "after the first copy. Row numbers: "
-                f"**{row_list}**. You can remove them in the **Data Quality Review** tab."
+                f"**{row_list}**. You can remove them in the **Review & fix** tab."
             )
         return f"No exact duplicate rows were found in **{active_dataset}**."
 
@@ -594,7 +594,7 @@ def answer_data_quality_question(
             suggestions.append("review numeric outliers against the source")
         if not suggestions:
             return f"No cleaning actions are currently needed for **{active_dataset}**."
-        return "Recommended next steps: " + "; ".join(suggestions) + ". Open **Data Quality Review** to apply safe fixes."
+        return "Recommended next steps: " + "; ".join(suggestions) + ". Open **Review & fix** to apply safe fixes."
 
     if any(token in normalized for token in ("help", "what can", "ask", "support")):
         return (
@@ -1123,6 +1123,27 @@ st.markdown(
         color: var(--muted); font-size: .72rem; margin-top: 2px;
         letter-spacing: .045em; text-transform: uppercase;
     }
+    .sidebar-section-label {
+        margin: 18px 0 4px; color: #52716a; font-size: .68rem;
+        font-weight: 760; letter-spacing: .13em; text-transform: uppercase;
+    }
+    .dashboard-intro {
+        margin: 1rem 0 .25rem; padding: 16px 19px;
+        border: 1px solid #dcebe5; border-radius: 15px;
+        background: linear-gradient(110deg, #edf8f4, #fff 70%);
+    }
+    .dashboard-intro strong {display: block; color: var(--ink); font-size: 1.02rem;}
+    .dashboard-intro span {display: block; color: #526b69; font-size: .82rem; margin-top: 4px;}
+    .welcome-panel, .dashboard-intro {animation: workspace-appear .5s ease-out both;}
+    .welcome-signal {animation: workspace-appear .55s ease-out both;}
+    .welcome-signal:nth-child(3) {animation-delay: .08s;}
+    .welcome-signal:nth-child(4) {animation-delay: .16s;}
+    .welcome-signal:nth-child(5) {animation-delay: .24s;}
+    .welcome-signal:nth-child(6) {animation-delay: .32s;}
+    @keyframes workspace-appear {
+        from {opacity: 0; transform: translateY(8px);}
+        to {opacity: 1; transform: translateY(0);}
+    }
     section[data-testid="stSidebar"] {
         background: #f8f9fc; border-right: 1px solid var(--line);
     }
@@ -1247,7 +1268,7 @@ st.markdown(
     .inspection-loader-copy span {display:block; color:var(--muted); font-size:.76rem; margin-top:3px;}
     @keyframes inspection-spin {to {transform: rotate(360deg);}}
     @media (prefers-reduced-motion: reduce) {
-        .inspection-loader-spinner {animation-duration: 2.4s;}
+        .inspection-loader-spinner, .welcome-panel, .dashboard-intro, .welcome-signal {animation: none;}
         .stButton button, .stDownloadButton button {transition: none;}
     }
     [data-testid="stTabs"] [role="tablist"] {
@@ -1388,36 +1409,13 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
     st.caption("Your data quality command center")
-    uploaded_files = st.file_uploader(
-        "Drop your data files here",
-        type=["csv", "xlsx"],
-        accept_multiple_files=True,
-        help="Drop or browse multiple CSV and XLSX files. Analyze each file independently.",
-        key="data_upload",
-    )
-    load_sample_clicked = st.button(
-        "Explore with 50-row quick sample",
+    with st.popover(
+        "LLM assistant settings",
+        icon=":material/settings:",
         width="stretch",
-        type="secondary",
-        icon=":material/science:",
-    )
-    load_connected_clicked = st.button(
-        "Load connected big-data sample",
-        width="stretch",
-        type="primary",
-        icon=":material/table_view:",
-        help="Load five related CSV/XLSX demo tables with over 50,000 synthetic rows.",
-    )
-    st.download_button(
-        "Download 5-file sample pack",
-        data=connected_sample_archive(),
-        file_name="smart_data_quality_sample_pack.zip",
-        mime="application/zip",
-        width="stretch",
-        icon=":material/folder_zip:",
-    )
-    st.caption("Synthetic test data · CSV and Excel · Session-only processing")
-    with st.expander("LLM assistant settings", expanded=False):
+        help="Connect your own OpenAI-compatible model",
+    ):
+        st.markdown("**Connect your own LLM**")
         st.caption(
             "Optional OpenAI-compatible Chat Completions endpoint. Settings are kept "
             "in this app session and are not written to files."
@@ -1460,6 +1458,36 @@ with st.sidebar:
             width="stretch",
             key="clear_assistant_settings",
         )
+    st.markdown('<div class="sidebar-section-label">01 &nbsp; Add your data</div>', unsafe_allow_html=True)
+    uploaded_files = st.file_uploader(
+        "Drop your data files here",
+        type=["csv", "xlsx"],
+        accept_multiple_files=True,
+        help="Drop or browse multiple CSV and XLSX files. Analyze each file independently.",
+        key="data_upload",
+    )
+    load_sample_clicked = st.button(
+        "Explore with 50-row quick sample",
+        width="stretch",
+        type="secondary",
+        icon=":material/science:",
+    )
+    load_connected_clicked = st.button(
+        "Load connected big-data sample",
+        width="stretch",
+        type="primary",
+        icon=":material/table_view:",
+        help="Load five related CSV/XLSX demo tables with over 50,000 synthetic rows.",
+    )
+    st.download_button(
+        "Download 5-file sample pack",
+        data=connected_sample_archive(),
+        file_name="smart_data_quality_sample_pack.zip",
+        mime="application/zip",
+        width="stretch",
+        icon=":material/folder_zip:",
+    )
+    st.caption("Synthetic test data · CSV and Excel · Session-only processing")
 
 if load_sample_clicked:
     with st.status(
@@ -1585,8 +1613,8 @@ if not datasets:
             <h1 class="welcome-title" id="welcome-title">Find the signal in every row.</h1>
             <p class="welcome-description">
               Bring in a CSV or Excel file to uncover missing values, duplicates,
-              inconsistent formats, and unusual numbers. Your files stay in this
-              browser session.
+              inconsistent formats, and unusual numbers. Files are processed by
+              the server for your current session.
             </p>
             <div class="welcome-steps">
               <div class="welcome-step">
@@ -1678,6 +1706,7 @@ column_signature = hashlib.sha256(
 email_defaults, date_defaults, numeric_defaults = infer_column_rules(data)
 
 with st.sidebar:
+    st.markdown('<div class="sidebar-section-label">02 &nbsp; Configure checks</div>', unsafe_allow_html=True)
     with st.expander("Column Rules", expanded=False):
         email_columns = st.multiselect(
             "Treat columns as Email",
@@ -1790,7 +1819,7 @@ st.markdown(
     '<span class="workflow-step workflow-step-complete"><strong>✓</strong><span><b>Inspection complete</b><small>Active quality rules applied</small></span></span>'
     f'<span class="workflow-step {findings_status}"><strong>{findings_icon}</strong><span><b>Findings</b><small>{findings_step}</small></span></span>'
     '<span class="workflow-step workflow-step-ready"><strong>4</strong><span><b>Review &amp; fix</b><small>Ready when you are</small></span></span>'
-    '<span class="workflow-step workflow-step-ready"><strong>5</strong><span><b>Export</b><small>Use the Export tab</small></span></span>'
+    '<span class="workflow-step workflow-step-ready"><strong>5</strong><span><b>Export</b><small>Use Preview &amp; export</small></span></span>'
     '</div>',
     unsafe_allow_html=True,
 )
@@ -1906,18 +1935,25 @@ if selected_metric:
 
 overview_tab, issues_tab, review_tab, preview_tab, assistant_tab = st.tabs(
     [
-        "📊 Overview Dashboard",
-        "🧾 Issue Logs",
-        "🛠️ Data Quality Review",
-        "📥 Data Preview & Export",
-        "🤖 Data Quality Assistant",
+        "1 · Overview",
+        "2 · Issue log",
+        "3 · Review & fix",
+        "4 · Preview & export",
+        "5 · Assistant",
     ]
 )
 
 with overview_tab:
+    st.markdown(
+        '<div class="dashboard-intro"><strong>Start with your quality overview</strong>'
+        '<span>See where findings are concentrated, review the recommendations, '
+        'then use the tabs above to inspect individual issues and apply safe fixes.</span></div>',
+        unsafe_allow_html=True,
+    )
     chart_col, type_col = st.columns([1.35, 1])
     with chart_col:
-        st.subheader("🔎 Where should you look first?")
+        st.subheader("Findings by column")
+        st.caption("Columns with the most findings appear first. A finding is a review candidate, not always an error.")
         if issues.empty:
             st.success("This dataset is looking healthy. No issues were found by the active checks.")
         else:
@@ -1929,18 +1965,25 @@ with overview_tab:
             )
             chart = px.bar(
                 issue_counts,
-                x="Column Name",
-                y="Issue Count",
-                color="Issue Count",
-                color_continuous_scale=["#e2f6f2", "#00a993", "#00796f"],
+                x="Issue Count",
+                y="Column Name",
+                orientation="h",
                 text="Issue Count",
+                color_discrete_sequence=["#61A9BD"],
+            )
+            chart.update_traces(
+                textposition="outside",
+                cliponaxis=False,
+                hovertemplate="%{y}<br>%{x:,} findings<extra></extra>",
             )
             chart.update_layout(
                 template="plotly_white",
-                coloraxis_showscale=False,
-                xaxis_title="",
-                yaxis_title="Findings",
-                margin=dict(l=12, r=12, t=15, b=20),
+                xaxis_title="Findings",
+                yaxis_title="",
+                yaxis=dict(autorange="reversed", automargin=True),
+                xaxis=dict(rangemode="tozero", gridcolor="#edf2f0"),
+                height=max(260, min(700, 80 + 42 * len(issue_counts))),
+                margin=dict(l=12, r=45, t=15, b=20),
                 plot_bgcolor="rgba(0,0,0,0)",
                 paper_bgcolor="rgba(0,0,0,0)",
                 font=dict(color="#526c68"),
@@ -1948,7 +1991,8 @@ with overview_tab:
             st.plotly_chart(chart, width="stretch", config={"displayModeBar": False})
 
     with type_col:
-        st.subheader("🧭 Quality findings")
+        st.subheader("Findings by type")
+        st.caption("Share of all detected findings, including duplicate rows.")
         issue_types = set(issues["Issue Type"]) if not issues.empty else set()
         if issues.empty:
             st.caption("Findings will appear here after a check detects an issue.")
@@ -1964,7 +2008,7 @@ with overview_tab:
                 names="Issue Type",
                 values="Findings",
                 hole=0.66,
-                color_discrete_sequence=["#00796f", "#00a993", "#8bded0", "#daaa00", "#f87c56", "#738ec4"],
+                color_discrete_sequence=["#61A9BD", "#CED14E", "#44986D", "#DD83C9", "#1F74AD", "#E98E2E", "#9267C6", "#8D6C5B", "#D8524F", "#979797"],
             )
             type_chart.update_traces(
                 textposition="inside",
@@ -1987,7 +2031,8 @@ with overview_tab:
     st.divider()
     missing_col, recommendations_col = st.columns([1.3, 1])
     with missing_col:
-        st.subheader("🧩 Completeness by column")
+        st.subheader("Missing values by column")
+        st.caption("Percentage of rows with a missing value in each column.")
         missing_profile = column_profile.sort_values("Missing %", ascending=False)
         if int(missing_profile["Missing"].sum()) == 0:
             st.success("Every column is complete under the current missing-value check.")
@@ -1997,18 +2042,19 @@ with overview_tab:
                 x="Missing %",
                 y="Column",
                 orientation="h",
-                color="Missing %",
-                color_continuous_scale=["#e2f6f2", "#daaa00", "#f87c56"],
+                color_discrete_sequence=["#61A9BD"],
                 text="Missing %",
                 hover_data={"Missing": True, "Unique": True},
             )
-            missing_chart.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
+            missing_chart.update_traces(texttemplate="%{text:.1f}%", textposition="outside", cliponaxis=False)
             missing_chart.update_layout(
                 template="plotly_white",
-                coloraxis_showscale=False,
                 xaxis_title="Missing values (%)",
                 yaxis_title="",
-                margin=dict(l=8, r=34, t=12, b=18),
+                yaxis=dict(autorange="reversed", automargin=True),
+                xaxis=dict(rangemode="tozero", gridcolor="#edf2f0"),
+                height=max(260, min(700, 80 + 42 * len(missing_profile))),
+                margin=dict(l=8, r=55, t=12, b=18),
                 plot_bgcolor="rgba(0,0,0,0)",
                 paper_bgcolor="rgba(0,0,0,0)",
                 font=dict(color="#526c68"),
@@ -2016,7 +2062,8 @@ with overview_tab:
             st.plotly_chart(missing_chart, width="stretch", config={"displayModeBar": False})
 
     with recommendations_col:
-        st.subheader("✨ Recommended next steps")
+        st.subheader("Recommended next steps")
+        st.caption("Use these suggestions to prioritize review; no changes are made automatically.")
         recommendations = []
         if duplicate_count:
             recommendations.append(
@@ -2047,8 +2094,9 @@ with overview_tab:
             st.success("No action needed — your data looks great.")
             st.markdown("Preview the dataset or export a cleaned copy whenever you’re ready.")
         else:
-            for recommendation, _ in recommendations:
-                st.markdown(f"- {recommendation}")
+            for index, (recommendation, _) in enumerate(recommendations, start=1):
+                st.markdown(f"**{index:02d}** &nbsp; {recommendation}")
+            st.info("Next: open **Issue log** for details, then **Review & fix** to choose safe changes.")
         with st.expander("How to interpret this report"):
             st.markdown(
                 "- Each finding represents a detected value or duplicate row, not a confirmed business error.\n"

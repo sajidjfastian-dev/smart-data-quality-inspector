@@ -16,7 +16,7 @@ The product mark is a rising chart with a gold quality-check badge, shown in the
 - Explore clickable KPI details, issue and completeness charts, numeric distributions, column profiles, issue filters, and recommendations.
 - Launch a built-in 12-second video demo from the **Watch demo** button; its refreshed logo matches the app and it works offline without an external video link.
 - Ask the built-in Data Quality Copilot about findings locally, or optionally connect an OpenAI-compatible Chat Completions endpoint for broader natural-language analysis.
-- Configure the endpoint URL, model ID, and password-masked API key in sidebar settings. Credentials stay in the current app session and are not written to configuration files.
+- Use the settings icon in the sidebar to configure an OpenAI-compatible endpoint URL, model ID, and password-masked API key. Credentials stay in the current app session and are not written to configuration files.
 - Dataset sharing with the configured model is off by default. When explicitly enabled, each assistant request sends the complete active dataset and recent conversation to that endpoint; requests larger than 10 MB are rejected rather than truncated.
 - Select any loaded file from the **Active file** workspace dropdown.
 - Follow a live file journey that confirms loading, scan completion, detected findings, and the next review/export steps, with progress indicators during file loading, scanning, and fixes.

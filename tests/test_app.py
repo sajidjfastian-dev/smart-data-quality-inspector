@@ -88,6 +88,29 @@ class QuickSampleTests(unittest.TestCase):
             self.app.session_state["quality_scan_cache"][SAMPLE]["issues"], scan["issues"]
         )
 
+    def test_model_settings_are_session_only_and_sharing_is_opt_in(self):
+        self.assertFalse(self.widget("checkbox", "Allow sending the active dataset to this endpoint").value)
+        self.widget("text_input", "Chat Completions URL").set_value(
+            "https://example.invalid/v1/chat/completions"
+        )
+        self.widget("text_input", "Model ID").set_value("example-model")
+        self.widget("text_input", "API key").set_value("test-session-key")
+        self.app.run()
+        self.assert_no_exception()
+        self.assertFalse(self.app.session_state["assistant_share_dataset"])
+        self.load_sample()
+        self.click("🧾 Summarize quality issues")
+        self.assertTrue(any("Local mode is active" in item.value for item in self.app.info))
+        self.assertFalse(any("model request failed" in item.value.lower() for item in self.app.error))
+        self.widget("checkbox", "Allow sending the active dataset to this endpoint").check().run()
+        self.assert_no_exception()
+        self.assertTrue(self.app.session_state["assistant_share_dataset"])
+        self.click("Clear model settings")
+        self.assertFalse(self.app.session_state["assistant_share_dataset"])
+        self.assertEqual(self.app.session_state["assistant_api_url"], "")
+        self.assertEqual(self.app.session_state["assistant_model_id"], "")
+        self.assertEqual(self.app.session_state["assistant_api_key"], "")
+
     def test_default_fixes_change_only_safe_cells_and_one_duplicate(self):
         original = self.load_sample().copy(deep=True)
         for label in FIX_LABELS:
