@@ -14,9 +14,9 @@ import pandas as pd
 from review_approval import frame_digest, sync_context, approve
 from demo_change_ticket import generate_ticket
 
-ROLES = ("Submitter", "Data owner", "Service desk", "CAB")
+ROLES = ("Submitter", "Approver")
 STATUSES = ("Draft", "Submitted", "Approved", "Rejected", "Ticket approved", "CAB approved", "Simulated")
-IDENTITIES = {"Data owner": "Demo Data Owner", "Service desk": "Demo Service Desk", "CAB": "Demo CAB"}
+IDENTITIES = {"Approver": "Demo Approver"}
 
 
 class WorkflowError(ValueError):
@@ -110,7 +110,7 @@ def submit(state, reference):
                  snapshot["rules"], snapshot["protected"], snapshot["privacy_reviewed"])
     rev.update(snapshot=snapshot, status="Submitted", submitted_at=timestamp())
     rev.pop("working", None)
-    event(rev, "Submitted for data-owner review", state["demo_user"])
+    event(rev, "Submitted for approver review", state["demo_user"])
     return rev
 
 
@@ -130,7 +130,7 @@ def valid_snapshot(revision):
 
 
 def owner_decision(state, reference, approved, reason=""):
-    require_role(state, "Data owner")
+    require_role(state, "Approver")
     rev = current(state, reference)
     if rev["status"] == "Approved" and approved:
         valid_snapshot(rev)
@@ -141,8 +141,8 @@ def owner_decision(state, reference, approved, reason=""):
     if not approved:
         if not reason.strip():
             raise WorkflowError("Enter a rejection reason.")
-        rev.update(status="Rejected", rejected_by=IDENTITIES["Data owner"], rejection_reason=reason.strip())
-        event(rev, "Rejected", IDENTITIES["Data owner"], reason.strip())
+        rev.update(status="Rejected", rejected_by=IDENTITIES["Approver"], rejection_reason=reason.strip())
+        event(rev, "Rejected", IDENTITIES["Approver"], reason.strip())
         return rev
     local = rev["approval_state"]
     namespace = f"{reference}/r{rev['number']}"
@@ -152,15 +152,15 @@ def owner_decision(state, reference, approved, reason=""):
     approve(local, namespace, snap["selected"], snap["choice"], len(snap["remaining"]))
     rev["ticket"] = generate_ticket(local, namespace, snap["original"], snap["selected"], snap["choice"], snap["changes"])
     rev["status"] = "Approved"
-    event(rev, "Owner approved; demo ticket generated", IDENTITIES["Data owner"])
+    event(rev, "Request approved; demo ticket generated", IDENTITIES["Approver"])
     return rev
 
 
 def advance(state, reference, stage):
     stages = {
-        "ticket": ("Service desk", "Approved", "Ticket approved"),
-        "cab": ("CAB", "Ticket approved", "CAB approved"),
-        "simulate": ("CAB", "CAB approved", "Simulated"),
+        "ticket": ("Approver", "Approved", "Ticket approved"),
+        "cab": ("Approver", "Ticket approved", "CAB approved"),
+        "simulate": ("Approver", "CAB approved", "Simulated"),
     }
     role, before, after = stages[stage]
     require_role(state, role)
@@ -225,8 +225,7 @@ def open_draft(state, reference):
                     "fixed_export_cache", "data_insights_cache", "final_approvals"):
             state[key] = {}
     else:
-        state.pop("data_upload", None)
-        state.pop("inspector_upload_signature", None)
+        reset_uploader(state)
         state["inspector_datasets"] = {}
         state["fixed_datasets"] = {}
         state["request_bindings"] = {}
@@ -235,11 +234,22 @@ def open_draft(state, reference):
 def start_new(state):
     reference = new_request(state)
     # The uploader's current files must not be re-imported into a new request.
-    state.pop("data_upload", None)
-    state.pop("inspector_upload_signature", None)
+    reset_uploader(state)
     state["inspector_datasets"] = {}
     state["fixed_datasets"] = {}
     state["request_bindings"] = {}
     state["workspace_page"] = "inspection"
     state["request_view"] = None
     return reference
+
+
+def upload_widget_key(state):
+    return f"data_upload_{state.get('request_upload_epoch', 0)}"
+
+
+def reset_uploader(state):
+    """Reset both server import tracking and the browser's file selection."""
+    state.pop(upload_widget_key(state), None)
+    state.pop("data_upload", None)  # Retire the pre-epoch widget on existing sessions.
+    state["request_upload_epoch"] = state.get("request_upload_epoch", 0) + 1
+    state.pop("inspector_upload_signature", None)

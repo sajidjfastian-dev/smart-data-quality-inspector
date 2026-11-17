@@ -15,3 +15,9 @@ Keep this workflow demo-only.
 **Why:** The user explicitly selected “Keep the workflow demo-only” after being told real identities, persistent private history and production authorization require integrations.
 
 **How to apply:** Label simulated roles, approvals and tickets honestly; keep production execution disabled or purely simulated, and do not claim session-only request lists persist across logins.
+
+Use only two demo roles: Submitter and Approver.
+
+**Why:** The user explicitly requested “only two roles. submitter/approver.”
+
+**How to apply:** Keep ticket and CAB approvals as separate workflow steps handled by the Approver, not separate role choices.

@@ -16,6 +16,8 @@ REQUEST_DASHBOARD_ARABIC = {
     "Submitter": "مقدّم الطلب",
     "All submitters": "جميع مقدّمي الطلبات",
     "Statuses": "الحالات",
+    "Submission date": "تاريخ التقديم",
+    "Action": "الإجراء",
     "All statuses": "جميع الحالات",
     "Filter by submission date": "التصفية حسب تاريخ التقديم",
     "Submission date interval (Asia/Dubai, UTC+04:00)": "الفترة الزمنية للتقديم (Asia/Dubai، UTC+04:00)",

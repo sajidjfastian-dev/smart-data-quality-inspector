@@ -22,7 +22,7 @@ from demo_session import is_signed_in
 from review_approval import sync_context, invalidate, change_index, frame_digest
 from review_ui import render_checker_review
 from issue_workspace import render_issue_workspace
-from request_workflow import bind_draft, current as current_request, save_draft, submit as submit_request, start_new, WorkflowError
+from request_workflow import bind_draft, current as current_request, save_draft, submit as submit_request, start_new, WorkflowError, ROLES, upload_widget_key
 from request_dashboard import render_request_dashboard
 from request_details import render_request_details
 from history_ui import render_history
@@ -1132,7 +1132,7 @@ def column_rule_signature(email_columns, date_columns, numeric_columns, iqr_mult
 def load_connected_sample_data():
     signatures = tuple(
         upload_signature(uploaded_file)
-        for uploaded_file in st.session_state.get("data_upload", [])
+        for uploaded_file in st.session_state.get(upload_widget_key(st.session_state), [])
     )
     datasets = {}
     progress = st.progress(0.0, text="Preparing connected sample workspace...")
@@ -2176,16 +2176,19 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
     if is_signed_in():
+        if st.session_state.get("demo_role") in ("Data owner", "Service desk", "CAB"):
+            st.session_state["demo_role"] = "Approver"
         native.selectbox(
-            translate("Demo role"), ["Submitter", "Data owner", "Service desk", "CAB"],
+            translate("Demo role"), list(ROLES),
             format_func=lambda value, locale=language(): translate(value, locale),
             key="demo_role", on_change=change_demo_role,
         )
         native.caption(translate("Role switching is a simulation, not authentication."))
-        native.button(translate("Request list"), key="nav_requests", width="stretch", on_click=request_list_page)
+        native.button(translate("Request list"), key="nav_requests", width="stretch",
+                      icon=":material/table_rows:", on_click=request_list_page)
         if st.session_state.get("demo_role", "Submitter") == "Submitter":
             native.button(translate("New request"), key="nav_new_request", width="stretch",
-                          on_click=start_new, args=(st.session_state,))
+                          icon=":material/add_circle:", on_click=start_new, args=(st.session_state,))
     with st.container(key="source_panel"):
         st.markdown(
             '<div class="sidebar-source-heading"><span class="sidebar-source-kicker">Data sources</span>'
@@ -2198,7 +2201,7 @@ with st.sidebar:
                 type=["csv", "xlsx"],
                 accept_multiple_files=True,
                 label_visibility="collapsed",
-                key="data_upload",
+                key=upload_widget_key(st.session_state),
             )
             st.markdown(
                 '<div class="sidebar-helper">Large Excel files may require additional memory.</div>',
@@ -3106,7 +3109,7 @@ with review_tab:
                       "iqr": iqr_multiplier, "enabled": sorted(enabled_checks), "custom": list(custom_rules)},
         })
         native.caption(translate("Safe fixes are rule-based. Optional AI advice never applies changes automatically."))
-        submit_ack = native.checkbox(translate("Ready to submit this version to the demo data owner"),
+        submit_ack = native.checkbox(translate("Ready to submit this version to the demo approver"),
                                      key=f"submit_ack_{request_reference}_{approval_context['version']}_{approval_choice}")
         if native.button(translate("Submit for review"), key=f"submit_{request_reference}", type="primary",
                          disabled=not submit_ack or not privacy_reviewed):

@@ -110,7 +110,7 @@ class ApiUiTests(unittest.TestCase):
             self.assertTrue(self.find("button", "Push data to API").disabled)
             self.find("checkbox", "I reviewed all columns for sensitive data").check().run()
             self.assertTrue(self.find("button", "Push data to API").disabled)
-            self.find("checkbox", "Ready to submit this version to the demo data owner").check().run()
+            self.find("checkbox", "Ready to submit this version to the demo approver").check().run()
             self.find("button", "Submit for review").click().run()
             self.assertFalse(self.app.exception)
             self.assertTrue(self.find("button", "Push data to API").disabled)

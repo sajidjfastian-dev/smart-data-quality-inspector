@@ -94,13 +94,13 @@ def render_request_details(state, reference):
             st.caption(t("Validate in staging and take a verified backup before any real production change. This demo does neither."))
     with st.container(border=True):
         st.subheader(t("Demo approval steps"))
-        st.caption(t("Owner review → ticket approval → CAB approval → simulated application"))
-        if latest and role == "Data owner" and rev["status"] == "Submitted":
+        st.caption(t("Request review → ticket approval → CAB approval → simulated application"))
+        if latest and role == "Approver" and rev["status"] == "Submitted":
             checked = st.checkbox(t("I reviewed the changes and remaining findings"), key=f"owner_ack_{reference}_{number}")
             reason = st.text_area(t("Rejection reason"), key=f"reject_reason_{reference}_{number}")
             left, right = st.columns(2)
             decision = None
-            if left.button(t("Approve as data owner"), disabled=not checked, key=f"owner_yes_{reference}_{number}"):
+            if left.button(t("Approve request"), disabled=not checked, key=f"owner_yes_{reference}_{number}"):
                 decision = True
             if right.button(t("Reject request"), key=f"owner_no_{reference}_{number}"):
                 decision = False
@@ -111,11 +111,11 @@ def render_request_details(state, reference):
                     st.rerun()
                 except WorkflowError as error:
                     st.error(t(str(error)))
-        elif latest and role in ("Service desk", "CAB"):
+        elif latest and role == "Approver":
             for stage, expected_role, expected_status, label in [
-                ("ticket", "Service desk", "Approved", "Approve demo ticket"),
-                ("cab", "CAB", "Ticket approved", "Approve as demo CAB"),
-                ("simulate", "CAB", "CAB approved", "Simulate production application"),
+                ("ticket", "Approver", "Approved", "Approve demo ticket"),
+                ("cab", "Approver", "Ticket approved", "Approve CAB step"),
+                ("simulate", "Approver", "CAB approved", "Simulate production application"),
             ]:
                 if role != expected_role:
                     continue

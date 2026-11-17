@@ -44,7 +44,7 @@ class DashboardTests(unittest.TestCase):
             app.run()
             self.clean(app)
             first = app.session_state["active_request_ref"]
-            next(w for w in app.checkbox if w.label == "Ready to submit this version to the demo data owner").check().run()
+            next(w for w in app.checkbox if w.label == "Ready to submit this version to the demo approver").check().run()
             app.button(key="submit_"+first).click().run()
             self.clean(app)
             self.assertEqual(app.session_state["demo_requests"][first]["revisions"][0]["status"], "Submitted")
@@ -62,7 +62,7 @@ class DashboardTests(unittest.TestCase):
             revision = app.session_state["demo_requests"][second]["revisions"][0]
             self.assertIn("working", revision)
             self.assertEqual(len(revision["working"]["original"]), 2)
-            next(w for w in app.checkbox if w.label == "Ready to submit this version to the demo data owner").check().run()
+            next(w for w in app.checkbox if w.label == "Ready to submit this version to the demo approver").check().run()
             app.button(key="submit_"+second).click().run()
             self.clean(app)
             self.assertEqual(app.session_state["demo_requests"][second]["revisions"][0]["status"], "Submitted")

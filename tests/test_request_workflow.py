@@ -25,7 +25,7 @@ class RequestWorkflowTests(unittest.TestCase):
 
     def submitted(self):
         flow.submit(self.state, self.ref)
-        self.state["demo_role"] = "Data owner"
+        self.state["demo_role"] = "Approver"
 
     def approved(self):
         self.submitted()
@@ -42,9 +42,13 @@ class RequestWorkflowTests(unittest.TestCase):
         empty = flow.new_request(self.state)
         self.state["inspector_upload_signature"] = ("stale",)
         self.state["data_upload"] = ["previous file"]
+        old_key = flow.upload_widget_key(self.state)
+        self.state[old_key] = ["previous file"]
         flow.open_draft(self.state, empty)
         self.assertNotIn("inspector_upload_signature", self.state)
         self.assertNotIn("data_upload", self.state)
+        self.assertNotIn(old_key, self.state)
+        self.assertNotEqual(old_key, flow.upload_widget_key(self.state))
 
     def test_bind_is_idempotent_and_same_filename_separate(self):
         data = self.data["original"]
@@ -60,12 +64,10 @@ class RequestWorkflowTests(unittest.TestCase):
         self.assertEqual(snap["selected"].iloc[0, 1], 1)
         self.assertEqual(snap["rules"]["enabled"], ["missing"])
         flow.owner_decision(self.state, self.ref, True)
-        self.state["demo_role"] = "CAB"
+        self.state["demo_role"] = "Approver"
         with self.assertRaises(flow.WorkflowError):
             flow.advance(self.state, self.ref, "simulate")
-        self.state["demo_role"] = "Service desk"
         flow.advance(self.state, self.ref, "ticket")
-        self.state["demo_role"] = "CAB"
         flow.advance(self.state, self.ref, "cab")
         flow.advance(self.state, self.ref, "simulate")
         n = len(flow.current(self.state, self.ref)["timeline"])
@@ -97,7 +99,7 @@ class RequestWorkflowTests(unittest.TestCase):
         self.assertEqual(new["status"], "Draft")
         flow.submit(self.state, self.ref)
         self.assertEqual(flow.current(self.state, self.ref)["status"], "Submitted")
-        self.assertEqual(flow.requests(self.state)[self.ref]["revisions"][0]["rejected_by"], "Demo Data Owner")
+        self.assertEqual(flow.requests(self.state)[self.ref]["revisions"][0]["rejected_by"], "Demo Approver")
 
     def test_tampered_rules_or_mask_block_approvals(self):
         self.submitted()
@@ -118,7 +120,7 @@ class RequestWorkflowTests(unittest.TestCase):
     def test_changed_snapshot_cannot_execute(self):
         rev = self.approved()
         rev["snapshot"]["selected"].iloc[0, 1] = 999
-        self.state["demo_role"] = "Service desk"
+        self.state["demo_role"] = "Approver"
         with self.assertRaises(flow.WorkflowError):
             flow.advance(self.state, self.ref, "ticket")
 

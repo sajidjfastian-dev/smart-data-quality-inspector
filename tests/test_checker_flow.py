@@ -24,11 +24,11 @@ class CheckerFlowTests(unittest.TestCase):
         self.assert_clean()
 
     def approve(self):
-        self.widget("checkbox", "Ready to submit this version to the demo data owner").check().run()
+        self.widget("checkbox", "Ready to submit this version to the demo approver").check().run()
         self.widget("button", "Submit for review").click().run()
-        self.widget("selectbox", "Demo role").select("Data owner").run()
+        self.widget("selectbox", "Demo role").select("Approver").run()
         self.widget("checkbox", "I reviewed the changes and remaining findings").check().run()
-        self.widget("button", "Approve as data owner").click().run()
+        self.widget("button", "Approve request").click().run()
         self.assert_clean()
 
     def test_fixed_review_approval_send_and_reapply(self):
@@ -39,11 +39,10 @@ class CheckerFlowTests(unittest.TestCase):
         self.assertIn("••••", markup)
         self.assertIn("Removed duplicate row", markup)
         self.approve()
-        self.widget("selectbox", "Demo role").select("Service desk").run()
+        self.assertEqual(self.widget("selectbox", "Demo role").options, ["Submitter", "Approver"])
         self.widget("button", "Approve demo ticket").click().run()
-        self.widget("selectbox", "Demo role").select("CAB").run()
         self.assertTrue(self.widget("button", "Simulate production application").disabled)
-        self.widget("button", "Approve as demo CAB").click().run()
+        self.widget("button", "Approve CAB step").click().run()
         with patch("api_settings.push_api_data") as push:
             self.widget("button", "Simulate production application").click().run()
         self.assert_clean()
@@ -58,9 +57,9 @@ class CheckerFlowTests(unittest.TestCase):
         self.assertTrue(self.widget("button", "Push data to API").disabled)
 
     def test_original_review_return_and_rule_invalidation(self):
-        self.widget("checkbox", "Ready to submit this version to the demo data owner").check().run()
+        self.widget("checkbox", "Ready to submit this version to the demo approver").check().run()
         self.widget("button", "Submit for review").click().run()
-        self.widget("selectbox", "Demo role").select("Data owner").run()
+        self.widget("selectbox", "Demo role").select("Approver").run()
         self.widget("button", "Reject request").click().run()
         self.assertIn("Enter a rejection reason.", [e.value for e in self.app.error])
         self.widget("text_area", "Rejection reason").input("Check the source").run()

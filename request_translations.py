@@ -1,4 +1,12 @@
 REQUEST_ARABIC = {
+    "Submitted for approver review": "تم التقديم للمراجعة والاعتماد",
+    "Approver": "المعتمد",
+    "Demo Approver": "المعتمد التجريبي",
+    "Approve request": "اعتماد الطلب",
+    "Approve CAB step": "اعتماد خطوة لجنة التغيير",
+    "Ready to submit this version to the demo approver": "هذا الإصدار جاهز للتقديم إلى المعتمد التجريبي",
+    "Request approved; demo ticket generated": "تم اعتماد الطلب وإنشاء تذكرة تجريبية",
+    "Request review → ticket approval → CAB approval → simulated application": "مراجعة الطلب ← اعتماد التذكرة ← اعتماد لجنة التغيير ← محاكاة التطبيق",
     "Request list": "قائمة الطلبات",
     "Switch to Submitter to upload data or create a request.": "انتقل إلى دور مقدم الطلب لرفع البيانات أو إنشاء طلب.",
     "Submitter": "مقدم الطلب", "Data owner": "مالك البيانات", "Service desk": "مكتب الخدمة", "CAB": "لجنة التغيير",

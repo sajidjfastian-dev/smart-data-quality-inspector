@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;650;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap');
 /* Focused enhancements to the existing inspector, not a second application. */
 .welcome-copy {animation: inspector-reveal .7s cubic-bezier(.2,.7,.2,1) both;}
 .welcome-preview {container-type: inline-size; animation: inspector-reveal .8s .12s both;}
@@ -198,4 +199,106 @@ section[data-testid="stSidebar"] [data-testid="stSidebarUserContent"] > div > [d
     .st-key-overview_missing, .st-key-overview_recommendations {padding: 15px !important;}
     .overview-heading {min-height: 0;}
     .overview-table :is(th,td) {padding: 9px 8px;}
+}
+
+/* Compact workspace chrome: a restrained indigo rail and a paper-light ledger.
+   Keep the existing header/logo, sidebar controls, and account placement intact. */
+html, body, .stApp, .stApp :is(button, input, textarea, select) {
+    font-family: "DM Sans", "Noto Sans Arabic", sans-serif;
+}
+html[dir="rtl"] .stApp, html[dir="rtl"] .stApp :is(button, input, textarea, select) {
+    font-family: "Noto Sans Arabic", "DM Sans", sans-serif;
+}
+.stApp, [data-testid="stAppViewContainer"] {background: #fefeff;}
+section[data-testid="stSidebar"] {
+    background: #25213f !important; color: #eeedf6;
+    border-inline-end: 1px solid #302b4a; border-inline-start: 0; border-right-color: #302b4a;
+    width: 264px; min-width: 244px; max-width: 300px;
+}
+section[data-testid="stSidebar"] [data-testid="stSidebarUserContent"] {
+    padding: 20px 18px 0 !important;
+}
+section[data-testid="stSidebar"] [data-testid="stVerticalBlock"] {gap: .65rem;}
+section[data-testid="stSidebar"] .sidebar-brand {
+    padding: 2px 26px 18px 0; margin-bottom: 6px; border-bottom: 1px solid #403953;
+}
+html[dir="rtl"] section[data-testid="stSidebar"] .sidebar-brand {padding: 2px 0 18px 26px;}
+section[data-testid="stSidebar"] .sidebar-brand-title {color: #f2f0fb; font-size: 1rem; letter-spacing: -.02em;}
+section[data-testid="stSidebar"] .sidebar-brand-caption {color: #b2adc8; font-size: .7rem;}
+section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
+section[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p {
+    color: #e1ddec !important; font-size: .77rem;
+}
+section[data-testid="stSidebar"] [data-testid="stCaptionContainer"] p {
+    color: #b8b2ce !important; font-size: .69rem; line-height: 1.55;
+}
+section[data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] button {color: #d6d0e8; background: transparent;}
+section[data-testid="stSidebar"] [data-baseweb="select"] > div {
+    min-height: 37px; border: 1px solid #514866; background: #332d4c; color: #f2eff9; border-radius: 5px;
+}
+section[data-testid="stSidebar"] [data-baseweb="select"] :is(input, span, svg) {color: #eeeaf9; fill: currentColor;}
+section[data-testid="stSidebar"] button {
+    min-height: 36px; border-radius: 5px; box-shadow: none;
+    border-color: #524966; background: #332d4c; color: #eeeaf8;
+}
+section[data-testid="stSidebar"] button p {color: inherit !important; font-size: .77rem !important;}
+section[data-testid="stSidebar"] button:hover {background: #43395c; border-color: #776890; color: #f7f4ff;}
+section[data-testid="stSidebar"] button:focus-visible {outline: 3px solid #baa9e4; outline-offset: 2px;}
+section[data-testid="stSidebar"] :is(.st-key-nav_requests, .st-key-nav_new_request) button {
+    justify-content: flex-start; border: 1px solid transparent; background: transparent; padding: 8px 12px; min-height: 39px;
+}
+section[data-testid="stSidebar"] :is(.st-key-nav_requests, .st-key-nav_new_request) button:hover,
+section[data-testid="stSidebar"] :is(.st-key-nav_requests, .st-key-nav_new_request) button[kind="primary"] {
+    background: #443b60; color: #f8f5ff; border-color: #51466d;
+}
+section[data-testid="stSidebar"] .st-key-source_panel {
+    margin-top: .5rem; padding-top: 14px; border-top: 1px solid #403953;
+}
+section[data-testid="stSidebar"] .sidebar-source-heading {padding-top: 0;}
+section[data-testid="stSidebar"] .sidebar-source-kicker {color: #b8accf; font-size: .61rem; letter-spacing: .1em;}
+section[data-testid="stSidebar"] .sidebar-source-heading strong {color: #eeeaf8; font-size: .9rem; margin-top: 3px;}
+section[data-testid="stSidebar"] .sidebar-source-heading span:last-child {color: #bdb6cf; font-size: .73rem; line-height: 1.55;}
+section[data-testid="stSidebar"] :is(.sidebar-helper, .sidebar-session-note) {color: #bdb6cf; font-size: .68rem; line-height: 1.5;}
+section[data-testid="stSidebar"] .sidebar-divider {color: #a89fbf; font-size: .6rem;}
+section[data-testid="stSidebar"] .sidebar-divider::before,
+section[data-testid="stSidebar"] .sidebar-divider::after {background: #49405f;}
+section[data-testid="stSidebar"] [data-testid="stFileUploader"] {
+    color: #e9e3f5; border-radius: 6px;
+}
+section[data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] {
+    padding: 14px 10px; background: #302a47; border: 1px dashed #6e6188; border-radius: 6px; color: #e9e3f5;
+}
+section[data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] :is(small, span, svg) {color: #d7cfe9;}
+section[data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] [data-testid="stFileUploaderDropzoneInstructions"] {color: #e9e3f5;}
+section[data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] button {
+    color: #f2eefb; background: #463b60; border-color: #74638e; font-size: .73rem;
+}
+section[data-testid="stSidebar"] [data-testid="stFileUploaderFile"] {color: #e9e3f5;}
+section[data-testid="stSidebar"] [data-testid="stFileUploaderFile"] :is(small, span) {color: #d7cfe9;}
+section[data-testid="stSidebar"] .sidebar-locked {
+    background: #302a47; border-color: #655976; color: #d0c8e0; padding: 12px; border-radius: 6px; font-size: .74rem;
+}
+section[data-testid="stSidebar"] .sidebar-locked svg {fill: #b8acd2;}
+section[data-testid="stSidebar"] .st-key-account_panel {
+    margin-inline: -18px !important; width: calc(100% + 36px) !important;
+    padding: 16px 18px !important; background: #201c37; border-color: #403953; gap: .7rem;
+}
+section[data-testid="stSidebar"] .account-avatar {background: #61517d; color: #f7f2ff; box-shadow: 0 0 0 2px #403650; width: 32px; height: 32px; flex-basis: 32px;}
+section[data-testid="stSidebar"] .account-text strong {color: #eeeaf7; font-size: .82rem;}
+section[data-testid="stSidebar"] .account-text small {color: #beb5d2; font-size: .65rem;}
+section[data-testid="stSidebar"] .account-text small::before {background: #89b8a7; width: 5px; height: 5px;}
+section[data-testid="stSidebar"] .account-hint {color: #c8c0d9; font-size: .73rem;}
+section[data-testid="stSidebar"] .st-key-settings_button button {
+    width: 36px; min-width: 36px; height: 36px; min-height: 36px; padding: 0; color: #d7cde9;
+}
+section[data-testid="stSidebar"] .st-key-sidebar_login button {background: #65517f; border-color: #89729f;}
+section[data-testid="stSidebar"] .st-key-sidebar_logout button:hover {background: #57354c; border-color: #9c647d;}
+section[data-testid="stSidebar"] .st-key-account_actions {flex-wrap: nowrap !important;}
+@media (max-width: 760px) {
+    section[data-testid="stSidebar"] {min-width: 244px; max-width: min(300px, 85vw);}
+}
+/* Streamlit keeps collapsed sidebar children mounted; hide their fixed/sticky
+   descendants too so RTL mobile layouts cannot leave account text on the page. */
+section[data-testid="stSidebar"][data-collapsed="true"] {
+    display: none !important;
 }

@@ -71,14 +71,25 @@ def render_request_dashboard(state):
     css = Path(__file__).resolve().parent / "assets" / "request_dashboard.css"
     st.markdown(f"<style>{css.read_text(encoding='utf-8')}</style>", unsafe_allow_html=True)
     with st.container(key="request_dashboard"):
-        st.markdown(
-            '<div class="request-register-heading"><h2>'
-            + escape(localization.translate("Request dashboard"))
-            + "</h2><p>"
-            + escape(localization.translate("Track the latest revision of each demo request."))
-            + "</p></div>",
-            unsafe_allow_html=True,
-        )
+        user = state.get("demo_user")
+        role = state.get("demo_role", "Submitter")
+        with st.container(key="rd_heading"):
+            title, action = st.columns([4, 1.2], vertical_alignment="center")
+            with title:
+                st.markdown(
+                    '<div class="request-register-heading"><h2>'
+                    + escape(localization.translate("Request dashboard"))
+                    + "</h2><p>"
+                    + escape(localization.translate("Track the latest revision of each demo request."))
+                    + "</p></div>",
+                    unsafe_allow_html=True,
+                )
+            with action:
+                if user and role == "Submitter":
+                    st.button(
+                        localization.translate("New request"), key="rd_new", type="primary",
+                        on_click=_new_request, args=(state,), use_container_width=True,
+                    )
         st.markdown(
             '<div class="request-register-notice">'
             + escape(localization.translate(
@@ -87,8 +98,6 @@ def render_request_dashboard(state):
             + "</div>",
             unsafe_allow_html=True,
         )
-        user = state.get("demo_user")
-        role = state.get("demo_role", "Submitter")
         if not user:
             st.warning(localization.translate("Sign in to view this session's requests."))
             return
@@ -106,31 +115,23 @@ def render_request_dashboard(state):
             records = [item for item in records if item["submitted_by"] == user]
         records.sort(key=lambda item: (item.get("created_at", ""), item["reference"]), reverse=True)
 
-        copy, action = st.columns([4, 1])
-        with copy:
-            st.caption(localization.translate(
-                "Your requests only. Other submitters' requests are not shown."
-                if role == "Submitter" else
-                "Demo review view: all requests in this session are visible."
-            ))
-        with action:
-            if role == "Submitter":
-                st.button(
-                    localization.translate("New request"), key="rd_new", type="primary",
-                    on_click=_new_request, args=(state,), use_container_width=True,
-                )
-            else:
-                st.caption(localization.translate("Only the Submitter demo role can create requests."))
+        st.caption(localization.translate(
+            "Your requests only. Other submitters' requests are not shown."
+            if role == "Submitter" else
+            "Demo review view: all requests in this session are visible."
+        ))
         if st.session_state.pop("rd_creation_error", False):
             st.error(localization.translate("The request could not be created. Please try again."))
 
+        # Render metrics above the toolbar after the matching set is calculated.
+        summary_panel = st.container(key="rd_summary")
         with st.container(key="rd_filters"):
-            st.markdown("**" + localization.translate("Filters") + "**")
-            left, middle, right = st.columns([2, 1.3, 2])
+            left, middle, right, dates, clear = st.columns([2.3, 1.5, 1.8, 1.2, 1.1])
             with left:
                 reference = st.text_input(
                     localization.translate("Reference contains"), key="rd_reference",
                     placeholder=localization.translate("Search request references"),
+                    label_visibility="collapsed",
                 )
             submitters = sorted({item["submitted_by"] for item in records}, key=str.casefold)
             if st.session_state.get("rd_submitter") not in [None, *submitters]:
@@ -138,28 +139,39 @@ def render_request_dashboard(state):
             with middle:
                 submitter = st.selectbox(
                     localization.translate("Submitter"), [None, *submitters], key="rd_submitter",
+                    placeholder=localization.translate("All submitters"),
                     format_func=lambda value, locale=localization.language(): localization.translate("All submitters", locale) if value is None else value,
+                    label_visibility="collapsed",
                 )
             with right:
                 statuses = st.multiselect(
                     localization.translate("Statuses"), request_workflow.STATUSES,
                     key="rd_statuses", format_func=lambda value, locale=localization.language(): localization.translate(value, locale),
                     placeholder=localization.translate("All statuses"),
+                    label_visibility="collapsed",
                 )
-            date_filter = st.checkbox(localization.translate("Filter by submission date"), key="rd_use_dates")
-            interval = ()
+            with dates:
+                with st.popover(localization.translate("Submission date"), use_container_width=True):
+                    date_filter = st.checkbox(localization.translate("Filter by submission date"), key="rd_use_dates")
+                    interval = ()
+                    if date_filter:
+                        interval = st.date_input(
+                            localization.translate("Submission date interval (Asia/Dubai, UTC+04:00)"),
+                            value=(), key="rd_dates", format="YYYY-MM-DD",
+                        )
+                        st.caption(localization.translate(
+                            "Select a start and end date. Drafts have no submission date and are excluded when this filter is on."
+                        ))
+                        if len(interval) != 2:
+                            st.info(localization.translate("Choose an end date to apply the submission date interval."))
+            with clear:
+                st.button(localization.translate("Clear filters"), key="rd_clear", on_click=_clear_filters,
+                          use_container_width=True)
             if date_filter:
-                interval = st.date_input(
-                    localization.translate("Submission date interval (Asia/Dubai, UTC+04:00)"),
-                    value=(), key="rd_dates",
-                    format="YYYY-MM-DD",
+                st.caption(
+                    localization.translate("Submission date interval (Asia/Dubai, UTC+04:00)")
+                    + ": " + " – ".join(value.isoformat() for value in interval)
                 )
-                st.caption(localization.translate(
-                    "Select a start and end date. Drafts have no submission date and are excluded when this filter is on."
-                ))
-                if len(interval) != 2:
-                    st.info(localization.translate("Choose an end date to apply the submission date interval."))
-            st.button(localization.translate("Clear filters"), key="rd_clear", on_click=_clear_filters)
 
         filtered = []
         for item in records:
@@ -178,31 +190,38 @@ def render_request_dashboard(state):
                     continue
             filtered.append(item)
 
-        scope = st.radio(
-            localization.translate("Metric scope"), ["all", "filtered"], key="rd_scope", horizontal=True,
-            format_func=lambda value, locale=localization.language(): localization.translate(
-                "All visible session requests" if value == "all" else "Filtered requests", locale
-            ),
+        with summary_panel:
+            scope = st.radio(
+                localization.translate("Metric scope"), ["all", "filtered"], key="rd_scope", horizontal=True,
+                label_visibility="collapsed",
+                help=localization.translate("Metrics use your role-visible session requests before filters.")
+                + " " + localization.translate("Metrics use all matching requests across every page."),
+                format_func=lambda value, locale=localization.language(): localization.translate(
+                    "All visible session requests" if value == "all" else "Filtered requests", locale
+                ),
+            )
+            metric_records = records if scope == "all" else filtered
+            counts = [item["revisions"][-1]["status"] for item in metric_records]
+            metrics = st.columns(4)
+            for column, label, count in zip(
+                metrics,
+                ("Draft", "Submitted / pending", "Approved", "Rejected"),
+                (counts.count("Draft"), counts.count("Submitted"),
+                 sum(status in _APPROVED for status in counts), counts.count("Rejected")),
+            ):
+                column.metric(
+                    localization.translate(label), count,
+                    help=localization.translate("Approved includes Approved, Ticket approved, CAB approved and Simulated.")
+                    if label == "Approved" else None,
+                )
+        st.markdown(
+            '<div class="request-register-section"><h3>'
+            + escape(localization.translate("Request register"))
+            + "</h3><span>"
+            + escape(localization.translate("{0} matching requests of {1} visible in this session").format(
+                len(filtered), len(records)
+            )) + "</span></div>", unsafe_allow_html=True,
         )
-        st.caption(localization.translate(
-            "Metrics use your role-visible session requests before filters." if scope == "all" else
-            "Metrics use all matching requests across every page."
-        ))
-        metric_records = records if scope == "all" else filtered
-        counts = [item["revisions"][-1]["status"] for item in metric_records]
-        metrics = st.columns(4)
-        for column, label, count in zip(
-            metrics,
-            ("Draft", "Submitted / pending", "Approved", "Rejected"),
-            (counts.count("Draft"), counts.count("Submitted"),
-             sum(status in _APPROVED for status in counts), counts.count("Rejected")),
-        ):
-            column.metric(localization.translate(label), count)
-        st.caption(localization.translate("Approved includes Approved, Ticket approved, CAB approved and Simulated."))
-        st.subheader(localization.translate("Request register"))
-        st.caption(localization.translate("{0} matching requests of {1} visible in this session").format(
-            len(filtered), len(records)
-        ))
         if not filtered:
             title = localization.translate("No requests yet" if not records else "No matching requests")
             if records:
@@ -229,41 +248,68 @@ def render_request_dashboard(state):
         page = min(max(1, st.session_state.get("rd_page", 1)), page_count)
         st.session_state["rd_page"] = page
         start = (page - 1) * _PAGE_SIZE
-        for index, item in enumerate(filtered[start:start + _PAGE_SIZE], start=start):
-            revision = item["revisions"][-1]
-            status = revision["status"]
-            tone = "approved" if status in _APPROVED else (
-                "rejected" if status == "Rejected" else "pending" if status == "Submitted" else ""
-            )
-            submitted = _submission(item)
-            with st.container(key=f"rd_record_{index}"):
-                detail, view = st.columns([9, 1.2], vertical_alignment="center")
-                with detail:
-                    cells = [
-                        _cell(localization.translate("Reference"), item["reference"], "request-register-reference"),
-                        _cell(localization.translate("Submitter"), item["submitted_by"]),
-                        _cell(localization.translate("Submission date (Asia/Dubai, UTC+04:00)"),
-                              submitted.strftime("%Y-%m-%d %H:%M") if submitted else ""),
-                        _cell(localization.translate("Status"), localization.translate(status),
-                              "request-register-status " + tone),
-                        _cell(localization.translate("Rejected by"), localization.translate(revision.get("rejected_by", ""))),
-                    ]
-                    st.markdown('<div class="request-register-row">' + "".join(cells) + "</div>", unsafe_allow_html=True)
-                with view:
-                    st.button(
-                        localization.translate("View"), key=f"rd_view_{item['reference']}",
-                        help=localization.translate("View request {0}").format(item["reference"]),
-                        on_click=_view_request, args=(state, item["reference"]), use_container_width=True,
-                    )
+        with st.container(key="rd_table"):
+            _render_register_rows(state, filtered, start)
 
-        previous, summary, following = st.columns([1, 3, 1])
-        with previous:
-            st.button(localization.translate("Previous"), key="rd_previous", disabled=page == 1,
-                      on_click=_change_page, args=(-1,), use_container_width=True)
-        with summary:
-            st.caption(localization.translate("Page {0} of {1} · Requests {2}–{3} of {4}").format(
-                page, page_count, start + 1, min(start + _PAGE_SIZE, len(filtered)), len(filtered)
-            ))
-        with following:
-            st.button(localization.translate("Next"), key="rd_next", disabled=page == page_count,
-                      on_click=_change_page, args=(1,), use_container_width=True)
+        with st.container(key="rd_pagination"):
+            previous, summary, following = st.columns([1, 3, 1])
+            with previous:
+                st.button(localization.translate("Previous"), key="rd_previous", disabled=page == 1,
+                          on_click=_change_page, args=(-1,), use_container_width=True)
+            with summary:
+                st.caption(localization.translate("Page {0} of {1} · Requests {2}–{3} of {4}").format(
+                    page, page_count, start + 1, min(start + _PAGE_SIZE, len(filtered)), len(filtered)
+                ))
+            with following:
+                st.button(localization.translate("Next"), key="rd_next", disabled=page == page_count,
+                          on_click=_change_page, args=(1,), use_container_width=True)
+
+
+def _render_register_rows(state, filtered, start):
+    """One shared header; native buttons keep the real request-view callbacks."""
+    with st.container(key="rd_table_header"):
+        labels, action = st.columns([9, 1.2], vertical_alignment="center")
+        with labels:
+            headings = ("Reference", "Submitter", "Submission date", "Status", "Rejected by")
+            st.markdown(
+                '<div class="request-register-row request-register-header">'
+                + "".join(
+                    "<span>" + escape(localization.translate(label))
+                    + ("<time>UTC+04:00 · Asia/Dubai</time>" if label == "Submission date" else "")
+                    + "</span>" for label in headings
+                ) + "</div>", unsafe_allow_html=True,
+            )
+        with action:
+            st.markdown(
+                '<span class="request-register-action-label">'
+                + escape(localization.translate("Action")) + "</span>", unsafe_allow_html=True,
+            )
+    for index, item in enumerate(filtered[start:start + _PAGE_SIZE], start=start):
+        revision = item["revisions"][-1]
+        status = revision["status"]
+        tone = "approved" if status in _APPROVED else (
+            "rejected" if status == "Rejected" else "pending" if status == "Submitted" else ""
+        )
+        submitted = _submission(item)
+        with st.container(key=f"rd_record_{index}"):
+            detail, view = st.columns([9, 1.2], vertical_alignment="center")
+            with detail:
+                cells = [
+                    _cell(localization.translate("Reference"), item["reference"], "request-register-reference"),
+                    _cell(localization.translate("Submitter"), item["submitted_by"]),
+                    _cell(localization.translate("Submission date (Asia/Dubai, UTC+04:00)"),
+                          submitted.strftime("%Y-%m-%d %H:%M") if submitted else "—",
+                          "request-register-date"),
+                    _cell(localization.translate("Status"), localization.translate(status),
+                          "request-register-status " + tone),
+                    _cell(localization.translate("Rejected by"),
+                          localization.translate(revision.get("rejected_by", "")) or "—"),
+                ]
+                st.markdown('<div class="request-register-row">' + "".join(cells) + "</div>", unsafe_allow_html=True)
+            with view:
+                st.button(
+                    localization.translate("View"), key=f"rd_view_{item['reference']}",
+                    help=localization.translate("View request {0}").format(item["reference"]),
+                    on_click=_view_request, args=(state, item["reference"]), use_container_width=True,
+                )
+
