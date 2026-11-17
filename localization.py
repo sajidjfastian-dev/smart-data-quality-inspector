@@ -54,6 +54,48 @@ def translate(value, locale=None):
     return value
 
 
+def translate_issue_type(value, locale=None):
+    """Translate generated issue labels without altering a custom rule's value."""
+    if isinstance(value, str) and value.startswith("Custom: "):
+        return translate("Custom: {0}", locale).format(translate(value[len("Custom: "):], locale))
+    return translate(value, locale)
+
+
+def translate_progress(message):
+    """Translate generated progress wording while keeping column names intact."""
+    if language() != "العربية":
+        return message
+    parts = message.split(" · ", 2)
+    parts[0] = translate(parts[0])
+    if len(parts) == 3:
+        parts[2] = translate(parts[2])
+    return " · ".join(parts)
+
+
+def display_profile(profile):
+    """Localize only app-owned profile labels, never dataset column names."""
+    if language() != "العربية":
+        return profile
+    result = profile.copy()
+    result["Detected type"] = result["Detected type"].map(
+        lambda text: " · ".join(translate(part) for part in text.split(" · "))
+    )
+    return result.rename(columns=translate)
+
+
+def display_findings(issues):
+    """Localize generated findings for display; leave exported findings untouched."""
+    if language() != "العربية":
+        return issues
+    result = issues.copy()
+    duplicate_rows = result["Issue Type"] == "Duplicate Row"
+    result.loc[duplicate_rows, "Column Name"] = translate("Entire row")
+    result.loc[duplicate_rows, "Current Value"] = translate("Exact match to an earlier row")
+    result["Issue Type"] = result["Issue Type"].map(translate_issue_type)
+    result["Suggested Fix"] = result["Suggested Fix"].map(translate)
+    return result.rename(columns=translate)
+
+
 def translate_markup(value):
     if language() != "العربية" or not any(marker in value for marker in _MARKUP_CLASSES):
         return value

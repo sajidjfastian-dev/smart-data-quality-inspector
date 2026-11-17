@@ -261,10 +261,18 @@ class SampleAndBatchExportTests(unittest.TestCase):
         expected = pd.DataFrame({"name": ["A", "B"], "amount": [2.5, 2.5]})
         payload = APP.build_cleaned_batch_archive({"folder/report 1.xlsx": frame})
         with ZipFile(BytesIO(payload)) as archive:
-            self.assertEqual(archive.namelist(), ["folder_report_1.xlsx_cleaned.csv"])
+            self.assertEqual(archive.namelist(), ["folder_report 1.xlsx_cleaned.csv"])
             entry = archive.namelist()[0]
             self.assertStoredEqual(APP.read_data_file(entry, archive.read(entry)), expected)
         assert_frame_equal(frame, snapshot)
+
+    def test_batch_preserves_unicode_and_avoids_name_collisions(self):
+        frame = pd.DataFrame({"Rows": ["Upload", "العربية"]})
+        payload = APP.build_cleaned_batch_archive({"بيانات.csv": frame, "بيانات.CSV": frame})
+        with ZipFile(BytesIO(payload)) as archive:
+            self.assertEqual(archive.namelist(), ["بيانات_cleaned.csv", "بيانات_cleaned (2).csv"])
+            for name in archive.namelist():
+                assert_frame_equal(pd.read_csv(BytesIO(archive.read(name))), frame)
 
     def test_empty_batch_is_valid_empty_zip_without_progress(self):
         progress = []

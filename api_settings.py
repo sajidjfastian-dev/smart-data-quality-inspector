@@ -4,7 +4,7 @@ import hashlib
 import json
 
 import pandas as pd
-from localization import st
+from localization import st, translate, language
 
 from api_connections import ApiConnectionError, SAMPLE_API_URL, fetch_api_data, push_api_data
 from security_guardrails import mask_dataframe
@@ -33,7 +33,7 @@ def _queue_import(url, data_format, json_path, auth_mode, secret, header_name, l
         try:
             data = fetch_api_data(url, data_format, json_path, auth_mode, secret, header_name)
         except ApiConnectionError as error:
-            st.error(str(error))
+            st.error(translate(str(error)))
             return
     st.session_state["pending_api_dataset"] = (label, data)
     st.rerun()
@@ -90,7 +90,7 @@ def render_api_settings(active_dataset=None, data=None, fixed_data=None,
         st.info("Load a file or API source before pushing data.")
     else:
         copies = ["Original data"] + (["Fixed copy"] if fixed_data is not None else [])
-        choice = st.selectbox("Data to send", copies, key=f"api_export_copy_{active_dataset}")
+        choice = st.selectbox("Data to send", copies, format_func=lambda value, locale=language(): translate(value, locale), key=f"api_export_copy_{active_dataset}")
         send_data = fixed_data if choice == "Fixed copy" else data
         if choice == "Original data":
             st.caption("This sends a masked copy of the original data without applying fixes.")
@@ -132,8 +132,7 @@ def render_api_settings(active_dataset=None, data=None, fixed_data=None,
                         )
                     except ApiConnectionError as error:
                         st.error(
-                            f"{error} The destination may have received the request; "
-                            "check it before retrying."
+                            translate("{0} The destination may have received the request; check it before retrying.").format(translate(str(error)))
                         )
                     else:
                         st.success(f"The destination accepted the request (HTTP {status}).")

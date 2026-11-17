@@ -214,13 +214,38 @@ class DownloadInteractionTests(unittest.TestCase):
         self.page.get_by_role("button", name="Switch to Arabic").click()
         self.page.get_by_role("heading", name="حوّل البيانات إلى قرارات.").wait_for()
         self.assertFalse(self.page.get_by_test_id("stSidebar").is_visible())
-        menu = self.page.get_by_role("button", name="Main menu").bounding_box()
+        menu = self.page.get_by_role("button", name="القائمة الرئيسية").bounding_box()
         demo = self.page.get_by_role("button", name="مشاهدة العرض التوضيحي").bounding_box()
         self.assertLessEqual(menu["x"] + menu["width"], demo["x"])
-        self.page.get_by_role("button", name="Expand sidebar").click()
+        self.page.get_by_role("button", name="توسيع الشريط الجانبي").click()
         self.assertTrue(self.page.get_by_test_id("stSidebar").get_by_test_id("stFileUploader").is_visible())
-        self.page.get_by_role("button", name="Collapse sidebar").click()
+        self.page.get_by_role("button", name="طي الشريط الجانبي").click()
         self.assertFalse(self.page.get_by_test_id("stSidebar").is_visible())
+
+    def test_arabic_uploader_and_language_switch_preserve_upload(self):
+        self.page.get_by_role("button", name="Switch to Arabic").click()
+        self.page.wait_for_function("document.documentElement.lang === 'ar' && document.documentElement.dir === 'rtl'")
+        uploader = self.page.get_by_test_id("stSidebar").get_by_test_id("stFileUploader")
+        uploader.get_by_role("button", name="رفع الملفات").wait_for()
+        self.assertIn("لكل ملف", uploader.inner_text())
+        self.assertEqual(uploader.locator('input[type="file"]').get_attribute("aria-label"), "رفع ملف")
+        uploader.locator('input[type="file"]').set_input_files({
+            "name": "بيانات Upload.csv", "mimeType": "text/csv",
+            "buffer": "Rows,Value\n1,Upload\n2,العربية\n".encode(),
+        })
+        self.page.get_by_role("tab", name="4 · معاينة وتصدير").wait_for()
+        self.page.locator('[data-testid="stFileUploader"] button[aria-label="إزالة بيانات Upload.csv"]').wait_for(state="attached")
+        self.page.get_by_role("tab", name="4 · معاينة وتصدير").click()
+        self.page.get_by_role("button", name="تنزيل نسخة منقحة").wait_for()
+        self.page.get_by_role("button", name="التبديل إلى الإنجليزية").click()
+        self.page.wait_for_function("document.documentElement.lang === 'en' && document.documentElement.dir === 'ltr'")
+        self.page.get_by_role("tab", name="4 · Preview & export").wait_for()
+        self.assertEqual(self.page.locator(".st-key-active_dataset input").input_value(), "بيانات Upload.csv")
+        filename, content = self.download("Download a clean copy")
+        self.assertEqual(filename, "بيانات Upload_cleaned.csv")
+        self.assertEqual(pd.read_csv(BytesIO(content)).to_dict("records"), [
+            {"Rows": 1, "Value": "Upload"}, {"Rows": 2, "Value": "العربية"},
+        ])
 
     def test_full_width_header_language_icon_and_footer(self):
         header = self.page.locator(".st-key-app_header")
@@ -328,11 +353,11 @@ class DownloadInteractionTests(unittest.TestCase):
         self.assertEqual(filename, "cleaned_data_batch.zip")
         with ZipFile(BytesIO(content)) as archive:
             self.assertEqual(set(archive.namelist()), {
-                "customer_records_cleaned.csv", "sales.xlsx_cleaned.csv",
+                "customer records_cleaned.csv", "sales.xlsx_cleaned.csv",
             })
             self.assertEqual(len(archive.namelist()), 2)
             self.assertIsNone(archive.testzip())
-            self.assert_data(pd.read_csv(BytesIO(archive.read("customer_records_cleaned.csv"))), [
+            self.assert_data(pd.read_csv(BytesIO(archive.read("customer records_cleaned.csv"))), [
                 ["••••", "••••", 10.0, "2024/01/20"],
                 ["••••", "••••", 10.0, "2024/02/21"],
             ])

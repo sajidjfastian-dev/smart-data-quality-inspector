@@ -1,0 +1,10 @@
+---
+name: Native Streamlit localization
+description: Constraints on translating built-in Streamlit controls without changing user data.
+---
+
+The current Streamlit version does not expose translations for native controls. The Arabic interface adapts specific control chrome in the browser while leaving filenames, dataset values, options and exports untouched.
+
+**Why:** CSS-only replacement would not give screen readers translated labels, and translating arbitrary page text can alter user-provided data.
+
+**How to apply:** Scope any additions to identifiable native control elements and known interface strings; exercise upload, language switching and user-data preservation in browser tests after Streamlit upgrades.

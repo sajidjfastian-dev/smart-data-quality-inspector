@@ -13,7 +13,7 @@ from zipfile import BadZipFile, ZipFile
 import numpy as np
 import pandas as pd
 import plotly.express as px
-from localization import language, native, st, translate
+from localization import language, native, st, translate, translate_issue_type, translate_progress, display_findings, display_profile
 from api_settings import render_api_settings
 from api_connections import ApiConnectionError, request_public_api
 from data_insights import render_data_insights
@@ -590,6 +590,8 @@ def answer_arabic_quality_question(question, data, issues, duplicate_count, heal
         return f"عدد القيم المفقودة: **{counts.get('Missing Value', 0):,}**." + (f" الأعمدة الأكثر تأثراً: {details}." if details else "")
     if any(word in text for word in ("درجة", "صحة", "score", "health")):
         return f"درجة جودة **{filename}** هي **{health_score}%**، استناداً إلى **{len(issues):,}** نتيجة عبر **{len(data):,}** صفاً و**{len(data.columns):,}** عموداً."
+    if any(word in text for word in ("كم عمود", "عدد الأعمدة", "عدد الاعمدة", "how many columns")):
+        return f"يحتوي **{filename}** على **{len(data.columns):,}** عموداً: " + "، ".join(f"`{column}`" for column in data.columns) + "."
     matched_column = next(
         (column for column in data.columns if str(column).strip() and re.search(
             rf"(?<![\w]){re.escape(str(column).strip().casefold())}(?![\w])", text
@@ -598,11 +600,29 @@ def answer_arabic_quality_question(question, data, issues, duplicate_count, heal
     )
     if matched_column is not None:
         row = profile.loc[profile["Column"] == str(matched_column)].iloc[0]
-        return f"العمود **{matched_column}** يحتوي على **{int(row['Missing']):,}** قيمة مفقودة و**{int(row['Unique']):,}** قيمة فريدة."
+        subset = issues[issues["Column Name"].astype(str) == str(matched_column)]
+        breakdown = "، ".join(f"{amount:,} {translate_issue_type(kind)}" for kind, amount in subset["Issue Type"].value_counts().items())
+        types = " · ".join(translate(part) for part in row["Detected type"].split(" · "))
+        return f"العمود **{matched_column}** من النوع **{types}** ويحتوي على **{int(row['Missing']):,}** قيمة مفقودة و**{int(row['Unique']):,}** قيمة فريدة." + (f" النتائج: {breakdown}." if breakdown else " لا توجد نتائج في هذا العمود.")
     if any(word in text for word in ("إصلاح", "اصلح", "أصلح", "fix", "clean", "recommend")):
         return "ابدأ بمراجعة القيم المفقودة والصفوف المكررة، ثم تحقق من التنسيقات والقيم المتطرفة. افتح **مراجعة وإصلاح** لاختيار الإصلاحات الآمنة؛ لا تتغير البيانات الأصلية."
+    requested = []
+    if any(word in text for word in ("بريد", "إيميل", "ايميل", "email")):
+        requested.append(("Invalid Email", "email"))
+    if any(word in text for word in ("تاريخ", "تواريخ", "date")):
+        requested.extend([("Invalid Date", "date"), ("Inconsistent Date Format", "date")])
+    if any(word in text for word in ("متطرف", "شاذ", "outlier")):
+        requested.append(("Numeric Outlier", "outliers"))
+    if requested:
+        active = [(kind, check) for kind, check in requested if check in enabled_checks]
+        if not active:
+            return "الفحص المطلوب متوقف. فعّله من الإعدادات لعرض النتائج."
+        return "نتائج الفحص: " + "، ".join(f"**{counts.get(kind, 0):,} {translate_issue_type(kind)}**" for kind, _ in active) + ". القيم غير الصالحة والمتطرفة تحتاج إلى مراجعة بشرية."
+    if any(word in text for word in ("أي الأعمدة", "اي الاعمدة", "أكثر مشكلات", "most issues", "worst column")):
+        by_column = issues[issues["Column Name"] != "Entire row"]["Column Name"].value_counts().head(5)
+        return ("الأعمدة الأكثر تأثراً: " + "، ".join(f"**{column}** ({amount:,})" for column, amount in by_column.items()) + ".") if not by_column.empty else "لا توجد نتائج على مستوى الأعمدة."
     if any(word in text for word in ("مشكلة", "مشكلات", "النتائج", "قضايا", "issue", "finding", "quality")):
-        breakdown = "، ".join(f"**{amount:,} {translate(kind)}**" for kind, amount in counts.items())
+        breakdown = "، ".join(f"**{amount:,} {translate_issue_type(kind)}**" for kind, amount in counts.items())
         return f"تم اكتشاف **{len(issues):,}** نتيجة في **{filename}**." + (f" التفاصيل: {breakdown}." if breakdown else "")
     if any(word in text for word in ("صف", "سجل", "بيانات", "row", "record", "size", "column")):
         return f"يحتوي **{filename}** على **{len(data):,}** صفاً و**{len(data.columns):,}** عموداً."
@@ -1048,15 +1068,25 @@ def connected_sample_archive():
 def build_cleaned_batch_archive(datasets, progress_callback=None, sensitive_columns_by_dataset=None):
     archive = BytesIO()
     with ZipFile(archive, mode="w") as zip_file:
+        used_names = set()
         for index, (dataset_name, dataset) in enumerate(datasets.items()):
             cleaned = clean_data(dataset)
             if sensitive_columns_by_dataset is not None:
                 cleaned = mask_dataframe(cleaned, sensitive_columns_by_dataset[dataset_name])
-            safe_name = re.sub(r"[^A-Za-z0-9._-]+", "_", dataset_name)
+            # Preserve Unicode and spaces while preventing ZIP paths and controls.
+            safe_name = re.sub(r"[/\\\x00-\x1f\x7f]", "_", dataset_name).strip()
+            safe_name = safe_name.strip(".") or "data"
             if not safe_name.lower().endswith(".csv"):
                 safe_name = f"{safe_name}.csv"
+            stem = safe_name.rsplit(".", 1)[0]
+            entry_name = f"{stem}_cleaned.csv"
+            suffix = 2
+            while entry_name.casefold() in used_names:
+                entry_name = f"{stem}_cleaned ({suffix}).csv"
+                suffix += 1
+            used_names.add(entry_name.casefold())
             zip_file.writestr(
-                f"{safe_name.rsplit('.', 1)[0]}_cleaned.csv",
+                entry_name,
                 cleaned.to_csv(index=False),
             )
             if progress_callback:
@@ -1069,6 +1099,7 @@ def build_cleaned_batch_archive(datasets, progress_callback=None, sensitive_colu
 
 def render_inspection_loader(title, detail, container=None):
     target = container if container is not None else st
+    title, detail = translate(title), translate(detail)
     target.markdown(
         '<div class="inspection-loader" role="status" aria-live="polite">'
         '<span class="inspection-loader-spinner" aria-hidden="true"></span>'
@@ -1102,7 +1133,7 @@ st.markdown(
     [data-testid="stHeader"] * {pointer-events: none;}
     [data-testid="stHeader"] button {color: #f3fbf9; pointer-events: auto;}
     [data-testid="stHeader"] [data-testid="stExpandSidebarButton"] span {color: #f3fbf9;}
-    html[dir="rtl"] [data-testid="stHeader"] button[aria-label="Main menu"] {
+    html[dir="rtl"] [data-testid="stHeader"] [data-testid="stMainMenuButton"] {
         position: fixed; top: 20px; left: 10px; right: auto;
     }
     [data-testid="stAppDeployButton"],
@@ -1859,7 +1890,7 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                     ("date", "Invalid and inconsistent dates"),
                     ("outliers", "Numeric outliers"),
                 ):
-                    checks[key] = st.checkbox(label, value=True, key=f"check_{key}")
+                    checks[key] = st.checkbox(translate(label), value=True, key=f"check_{key}")
                 enabled_checks = {key for key, enabled in checks.items() if enabled}
                 if columns is None:
                     st.info("Upload a file or load a sample to configure columns and custom rules.")
@@ -1899,7 +1930,7 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                 ]
                 selected_rule = st.selectbox(
                     "Rule to edit", options=range(len(rule_choices)),
-                    format_func=lambda index: rule_choices[index],
+                    format_func=lambda index, locale=language(): translate("New rule", locale) if index == 0 else f"{index}. {rules[index - 1]['column']} · {translate(rules[index - 1]['kind'], locale)}",
                     key=f"edit_rule_{column_signature}",
                 )
                 selected = rules[selected_rule - 1] if selected_rule else None
@@ -1910,7 +1941,7 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                         index=columns.index(selected["column"]) if selected else 0,
                     )
                     rule_kind = st.selectbox(
-                        "Rule type", kinds,
+                        "Rule type", kinds, format_func=lambda value, locale=language(): translate(value, locale),
                         index=kinds.index(selected["kind"]) if selected else 0,
                     )
                     expected = st.text_input(
@@ -1918,7 +1949,7 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                         help="Text to include, comma-separated allowed values, or a numeric limit.",
                     )
                     save_rule = st.form_submit_button(
-                        "Save changes" if selected else "Add rule", width="stretch"
+                        translate("Save changes" if selected else "Add rule"), width="stretch"
                     )
                 if save_rule:
                     expected = expected.strip()
@@ -1936,7 +1967,7 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                         except ValueError:
                             error = "Enter a finite number for the limit."
                     if error:
-                        st.error(error)
+                        st.error(translate(error))
                     else:
                         rule = {"column": rule_column, "kind": rule_kind, "expected": expected}
                         if selected_rule:
@@ -1977,9 +2008,7 @@ def toggle_interface_language():
 _rtl = native.session_state.get("interface_language", "English") == "العربية"
 install_presentation_styles()
 native.html(
-    '<script>document.documentElement.lang="ar";document.documentElement.dir="rtl";</script>'
-    if _rtl else
-    '<script>document.documentElement.lang="en";document.documentElement.dir="ltr";</script>',
+    "<script>" + (Path(__file__).resolve().parent / "assets" / "native_controls.js").read_text(encoding="utf-8").replace("__ARABIC__", "true" if _rtl else "false") + "</script>",
     unsafe_allow_javascript=True,
 )
 with st.container(key="app_header"):
@@ -2123,7 +2152,7 @@ if uploaded_files and upload_signatures != st.session_state.get(
 
                 file_data = read_uploaded_file(uploaded_file, report_upload_progress)
                 if file_data.empty or len(file_data.columns) == 0:
-                    file_errors.append(f"{uploaded_file.name}: the file has no rows or columns.")
+                    file_errors.append(translate("{0}: the file has no rows or columns.").format(uploaded_file.name))
                     continue
                 loaded_datasets[dataset_label] = file_data
             except (
@@ -2134,22 +2163,16 @@ if uploaded_files and upload_signatures != st.session_state.get(
                 ValueError,
                 OSError,
             ) as error:
-                file_errors.append(f"{uploaded_file.name}: {error}")
+                logging.warning("Failed to read an uploaded dataset")
+                file_errors.append(translate("{0}: the file could not be read. Check that it is a valid CSV or Excel file and try again.").format(uploaded_file.name))
             except ImportError as error:
-                file_errors.append(
-                    f"{uploaded_file.name}: a required file-reading dependency is unavailable ({error})."
-                )
+                logging.warning("File-reading dependency unavailable")
+                file_errors.append(translate("{0}: a required file-reading dependency is unavailable.").format(uploaded_file.name))
             except MemoryError:
-                file_errors.append(
-                    f"{uploaded_file.name}: there is not enough memory to read this file. "
-                    "Try a smaller file or increase the available memory."
-                )
+                file_errors.append(translate("{0}: there is not enough memory to read this file. Try a smaller file or increase the available memory.").format(uploaded_file.name))
             except Exception:
                 logging.error("Failed to read an uploaded dataset")
-                file_errors.append(
-                    f"{uploaded_file.name}: the file could not be read. "
-                    "Check that it is a valid CSV or Excel file and try again."
-                )
+                file_errors.append(translate("{0}: the file could not be read. Check that it is a valid CSV or Excel file and try again.").format(uploaded_file.name))
         progress.progress(1.0, text="File batch ready.")
         progress.empty()
         upload_loader.empty()
@@ -2393,7 +2416,7 @@ else:
 
         def update_inspection_progress(fraction, message):
             overall = min(fraction * .85, .85)
-            inspection_progress.progress(overall, text=f"{overall:.0%} · {message}")
+            inspection_progress.progress(overall, text=f"{overall:.0%} · {translate_progress(message)}")
             inspection_status.update(
                 label="Inspecting the active file...",
                 state="running",
@@ -2414,7 +2437,7 @@ else:
             column_profile = build_column_profile(
                 data, email_columns, date_columns, numeric_columns,
                 progress_callback=lambda fraction, column: inspection_progress.progress(
-                    .85 + .15 * fraction, text=f"{.85 + .15 * fraction:.0%} · Profiling column · {column}"
+                    .85 + .15 * fraction, text=translate("{0} · Profiling column · {1}").format(f"{.85 + .15 * fraction:.0%}", column)
                 ),
             )
         except MemoryError:
@@ -2483,7 +2506,7 @@ if set(CONNECTED_SAMPLE_FILES).issubset(datasets):
             "The synthetic tables share customer, product, and order IDs, so you can "
             "test related datasets together or inspect each file independently."
         )
-        st.dataframe(SAMPLE_RELATIONSHIPS, width="stretch", hide_index=True)
+        st.dataframe(SAMPLE_RELATIONSHIPS.rename(columns=translate), width="stretch", hide_index=True)
 
 metric_cards = [
     ("health", "📈 Data Health Score", f"{health_score}%", "How the quality score is calculated"),
@@ -2511,7 +2534,7 @@ if selected_metric:
         label for key, label, _, _ in metric_cards if key == selected_metric
     )
     with st.container(border=True):
-        st.subheader(f"{selected_label} details")
+        st.subheader(translate("{0} details").format(translate(selected_label)))
         if selected_metric == "health":
             flagged_cells = issue_count
             total_cells = data.shape[0] * data.shape[1]
@@ -2527,10 +2550,10 @@ if selected_metric:
             else:
                 st.caption("Findings contributing to the score:")
                 st.dataframe(
-                    issues.groupby("Issue Type", as_index=False)
+                    issues.assign(**{"Issue Type": issues["Issue Type"].map(translate_issue_type)}).groupby("Issue Type", as_index=False)
                     .size()
                     .rename(columns={"size": "Issue Count"})
-                    .sort_values("Issue Count", ascending=False),
+                    .sort_values("Issue Count", ascending=False).rename(columns=translate),
                     width="stretch",
                     hide_index=True,
                 )
@@ -2540,8 +2563,8 @@ if selected_metric:
             row_col, column_col, unique_col, duplicate_col = st.columns(4)
             row_col.metric("Rows in dataset", f"{len(data):,}")
             column_col.metric("Columns", f"{len(data.columns):,}")
-            unique_col.metric("Rows after deduplication", f"{unique_rows:,}" if "duplicates" in enabled_checks else "Not checked")
-            duplicate_col.metric("Rows duplicated", f"{duplicate_percent:.1f}%" if "duplicates" in enabled_checks else "Not checked")
+            unique_col.metric("Rows after deduplication", f"{unique_rows:,}" if "duplicates" in enabled_checks else translate("Not checked"))
+            duplicate_col.metric("Rows duplicated", f"{duplicate_percent:.1f}%" if "duplicates" in enabled_checks else translate("Not checked"))
             st.caption(
                 "Row numbers in the issue log refer to the displayed data order, starting at 1."
             )
@@ -2556,7 +2579,9 @@ if selected_metric:
                     .sort_values("Issue Count", ascending=False)
                 )
                 issue_column_counts = (
-                    issues.groupby("Column Name", as_index=False)
+                    issues.assign(**{"Column Name": issues["Column Name"].where(
+                        issues["Issue Type"] != "Duplicate Row", translate("Entire row")
+                    )}).groupby("Column Name", as_index=False)
                     .size()
                     .rename(columns={"size": "Issue Count"})
                     .sort_values("Issue Count", ascending=False)
@@ -2564,12 +2589,13 @@ if selected_metric:
                 type_column, field_column = st.columns(2)
                 with type_column:
                     st.caption("Findings by issue type")
-                    st.dataframe(issue_type_counts, width="stretch", hide_index=True)
+                    issue_type_counts["Issue Type"] = issue_type_counts["Issue Type"].map(translate_issue_type)
+                    st.dataframe(issue_type_counts.rename(columns=translate), width="stretch", hide_index=True)
                 with field_column:
                     st.caption("Findings by column")
-                    st.dataframe(issue_column_counts, width="stretch", hide_index=True)
+                    st.dataframe(issue_column_counts.rename(columns=translate), width="stretch", hide_index=True)
                 st.caption("Showing every detected issue:")
-                st.dataframe(mask_findings(issues.head(1_000), display_sensitive_columns), width="stretch", hide_index=True)
+                st.dataframe(display_findings(mask_findings(issues.head(1_000), display_sensitive_columns)), width="stretch", hide_index=True)
                 if len(issues) > 1_000:
                     st.caption("Showing the first 1,000 findings. The issue report contains all matching findings.")
         elif selected_metric == "duplicates":
@@ -2586,7 +2612,7 @@ if selected_metric:
                     f"**{duplicate_count:,}** exact duplicate row(s) were found. "
                     "These rows match an earlier row across every column."
                 )
-                st.dataframe(duplicate_rows, width="stretch", hide_index=True)
+                st.dataframe(duplicate_rows, column_config={"Row Number": translate("Row Number")}, width="stretch", hide_index=True)
                 if duplicate_count > 1_000:
                     st.caption("Showing the first 1,000 duplicate rows.")
 
@@ -2618,7 +2644,9 @@ with overview_tab:
             st.success("No findings were found by the enabled checks.")
         else:
             issue_counts = (
-                issues.groupby("Column Name", as_index=False)
+                issues.assign(**{"Column Name": issues["Column Name"].where(
+                    issues["Issue Type"] != "Duplicate Row", translate("Entire row")
+                )}).groupby("Column Name", as_index=False)
                 .size()
                 .rename(columns={"size": "Issue Count"})
                 .sort_values("Issue Count", ascending=False)
@@ -2634,7 +2662,7 @@ with overview_tab:
             chart.update_traces(
                 textposition="outside",
                 cliponaxis=False,
-                hovertemplate="%{y}<br>%{x:,} findings<extra></extra>",
+                hovertemplate="%{y}<br>%{x:,} " + translate("findings") + "<extra></extra>",
             )
             chart.update_layout(
                 template="plotly_white",
@@ -2664,6 +2692,7 @@ with overview_tab:
                 .sort_values("Findings", ascending=False)
             )
             type_counts["Share (%)"] = type_counts["Findings"] / type_counts["Findings"].sum() * 100
+            type_counts["Issue Type"] = type_counts["Issue Type"].map(translate_issue_type)
             type_chart = px.bar(
                 type_counts,
                 x="Findings",
@@ -2676,7 +2705,7 @@ with overview_tab:
             type_chart.update_traces(
                 textposition="outside",
                 cliponaxis=False,
-                hovertemplate="%{y}<br>%{x:,} findings · %{customdata[0]:.1f}%<extra></extra>",
+                hovertemplate="%{y}<br>%{x:,} " + translate("findings") + " · %{customdata[0]:.1f}%<extra></extra>",
             )
             type_chart.update_layout(
                 template="plotly_white",
@@ -2693,7 +2722,7 @@ with overview_tab:
             )
             st.plotly_chart(type_chart, width="stretch", config={"displayModeBar": False})
             type_counts = type_counts.rename(columns={"Findings": "Issue Count"})
-            st.dataframe(type_counts, width="stretch", hide_index=True)
+            st.dataframe(type_counts.rename(columns=translate), width="stretch", hide_index=True)
 
     st.divider()
     missing_col, recommendations_col = st.columns([1.3, 1])
@@ -2714,6 +2743,7 @@ with overview_tab:
                 color_discrete_sequence=["#61A9BD"],
                 text="Missing %",
                 hover_data={"Missing": True, "Unique": True},
+                labels={"Missing %": translate("Missing %"), "Missing": translate("Missing"), "Unique": translate("Unique"), "Column": translate("Column")},
             )
             missing_chart.update_traces(texttemplate="%{text:.1f}%", textposition="outside", cliponaxis=False)
             missing_chart.update_layout(
@@ -2771,11 +2801,9 @@ with overview_tab:
                 st.markdown(f"**{index:02d}** &nbsp; {translate(recommendation)}")
             st.info("Next: open **Issue log** for details, then **Review & fix** to choose safe changes.")
         with st.expander("How to interpret this report"):
-            st.markdown(
-                "- Each finding represents a detected value or duplicate row, not a confirmed business error.\n"
+            st.markdown(translate("- Each finding represents a detected value or duplicate row, not a confirmed business error.\n"
                 "- Statistical outliers are review candidates, not automatic corrections.\n"
-                "- Use the settings icon at the bottom of the sidebar to adjust checks and column rules."
-            )
+                "- Use the settings icon at the bottom of the sidebar to adjust checks and column rules."))
 
     st.caption("For distributions, field profiles, common values and timelines, open **Data insights**.")
 
@@ -2797,7 +2825,7 @@ with issues_tab:
         with filter_col:
             selected_type = st.selectbox(
                 "Filter findings", filter_options,
-                format_func=lambda option, locale=language(): translate(option, locale),
+                format_func=lambda option, locale=language(): translate_issue_type(option, locale),
             )
         protected_issues = mask_findings(issues, display_sensitive_columns)
         filtered_issues = protected_issues if selected_type == "All issue types" else protected_issues[
@@ -2823,6 +2851,7 @@ with issues_tab:
             selected_issue_column = st.selectbox(
                 "Filter by column",
                 issue_column_options,
+                format_func=lambda value, locale=language(): translate("All columns", locale) if value == "All columns" else value,
                 key=f"issue_column_filter_{column_signature}",
             )
         if selected_issue_column != "All columns":
@@ -2858,14 +2887,7 @@ with issues_tab:
                 st.caption(f"Page {finding_page:,} of {finding_pages:,}; the downloaded report includes all matches.")
             finding_start = (finding_page - 1) * 1_000
             visible_findings = filtered_issues.iloc[finding_start:finding_start + 1_000]
-            if language() == "العربية":
-                visible_findings = visible_findings.copy()
-                duplicate_rows = visible_findings["Issue Type"] == "Duplicate Row"
-                visible_findings.loc[duplicate_rows, "Column Name"] = translate("Entire row")
-                visible_findings["Issue Type"] = visible_findings["Issue Type"].map(translate)
-                visible_findings["Suggested Fix"] = visible_findings["Suggested Fix"].map(translate)
-                visible_findings = visible_findings.rename(columns=translate)
-            st.dataframe(visible_findings, width="stretch", hide_index=True)
+            st.dataframe(display_findings(visible_findings), width="stretch", hide_index=True)
         st.download_button(
             "Download issue report",
             data=lambda: filtered_issues.to_csv(index=False).encode("utf-8-sig"),
@@ -2948,7 +2970,7 @@ with review_tab:
                         fill_numeric_missing=fix_missing_numeric,
                         standardize_dates=fix_date_formats,
                         progress_callback=lambda fraction, message: fix_progress.progress(
-                            fraction, text=f"{fraction:.0%} · {message}"
+                            fraction, text=f"{fraction:.0%} · {translate_progress(message)}"
                         ),
                     )
                 except MemoryError:
@@ -3007,7 +3029,7 @@ with review_tab:
                 review_progress = st.progress(0.0, text="Preparing preview checks...")
 
                 def update_review_progress(fraction, message):
-                    review_progress.progress(fraction, text=f"{fraction:.0%} · {message}")
+                    review_progress.progress(fraction, text=f"{fraction:.0%} · {translate_progress(message)}")
                     review_status.update(
                         label="Checking findings in the preview...",
                         state="running",
@@ -3075,11 +3097,11 @@ with review_tab:
         st.markdown(
             '<span style="display:inline-block;width:12px;height:12px;'
             'background:#fff0c2;border:1px solid #e6c46a;border-radius:3px;'
-            'vertical-align:middle"></span> Cell has a finding '
+            'vertical-align:middle"></span> ' + translate("Cell has a finding") + ' '
             '&nbsp;&nbsp; '
             '<span style="display:inline-block;width:12px;height:12px;'
             'background:#fff1ed;border:1px solid #e9b5aa;border-radius:3px;'
-            'vertical-align:middle"></span> Duplicate row',
+            'vertical-align:middle"></span> ' + translate("Duplicate row"),
             unsafe_allow_html=True,
         )
 
@@ -3128,10 +3150,8 @@ with review_tab:
     displayed_positions = matching_positions[review_start:review_start + 1_000]
     review_display = mask_dataframe(review_data.iloc[displayed_positions], display_sensitive_columns)
     review_display.insert(0, "Row Number", displayed_positions + 1)
-    st.caption(
-        f"Showing {len(review_display):,} of {len(matching_positions):,} matching rows"
-        + (" with findings" if issue_rows_only else "")
-    )
+    st.caption(translate("Showing {0} of {1} matching rows").format(f"{len(review_display):,}", f"{len(matching_positions):,}")
+        + (translate(" with findings") if issue_rows_only else ""))
     if review_display.empty:
         st.info("No rows match these search and filter choices.")
     else:
@@ -3143,6 +3163,7 @@ with review_tab:
             width="stretch",
             height=650,
             hide_index=True,
+            column_config={"Row Number": translate("Row Number")},
         )
 
     if has_fixed_data and show_fixed:
@@ -3246,7 +3267,7 @@ with preview_tab:
                     )
 
                     def update_batch_export_progress(fraction, message):
-                        batch_progress.progress(fraction, text=f"{fraction:.0%} · {message}")
+                        batch_progress.progress(fraction, text=f"{fraction:.0%} · {translate_progress(message)}")
                         batch_status.update(
                             label="Preparing the cleaned batch export...",
                             state="running",
@@ -3340,6 +3361,7 @@ with assistant_tab:
         st.session_state[assistant_history_key] = [
             {
                 "role": "assistant",
+                "kind": "greeting",
                 "content": translate(
                     "Hi! I’m ready to help with **{0}**. Ask me about the data, a column, "
                     "or its quality findings. Configure your own LLM endpoint in the "
@@ -3365,7 +3387,7 @@ with assistant_tab:
                 key=f"assistant_prompt_{column_signature}_{prompt_index}",
                 width="stretch",
             ):
-                selected_prompt = suggested_prompt
+                selected_prompt = translate(suggested_prompt)
 
     context_column, clear_column = st.columns([3, 1])
     with context_column:
@@ -3398,7 +3420,7 @@ with assistant_tab:
             safe_question = MASK
         history.append({"role": "user", "content": safe_question})
         if assistant_share_dataset and not assistant_configured:
-            answer = (
+            answer = translate(
                 "I could not contact a model because the endpoint URL, model ID, or API "
                 "key is missing. Complete **LLM assistant settings** or turn off dataset "
                 "sharing to use local answers."
@@ -3432,7 +3454,7 @@ with assistant_tab:
                     )
                 except AssistantRequestError as error:
                     request_error = error
-                    answer = f"The model request failed: {error}"
+                    answer = translate("The model request failed: {0}").format(translate(str(error)))
                 assistant_loader.empty()
                 assistant_status.update(
                     label="Model request failed" if request_error else "Answer ready",
@@ -3440,7 +3462,7 @@ with assistant_tab:
                     expanded=bool(request_error),
                 )
             if request_error:
-                st.error(str(request_error))
+                st.error(translate(str(request_error)))
         else:
             with st.status(
                 "Preparing your local data-quality answer...",
@@ -3478,14 +3500,22 @@ with assistant_tab:
         st.session_state[assistant_history_key].append(
             {
                 "role": "assistant",
-                "content": (
-                    f"Conversation cleared. Ask me about **{active_dataset}**—for example, "
-                    "“How many rows are duplicates?”"
-                ),
+                "kind": "cleared",
+                "content": translate("Conversation cleared. Ask me about **{0}**—for example, “How many rows are duplicates?”").format(active_dataset),
             }
         )
     for message in st.session_state[assistant_history_key]:
         with st.chat_message(message["role"]):
-            st.markdown(mask_text(message["content"]))
+            if message.get("kind") == "greeting":
+                content = translate("Hi! I’m ready to help with **{0}**. Ask me about the data, a column, or its quality findings. Configure your own LLM endpoint in the sidebar for broader natural-language analysis.").format(active_dataset)
+            elif message.get("kind") == "cleared":
+                content = translate("Conversation cleared. Ask me about **{0}**—for example, “How many rows are duplicates?”").format(active_dataset)
+            else:
+                content = message["content"]
+            try:
+                content = mask_text_with_dataset(content, data, display_sensitive_columns)
+            except Exception:
+                content = MASK
+            st.markdown(mask_text(content))
 
 render_app_footer()

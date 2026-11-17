@@ -2,3 +2,4 @@
 - [Upload placement](upload-placement.md) — keep file uploads in the sidebar, not on the landing page.
 - [Sensitive data protection](sensitive-data-protection.md) — mask sensitive data in screens and outputs, with user-selectable additional columns.
 - [Browser navigation checks](browser-navigation-checks.md) — verify sidebar navigation in the browser; server-side state alone can conceal UI failures.
+- [Native Streamlit localization](native-streamlit-localization.md) — native control translations must not alter uploaded values or filenames.

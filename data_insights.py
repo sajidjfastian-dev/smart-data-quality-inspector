@@ -6,7 +6,7 @@ import pandas as pd
 from security_guardrails import mask_dataframe
 import plotly.express as px
 import plotly.graph_objects as go
-from localization import st
+from localization import st, translate, display_profile
 
 
 SAMPLE_LIMIT = 100_000
@@ -108,14 +108,12 @@ def render_data_insights(data, column_profile, numeric_columns, date_columns,
     sampled = len(data) > SAMPLE_LIMIT
     sample_count = min(len(data), SAMPLE_LIMIT)
     scope = (
-        f"Based on {sample_count:,} evenly spaced rows from {len(data):,}; exploratory sample, not a random sample."
-        if sampled else f"Based on all {len(data):,} rows."
+        translate("Based on {0} evenly spaced rows from {1}; exploratory sample, not a random sample.").format(f"{sample_count:,}", f"{len(data):,}")
+        if sampled else translate("Based on all {0} rows.").format(f"{len(data):,}")
     )
-    st.caption(
-        "Snapshot and numeric views use the complete file. "
-        + ("Categories and dates use an evenly spaced sample of up to 100,000 rows. " if sampled else "")
-        + "Quality checks still inspect the complete file."
-    )
+    st.caption(translate("Snapshot and numeric views use the complete file.") + " "
+        + (translate("Categories and dates use an evenly spaced sample of up to 100,000 rows.") + " " if sampled else "")
+        + translate("Quality checks still inspect the complete file."))
     snapshot, numbers, categories, dates, relationships = st.tabs(
         ["Snapshot", "Numeric", "Categories", "Dates", "Relationships"],
         key=f"insight_views_{column_signature}", on_change="rerun",
@@ -135,7 +133,7 @@ def render_data_insights(data, column_profile, numeric_columns, date_columns,
             metrics[3].metric("Numeric columns", f"{len(numeric_columns):,}")
             st.subheader("Your fields at a glance")
             st.caption("Detected types are suggestions. Change them in inspection settings if needed.")
-            st.dataframe(column_profile, width="stretch", hide_index=True)
+            st.dataframe(display_profile(column_profile), width="stretch", hide_index=True)
             st.subheader("A look at the data")
             st.caption("The first 10 rows of the active file.")
             st.dataframe(mask_dataframe(data.head(10), sensitive_columns), width="stretch", hide_index=True)
@@ -167,9 +165,9 @@ def render_data_insights(data, column_profile, numeric_columns, date_columns,
                         x=(edges[:-1] + edges[1:]) / 2, y=counts, width=np.diff(edges),
                         customdata=np.column_stack((edges[:-1], edges[1:])),
                         marker_color=CHART_COLOR,
-                        hovertemplate="Range: %{customdata[0]:,.2f} – %{customdata[1]:,.2f}<br>Rows: %{y:,}<extra></extra>",
+                        hovertemplate=translate("Range") + ": %{customdata[0]:,.2f} – %{customdata[1]:,.2f}<br>" + translate("Rows") + ": %{y:,}<extra></extra>",
                     ))
-                    st.plotly_chart(_chart_style(figure, str(selected), "Rows"), width="stretch", config={"displayModeBar": False})
+                    st.plotly_chart(_chart_style(figure, str(selected), translate("Rows")), width="stretch", config={"displayModeBar": False})
                     st.caption("Values are grouped into 40 ranges.")
 
     with categories:
@@ -189,7 +187,7 @@ def render_data_insights(data, column_profile, numeric_columns, date_columns,
                     st.info("This column has no non-empty values in the rows analyzed.")
                 else:
                     st.subheader("Most common values")
-                    st.caption("Top 10 non-empty values. " + scope)
+                    st.caption(translate("Top 10 non-empty values.") + " " + scope)
                     chart_data = counts.copy()
                     chart_data["Label"] = chart_data["Value"].map(
                         lambda value: value if len(value) <= 45 else value[:42] + "…"
@@ -200,13 +198,13 @@ def render_data_insights(data, column_profile, numeric_columns, date_columns,
                     )
                     figure.update_traces(
                         textposition="outside", cliponaxis=False,
-                        hovertemplate="%{customdata[0]}<br>%{x:,} rows<extra></extra>",
+                        hovertemplate="%{customdata[0]}<br>%{x:,} " + translate("rows") + "<extra></extra>",
                     )
                     figure.update_yaxes(autorange="reversed", automargin=True)
                     figure.update_xaxes(rangemode="tozero")
-                    st.plotly_chart(_chart_style(figure, "Rows", ""), width="stretch", config={"displayModeBar": False})
+                    st.plotly_chart(_chart_style(figure, translate("Rows"), ""), width="stretch", config={"displayModeBar": False})
                     with st.expander("See exact values"):
-                        st.dataframe(counts, width="stretch", hide_index=True)
+                        st.dataframe(counts.rename(columns=translate), width="stretch", hide_index=True)
 
     with dates:
         if dates.open:
@@ -225,15 +223,13 @@ def render_data_insights(data, column_profile, numeric_columns, date_columns,
                     st.info("No parseable dates were found in the rows analyzed.")
                 else:
                     st.subheader("Records over time")
-                    st.caption(
-                        f"{valid:,} parseable values grouped by UTC month; invalid and missing dates are excluded. "
-                        "Ambiguous dates are interpreted month-first. " + scope
-                    )
+                    st.caption(translate("{0} parseable values grouped by UTC month; invalid and missing dates are excluded.").format(f"{valid:,}")
+                        + " " + translate("Ambiguous dates are interpreted month-first.") + " " + scope)
                     figure = px.bar(counts, x="Month", y="Rows", color_discrete_sequence=[CHART_COLOR])
-                    figure.update_traces(hovertemplate="%{x|%b %Y}<br>%{y:,} rows<extra></extra>")
+                    figure.update_traces(hovertemplate="%{x|%Y-%m}<br>%{y:,} " + translate("rows") + "<extra></extra>")
                     figure.update_xaxes(type="date")
                     figure.update_yaxes(rangemode="tozero")
-                    st.plotly_chart(_chart_style(figure, "Month", "Rows"), width="stretch", config={"displayModeBar": False})
+                    st.plotly_chart(_chart_style(figure, translate("Month"), translate("Rows")), width="stretch", config={"displayModeBar": False})
 
     with relationships:
         if relationships.open:
@@ -262,10 +258,8 @@ def render_data_insights(data, column_profile, numeric_columns, date_columns,
                     else:
                         st.metric("Pearson correlation", f"{correlation:.2f}")
                         st.caption("Correlation describes association, not causation.")
-                    st.caption(
-                        f"{result['pairs']:,} valid pairs. {scope} "
-                        + (f"The chart shows {len(result['points']):,} evenly spaced pairs." if result["points_sampled"] else "The chart shows all valid pairs.")
-                    )
+                    st.caption(translate("{0} valid pairs.").format(f"{result['pairs']:,}") + " " + scope + " "
+                        + (translate("The chart shows {0} evenly spaced pairs.").format(f"{len(result['points']):,}") if result["points_sampled"] else translate("The chart shows all valid pairs.")))
                     figure = px.scatter(
                         result["points"], x="X", y="Y", color_discrete_sequence=[CHART_COLOR],
                     )
