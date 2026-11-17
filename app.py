@@ -1123,47 +1123,65 @@ st.markdown(
     }
     .brand-subtitle {color: #d0dfdc; font-size: .9rem; margin-top: 5px;}
     .welcome-panel {
-        display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(300px, .95fr);
-        align-items: center; gap: clamp(26px, 5vw, 68px);
-        min-height: 350px; margin-top: 1.35rem; padding: clamp(26px, 4vw, 46px);
-        overflow: hidden; border: 1px solid #dce9e4; border-radius: 24px;
+        display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(285px, .92fr);
+        align-items: center; gap: 38px clamp(26px, 4vw, 58px);
+        margin-top: 1.35rem; padding: clamp(28px, 4vw, 48px);
+        overflow: hidden; border: 1px solid #dce9e4; border-radius: 22px;
         background:
-            radial-gradient(ellipse at 4% 100%, rgba(0, 199, 177, .12), transparent 38%),
-            linear-gradient(120deg, #eff7f4 0%, #fff 54%, #f0f7f4 100%);
-        box-shadow: 0 14px 36px rgba(23, 52, 58, .06);
+            radial-gradient(ellipse at 0% 0%, rgba(0, 199, 177, .09), transparent 38%),
+            linear-gradient(125deg, #f8fcfa 0%, #fff 62%, #f4f9f6 100%);
+        box-shadow: 0 18px 45px rgba(23, 52, 58, .06);
     }
     .welcome-eyebrow {
-        color: var(--teal); font-size: .68rem; font-weight: 760;
-        letter-spacing: .16em; text-transform: uppercase;
+        display: inline-flex; align-items: center; gap: 8px; color: #08756a;
+        font-size: .68rem; font-weight: 760; letter-spacing: .13em; text-transform: uppercase;
     }
+    .welcome-eyebrow::before {content: ""; width: 7px; height: 7px; border-radius: 50%; background: #00a996;}
     .welcome-title {
-        max-width: 520px; margin: 12px 0 10px; color: var(--ink);
-        font-size: clamp(1.75rem, 3.2vw, 2.55rem); line-height: 1.08;
-        font-weight: 760; letter-spacing: -.045em;
+        max-width: 550px; margin: 18px 0 16px; color: #17343a;
+        font-size: clamp(2.1rem, 3.6vw, 3.05rem); line-height: 1.08;
+        font-weight: 760; letter-spacing: -.05em;
     }
-    .welcome-description {
-        max-width: 510px; margin: 0; color: #526b69;
-        font-size: .98rem; line-height: 1.65;
+    .welcome-title .welcome-accent {color: #007c70;}
+    .welcome-panel p.welcome-description {
+        max-width: 480px; margin: 0; color: #526b69;
+        font-size: .98rem; line-height: 1.7;
+    }
+    .welcome-start {
+        display: flex; align-items: flex-start; gap: 12px; margin-top: 26px;
+        padding: 15px 16px; border: 1px solid #d7ebe3; border-radius: 13px;
+        background: rgba(239, 249, 245, .8);
+    }
+    .welcome-start-icon {
+        display: grid; place-items: center; width: 32px; height: 32px; flex: 0 0 32px;
+        border-radius: 9px; background: #d7f1e9; color: #006e61; font-size: 1.1rem; font-weight: 700;
+    }
+    .welcome-start strong {display: block; color: #173f3c; font-size: .81rem;}
+    .welcome-start-copy {display: block; color: #526f69; font-size: .76rem; line-height: 1.5; margin-top: 3px;}
+    .welcome-meta {display: flex; flex-wrap: wrap; gap: 7px; margin-top: 20px;}
+    .welcome-meta span {
+        border: 1px solid #e0ebe6; border-radius: 6px; padding: 5px 8px;
+        color: #56716c; background: #fff; font-size: .67rem; font-weight: 700; letter-spacing: .04em;
     }
     .welcome-steps {
-        display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 10px; margin-top: 27px;
+        display: grid; grid-column: 1 / -1; grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px; padding-top: 25px; border-top: 1px solid #e2ece7;
     }
     .welcome-step {
-        display: flex; align-items: flex-start; gap: 9px; min-width: 0;
-        color: var(--ink); font-size: .76rem; font-weight: 680; line-height: 1.35;
+        display: flex; align-items: flex-start; gap: 12px; min-width: 0;
+        color: #183f3d; font-size: .84rem; font-weight: 700; line-height: 1.4;
     }
     .welcome-step-number {
-        display: grid; place-items: center; flex: 0 0 25px; height: 25px;
-        border-radius: 8px; color: var(--teal-dark); background: #d9efea;
-        font-size: .68rem; font-weight: 760;
+        display: grid; place-items: center; flex: 0 0 31px; height: 31px;
+        border-radius: 9px; color: #087466; background: #e5f4ee;
+        font-size: .68rem; font-weight: 760; letter-spacing: .02em;
     }
     .welcome-step small {
-        display: block; margin-top: 4px; color: var(--muted);
-        font-size: .68rem; font-weight: 450; line-height: 1.4;
+        display: block; margin-top: 4px; color: #617873;
+        font-size: .76rem; font-weight: 450; line-height: 1.5;
     }
     .welcome-preview {
-        position: relative; padding: 24px; overflow: hidden;
+        position: relative; padding: 25px; overflow: hidden;
         border: 1px solid rgba(255,255,255,.13); border-radius: 19px;
         color: #fff;
         background:
@@ -1172,8 +1190,8 @@ st.markdown(
         box-shadow: 0 16px 32px rgba(16, 45, 53, .15);
     }
     .welcome-preview-top {
-        display: flex; align-items: center; justify-content: space-between;
-        gap: 12px; margin-bottom: 18px;
+        display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        margin-bottom: 18px;
     }
     .welcome-preview-title {
         color: #d3e6e1; font-size: .67rem; font-weight: 720;
@@ -1185,6 +1203,8 @@ st.markdown(
         font-size: .61rem; font-weight: 700; letter-spacing: .06em;
         white-space: nowrap;
     }
+    .welcome-preview h2.welcome-preview-heading {color: #f3fcf8; font-size: 1.28rem; font-weight: 700; letter-spacing: -.025em; line-height: 1.25; margin: 0 0 6px;}
+    .welcome-preview p.welcome-preview-description {color: #bcd8d1 !important; font-size: .75rem; line-height: 1.5; margin: 0 0 18px;}
     .journey-visual {
         display: flex; align-items: center; gap: 6px;
         padding: 18px 12px 16px; border-radius: 14px;
@@ -1229,56 +1249,16 @@ st.markdown(
         border-radius: 50%; background: #e9d171; animation: journey-travel 2.4s linear infinite;
     }
     .journey-link:nth-of-type(4)::after {animation-delay: 1.2s;}
-    .journey-checks {display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px;}
+    .journey-checks-label {color: #b7d8cf; font-size: .63rem; letter-spacing: .09em; text-transform: uppercase; font-weight: 750; margin-top: 18px;}
+    .journey-checks {display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px;}
     .journey-checks span {
         padding: 5px 8px; border: 1px solid rgba(189, 235, 223, .14); border-radius: 20px;
         color: #c6e5dc; background: rgba(255,255,255,.05); font-size: .62rem;
     }
-    .welcome-preview p.journey-caption {margin: 13px 0 0; color: #b7d4cc !important; font-size: .68rem; line-height: 1.45;}
     @keyframes journey-cell {0%, 100% {opacity: .5;} 45% {opacity: 1;}}
     @keyframes journey-scan {0%, 100% {top: 20%;} 50% {top: 78%;}}
     @keyframes journey-grow {0%, 100% {transform: scaleY(.65);} 50% {transform: scaleY(1);}}
     @keyframes journey-travel {0% {left: 0; opacity: 0;} 20% {opacity: 1;} 85% {opacity: 1;} 100% {left: calc(100% - 7px); opacity: 0;}}
-    .welcome-signal {
-        display: flex; align-items: center; gap: 12px; padding: 12px 13px;
-        border: 1px solid rgba(255,255,255,.09); border-radius: 12px;
-        background: rgba(255,255,255,.055);
-    }
-    .welcome-signal + .welcome-signal {margin-top: 8px;}
-    .welcome-signal-icon {
-        display: grid; place-items: center; flex: 0 0 31px; height: 31px;
-        border-radius: 10px; color: #d4f5ee; background: rgba(0, 199, 177, .17);
-        font-size: .78rem; font-weight: 760;
-    }
-    .welcome-signal-copy {min-width: 0; flex: 1;}
-    .welcome-signal-copy strong {display: block; color: #fff; font-size: .79rem;}
-    .welcome-signal-copy small {
-        display: block; margin-top: 3px; color: #b4cbc6;
-        font-size: .67rem; line-height: 1.35;
-    }
-    .welcome-signal-check {
-        color: #8bded0; font-size: .92rem; font-weight: 750;
-    }
-    .api-flow {
-        display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
-        margin-top: 18px; color: #55746d; font-size: .73rem; font-weight: 700;
-    }
-    .api-flow span {
-        padding: 6px 10px; border: 1px solid #dcebe6; border-radius: 20px;
-        background: #fff;
-    }
-    .api-flow i {
-        width: 20px; height: 2px; background: #a4d8ce; position: relative;
-        overflow: hidden;
-    }
-    .api-flow i::after {
-        content: ""; position: absolute; inset: 0; background: #00796f;
-        animation: api-flow-pulse 2s ease-in-out infinite;
-    }
-    @keyframes api-flow-pulse {
-        0% {transform: translateX(-100%);}
-        60%, 100% {transform: translateX(100%);}
-    }
     .sidebar-brand {
         display: flex; align-items: center; gap: 12px;
         padding: 4px 0 20px; margin-bottom: 0;
@@ -1420,11 +1400,6 @@ st.markdown(
     .dashboard-intro strong {display: block; color: var(--ink); font-size: 1.02rem;}
     .dashboard-intro span {display: block; color: #526b69; font-size: .82rem; margin-top: 4px;}
     .welcome-panel, .dashboard-intro {animation: workspace-appear .5s ease-out both;}
-    .welcome-signal {animation: workspace-appear .55s ease-out both;}
-    .welcome-signal:nth-child(3) {animation-delay: .08s;}
-    .welcome-signal:nth-child(4) {animation-delay: .16s;}
-    .welcome-signal:nth-child(5) {animation-delay: .24s;}
-    .welcome-signal:nth-child(6) {animation-delay: .32s;}
     @keyframes workspace-appear {
         from {opacity: 0; transform: translateY(8px);}
         to {opacity: 1; transform: translateY(0);}
@@ -1564,7 +1539,7 @@ st.markdown(
     .inspection-loader-copy span {display:block; color:var(--muted); font-size:.76rem; margin-top:3px;}
     @keyframes inspection-spin {to {transform: rotate(360deg);}}
     @media (prefers-reduced-motion: reduce) {
-        .inspection-loader-spinner, .welcome-panel, .dashboard-intro, .welcome-signal, .api-flow i::after,
+        .inspection-loader-spinner, .welcome-panel, .dashboard-intro,
         .journey-grid i, .journey-scan-line, .journey-bars i, .journey-link::after {animation: none;}
         .stButton button, .stDownloadButton button,
         [data-testid="stPopoverBody"][aria-label="Settings"] [role="tab"] {transition: none;}
@@ -1642,16 +1617,10 @@ st.markdown(
         .brand-header {padding: 16px 14px; gap: 11px; border-radius: 14px;}
         .brand-logo {width: 42px; height: 42px; flex-basis: 42px;}
         .brand-subtitle {font-size: .82rem;}
-        .welcome-panel {display: flex; flex-direction: column; align-items: stretch; gap: 0; min-height: 0; padding: 24px 20px;}
-        .welcome-copy {display: contents;}
-        .welcome-eyebrow {order: 0;}
-        .welcome-title {order: 1;}
-        .welcome-description {order: 2;}
-        .welcome-preview {order: 3; margin-top: 20px;}
-        .welcome-steps {order: 4;}
-        .api-flow {order: 5;}
-        .welcome-steps {grid-template-columns: 1fr; gap: 12px; margin-top: 20px;}
-        .welcome-preview {padding: 19px;}
+        .welcome-panel {display: flex; flex-direction: column; align-items: stretch; gap: 24px; padding: 26px 21px;}
+        .welcome-title {font-size: 2.25rem;}
+        .welcome-preview {padding: 20px;}
+        .welcome-steps {grid-template-columns: 1fr; gap: 16px; padding-top: 20px;}
         .workflow-strip {grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; padding: 8px;}
         .workflow-step {gap: 7px; padding: 9px 8px;}
         .workflow-step:last-child {grid-column: span 2;}
@@ -2055,40 +2024,31 @@ if not datasets:
     render_settings(settings_anchor)
     st.markdown(
         """
-        <section class="welcome-panel" aria-labelledby="welcome-title">
+        <section class="welcome-panel" aria-label="Data quality introduction">
           <div class="welcome-copy">
-            <div class="welcome-eyebrow">A better view of your data</div>
-            <h1 class="welcome-title" id="welcome-title">Find the signal in every row.</h1>
+            <div class="welcome-eyebrow">Data quality, made clear</div>
+            <h1 class="welcome-title">Better data. <span class="welcome-accent">Better decisions.</span></h1>
             <p class="welcome-description">
-              Bring in a CSV, Excel file, or API source to uncover missing values, duplicates,
-              inconsistent formats, and unusual numbers. Files are processed by
-              the server for your current session.
+              Find missing values, duplicates, invalid formats and outliers in your data.
+              Explore the results, review suggested fixes, and move forward with confidence.
             </p>
-            <div class="welcome-steps">
-              <div class="welcome-step">
-                <span class="welcome-step-number">01</span>
-                <span>Bring your data<small>Upload a file or try a sample.</small></span>
-              </div>
-              <div class="welcome-step">
-                <span class="welcome-step-number">02</span>
-                <span>See what stands out<small>Review clear quality signals.</small></span>
-              </div>
-              <div class="welcome-step">
-                <span class="welcome-step-number">03</span>
-                <span>Make it better<small>Apply safe fixes and export.</small></span>
+            <div class="welcome-start">
+              <span class="welcome-start-icon" aria-hidden="true">↗</span>
+              <div><strong>Get started with your data</strong>
+                <span class="welcome-start-copy">Upload a file in the sidebar, or explore the sample workspace.</span>
               </div>
             </div>
-            <div class="api-flow" aria-label="Import, inspect, and send">
-              <span>File or API</span><i aria-hidden="true"></i>
-              <span>Inspect &amp; improve</span><i aria-hidden="true"></i>
-              <span>Export or API</span>
+            <div class="welcome-meta" aria-label="Supported data sources">
+              <span>CSV</span><span>EXCEL</span><span>API</span>
             </div>
           </div>
           <div class="welcome-preview" aria-label="Data quality checks included">
             <div class="welcome-preview-top">
-              <div class="welcome-preview-title">From data to clarity</div>
-              <div class="welcome-preview-badge">HOW IT WORKS</div>
+              <div class="welcome-preview-title">Your workflow</div>
+              <div class="welcome-preview-badge">AT A GLANCE</div>
             </div>
+            <h2 class="welcome-preview-heading">From data to insight</h2>
+            <p class="welcome-preview-description">A clear path from your source to a more reliable dataset.</p>
             <div class="journey-visual" aria-label="Import data, inspect quality, and explore insights">
               <div class="journey-stage">
                 <span class="journey-stage-label">Import</span>
@@ -2108,8 +2068,22 @@ if not datasets:
                 <small>Clear insights</small>
               </div>
             </div>
+            <div class="journey-checks-label">Quality checks</div>
             <div class="journey-checks"><span>Missing values</span><span>Duplicates</span><span>Invalid formats</span><span>Outliers</span></div>
-            <p class="journey-caption">Understand your data, review the findings, and share a cleaner result.</p>
+          </div>
+          <div class="welcome-steps" aria-label="How it works">
+            <div class="welcome-step">
+              <span class="welcome-step-number">01</span>
+              <span>Connect<small>Bring in files or connect an API.</small></span>
+            </div>
+            <div class="welcome-step">
+              <span class="welcome-step-number">02</span>
+              <span>Understand<small>Explore quality issues and insights.</small></span>
+            </div>
+            <div class="welcome-step">
+              <span class="welcome-step-number">03</span>
+              <span>Improve<small>Review fixes, then export or send.</small></span>
+            </div>
           </div>
         </section>
         """,
