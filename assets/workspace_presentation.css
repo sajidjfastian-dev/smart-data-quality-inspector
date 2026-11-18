@@ -132,6 +132,71 @@
     }
 }
 
+/* A stronger sequential spotlight makes the workflow legible from a distance.
+   Animation is decorative: the labels remain visible throughout the cycle. */
+.welcome-panel .welcome-preview .journey-visual {
+    gap: 10px;
+    padding: 20px 14px;
+    border: 1px solid rgba(163, 231, 214, .25);
+    background: radial-gradient(ellipse at 50% 5%, rgba(112, 213, 193, .17), transparent 75%),
+                rgba(3, 27, 32, .34);
+    box-shadow: inset 0 1px 0 rgba(222, 255, 247, .08);
+}
+.welcome-panel .welcome-preview .journey-stage {
+    --phase: 0s;
+    padding: 10px 4px;
+    border-radius: 16px;
+    animation: workflow-stage-glow 6.4s var(--phase) ease-in-out infinite;
+}
+.welcome-panel .welcome-preview .journey-stage:nth-child(3) {--phase: 1.6s;}
+.welcome-panel .welcome-preview .journey-stage:nth-child(5) {--phase: 3.2s;}
+.welcome-panel .welcome-preview .journey-stage:nth-child(7) {--phase: 4.8s;}
+.welcome-panel .welcome-preview .journey-stage-label {
+    color: #e4fff7;
+    font-weight: 800;
+    letter-spacing: .06em;
+}
+.welcome-panel .welcome-preview .journey-stage small {color: #e2f5ef; font-weight: 600;}
+.welcome-panel .welcome-preview .journey-icon {
+    border-color: rgba(169, 243, 220, .48);
+    background: linear-gradient(145deg, rgba(112, 217, 190, .22), rgba(255, 255, 255, .07));
+    animation: workflow-icon-lift 6.4s var(--phase) ease-in-out infinite;
+}
+.welcome-panel .welcome-preview .journey-icon::after {
+    border: 2px solid #f1d779;
+    animation: workflow-icon-ring 6.4s var(--phase) ease-in-out infinite;
+}
+.welcome-panel .welcome-preview .journey-icon::before {
+    animation: inspector-sheen 6.4s var(--phase) ease-in-out infinite;
+}
+.welcome-panel .welcome-preview .journey-link::after {
+    animation: inspector-flow 6.4s .8s ease-in-out infinite;
+}
+.welcome-panel .welcome-preview .journey-link:nth-child(4)::after {animation-delay: 2.4s;}
+.welcome-panel .welcome-preview .journey-link:nth-child(6)::after {animation-delay: 4s;}
+.welcome-panel .welcome-preview .journey-scan-line {animation-duration: 6.4s; animation-delay: 1.6s;}
+.welcome-panel .welcome-preview .journey-grid i {animation-duration: 6.4s;}
+.welcome-panel .welcome-preview .journey-bars i {animation-duration: 6.4s; animation-delay: 3.2s;}
+.welcome-panel .welcome-preview .journey-export-arrow {animation-duration: 6.4s; animation-delay: 4.8s;}
+@container (max-width: 540px) {
+    .welcome-panel .welcome-preview .journey-visual {flex-wrap: wrap; gap: 8px;}
+    .welcome-panel .welcome-preview .journey-stage {flex: 0 0 calc(50% - 4px);}
+    .welcome-panel .welcome-preview .journey-link {display: none;}
+    .welcome-panel .welcome-preview .journey-stage-label {white-space: nowrap;}
+}
+@keyframes workflow-stage-glow {
+    0%, 27%, 100% {background: transparent; box-shadow: inset 0 0 0 1px transparent;}
+    7%, 18% {background: rgba(147, 228, 204, .12); box-shadow: inset 0 0 0 1px rgba(182, 242, 220, .18);}
+}
+@keyframes workflow-icon-lift {
+    0%, 27%, 100% {transform: translateY(0) scale(1); box-shadow: 0 4px 10px rgba(3, 27, 32, .18);}
+    7%, 18% {transform: translateY(-4px) scale(1.06); box-shadow: 0 8px 20px rgba(5, 22, 27, .3), 0 0 20px rgba(167, 239, 213, .24);}
+}
+@keyframes workflow-icon-ring {
+    0%, 27%, 100% {opacity: 0;}
+    7%, 18% {opacity: 1; background: rgba(228, 196, 95, .09);}
+}
+
 /* Spacing system: one rhythm for header, content, sidebar, and footer. */
 /* Style/script-only helpers and the fixed header render no box; keep them out of flex gaps. */
 .stElementContainer:has(> .stHtml :is(script, style)):not(:has(.stHtml :not(script, style))),
