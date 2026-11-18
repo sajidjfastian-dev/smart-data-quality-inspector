@@ -137,6 +137,27 @@ def valid_snapshot(revision):
     return snap
 
 
+def approved_download(state, reference, number):
+    """Validate the latest approved revision again when preparing its download."""
+    require_role(state, "Submitter")
+    record = requests(state).get(reference)
+    if not record or record["submitted_by"] != state["demo_user"]:
+        raise WorkflowError("Request not found in this session.")
+    rev = record["revisions"][-1]
+    if rev["number"] != number or rev["status"] not in ("CAB approved", "Simulated"):
+        raise WorkflowError("Complete request, ticket and CAB approvals before downloading this revision.")
+    snap = valid_snapshot(rev)
+    ticket = rev.get("ticket")
+    from review_approval import is_approved
+    if (not snap["privacy_reviewed"] or not ticket or ticket.get("outdated")
+            or ticket.get("digest") != snap["selected_digest"]
+            or not is_approved(rev["approval_state"], f"{reference}/r{number}",
+                               snap["selected"], snap["choice"])):
+        raise WorkflowError("A current approved demo ticket is required.")
+    from security_guardrails import mask_dataframe
+    return mask_dataframe(snap["selected"], snap["protected"]).to_csv(index=False).encode("utf-8-sig")
+
+
 def owner_decision(state, reference, approved, reason=""):
     if requests(state)[reference].get("_db_version") and not state.get("_db_transaction"):
         from persistent_demo import transaction, REASONS

@@ -251,7 +251,7 @@ section[data-testid="stSidebar"] [data-testid="stSidebarUserContent"] > div > [d
 /* Language switch: both codes visible, the active one highlighted. */
 .st-key-language_choice [role="radiogroup"] {gap: 0; flex-wrap: nowrap;}
 .st-key-language_choice [role="radio"] {
-    min-height: 36px; min-width: 42px; padding: 0 10px; border: 1px solid rgba(218, 239, 234, .3);
+    min-height: 32px; min-width: 36px; padding: 0 8px; border: 1px solid rgba(218, 239, 234, .3);
     background: rgba(255,255,255,.08); color: #d0dfdc;
 }
 .st-key-language_choice [role="radio"] p {font-size: .78rem; font-weight: 700; letter-spacing: .04em; color: inherit !important;}

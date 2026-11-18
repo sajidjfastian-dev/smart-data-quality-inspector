@@ -1,5 +1,29 @@
 # FinVibe judging readiness assessment
 
+## Presentation verification — 18 November 2026
+
+This update supersedes earlier workflow-verification limitations below, not the security, compliance or business-impact findings.
+
+**Agreed scope:** process actual CSV/Excel uploads in the active session. SSO, independent approver identity and service-desk tickets remain demos. Final delivery is a masked approved CSV after request, ticket and CAB approvals, not a production-system write. Private requests and uploads clear on logout.
+
+**Browser-verified using controlled files, not organizational production data:**
+- CSV upload, quality charts, issue log, fixes, highlighted corrections and masked previews.
+- Submission, review acknowledgement, confirmation cancellation, request/ticket/CAB approvals and exact approved-file download.
+- Download blocked before approval, for rejected requests, new drafts and historical revisions.
+- Private requests cleared on logout; shared database examples unchanged.
+- Disabled checks and custom rules change actual findings as expected.
+- English desktop/projector layouts at 1280/1920 pixels and Arabic mobile charts.
+- Excel upload and the local assistant reporting the correct missing-value count.
+- Sample API returns 520 database-backed synthetic rows.
+
+Reusable workflow check: `scripts/check_judges_flow.py`. No unit suites were run; they remain deferred to pre-publish verification as requested. No publishing or production writes were performed.
+
+**Not production certification:** authenticated identities, independently authorized approvals, security/privacy review, operational controls and pre-publish regression verification are still required. Persistent private storage is explicitly outside today's scope. External model integration was not configured or tested; the local assistant works without it. Safe fixes are deterministic and may leave findings unresolved. Quality checks cover configured rules, not all possible business errors. Downloads retain configured masking.
+
+**Judges' walkthrough:** demo SSO → New request → upload a permitted file → Overview / Issue log → configure rules → apply fixes → highlighted Preview & export → submit fixed version → review side-by-side changes → request approval → ticket approval → CAB approval → download approved file. Explain session-only storage and demo identities/tickets.
+
+## Original assessment
+
 **Assessment date:** 17 November 2026. **Scope:** repository and supplied judging slide; targeted synthetic regression tests; official CBUAE sources. No application changes, production deployment, external model calls, or sensitive/real data access were performed. This is not a predicted score, a security audit, or a regulatory compliance assessment.
 
 The supplied [judging slide](attached_assets/image_1794899896256.png) identifies six criteria, scored by judges from 1–5 and weighted as shown below. The slide is the source for the rubric; no official online copy or more detailed marking guidance was verified. The app is a demonstrable prototype for synthetic files, not yet an evidenced real-data pilot. A loading skeleton was captured in the preview, not a completed independent first-time walkthrough; no usability conclusion should be drawn from that capture.

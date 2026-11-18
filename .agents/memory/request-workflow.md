@@ -10,11 +10,11 @@ The workflow is configurable quality checks → 360-degree inspection → sugges
 
 **How to apply:** Reuse existing inspection, rules, assistant, comparisons and tickets. Do not confuse owner approval with CAB approval or permit execution before all required gates.
 
-Keep this workflow demo-only.
+For the judges' presentation, process actual uploaded data through the real inspection, correction, review and approved-file download flow. Keep SSO, reviewer identity and ticket generation as demos; keep real uploads session-only and do not write to production systems.
 
-**Why:** The user explicitly selected “Keep the workflow demo-only” after being told real identities, persistent private history and production authorization require integrations.
+**Why:** The user subsequently requested an end-to-end functional flow with real data and explicitly chose “Download approved file” and “Session-only for today.”
 
-**How to apply:** Label simulated roles, approvals and tickets honestly; keep production execution disabled or purely simulated, and do not claim session-only request lists persist across logins.
+**How to apply:** Gate the final download on request, ticket and CAB approval of the same revision. Label demo identity and tickets honestly; do not claim session-only history survives logout or that the demo is production-authorized.
 
 Use only two demo roles: Submitter and Approver.
 

@@ -40,7 +40,7 @@ class CheckerFlowTests(unittest.TestCase):
         self.assertIn("Removed duplicate row", markup)
         self.approve()
         self.assertNotIn("Demo role", [w.label for w in self.app.selectbox])
-        self.widget("button", "Approve demo ticket").click().run()
+        self.widget("button", "Approve ticket").click().run()
         self.widget("button", "Confirm").click().run()
         self.assertTrue(self.widget("button", "Simulate production application").disabled)
         self.widget("button", "Approve CAB step").click().run()

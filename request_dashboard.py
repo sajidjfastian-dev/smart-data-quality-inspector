@@ -124,7 +124,7 @@ def render_request_dashboard(state):
         # Render metrics above the toolbar after the matching set is calculated.
         summary_panel = st.container(key="rd_summary")
         with st.container(key="rd_filters"):
-            left, middle, right, sessions, dates, clear = st.columns([2.3, 1.5, 1.8, 1.8, 1.2, 1.1])
+            left, middle, right, sessions, dates, clear = st.columns([2.2, 1.4, 1.6, 1.6, 1.65, 1.25])
             with left:
                 reference = st.text_input(
                     localization.translate("Reference contains"), key="rd_reference",

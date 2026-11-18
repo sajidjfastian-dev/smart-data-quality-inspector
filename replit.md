@@ -12,6 +12,8 @@
 
 ## Project constraints
 
+- Display application dates as YYYY-MM-DD; include HH:mm where useful, such as submission dates and timeline events, using Asia/Dubai. Do not reformat original uploaded data merely for UI consistency.
+
 - Keep the existing standalone Streamlit structure and dependency pins.
 - Private-file inspection remains session-only. Shared synthetic examples use the existing PostgreSQL database; real SSO and production writes remain disabled.
 - Uploaded datasets and optional AI credentials stay in the active Streamlit session.

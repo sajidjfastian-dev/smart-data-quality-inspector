@@ -106,10 +106,7 @@ def render_signed_in_sidebar(state):
     native.markdown(
         f'<div class="signed-in-guide" data-nav="{selected}">'
         f'<h3>{text("Request workflow")}</h3><ol>{workflow}</ol>'
-        '<div class="signed-in-guide__privacy">'
-        f'<h4>{text("What stays where")}</h4>'
-        f'<p>{text("Shared synthetic examples are saved. Private uploads stay in this session.")}</p>'
-        '</div></div>',
+        '</div>',
         unsafe_allow_html=True,
     )
 

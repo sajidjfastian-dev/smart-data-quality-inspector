@@ -36,9 +36,9 @@
 .st-key-rd_table {border: 1px solid var(--rd-line); border-radius: 6px; overflow: hidden; gap: 0;}
 .st-key-rd_table > [data-testid="stVerticalBlock"] {gap: 0;}
 .st-key-rd_table [data-testid="stHorizontalBlock"] {gap: 14px;}
-.st-key-rd_table [class*="st-key-rd_record_"] {border: 0; border-top: 1px solid #ececf3; border-radius: 0; padding: 6px 14px; background: #fefeff;}
-.st-key-rd_table [class*="st-key-rd_record_"]:nth-child(odd) {background: #fafafd;}
-.st-key-rd_table [class*="st-key-rd_record_"]:hover {background: #f3f2fa;}
+.st-key-rd_table [class*="st-key-rd_record_"] {border: 0; border-top: 1px solid #dce7e2; border-radius: 0; padding: 6px 14px; background: #ffffff;}
+.st-key-rd_table > [data-testid="stLayoutWrapper"]:nth-child(odd) > [class*="st-key-rd_record_"] {background: #eaf3ee;}
+.st-key-rd_table [class*="st-key-rd_record_"]:hover {background: #dcece3;}
 .request-register-row {display: grid; grid-template-columns: 1.25fr 1.05fr 1.4fr 1.05fr 1fr; gap: 12px; min-width: 0; align-items: center; min-height: 31px;}
 .request-register-cell {min-width: 0; color: #50536a; font-size: .77rem; line-height: 1.5; overflow-wrap: anywhere;}
 .request-register-cell small {display: none;}
@@ -206,6 +206,31 @@
 .st-key-rd_statuses .react-aria-ComboBox > [role="group"] {
     height: auto; max-height: none; min-height: 40px; align-items: flex-start;
     border-color: var(--rd-line); border-radius: 5px; background: #f7f7fb;
+}
+/* Stable filter geometry for text inputs, React Aria selects and popovers.
+   Opening a menu or changing its label must not resize the row. */
+.st-key-rd_filters {--filter-height: 40px;}
+.st-key-rd_filters [data-testid="stHorizontalBlock"] {align-items: flex-start; flex-wrap: nowrap;}
+.st-key-rd_filters :is([data-testid="stTextInputRootElement"], [data-baseweb="input"],
+    .react-aria-ComboBox > [role="group"], [data-testid="stPopoverButton"],
+    [data-testid="stBaseButton-secondary"]) {
+    box-sizing: border-box; height: var(--filter-height) !important;
+    min-height: var(--filter-height) !important; max-height: var(--filter-height) !important;
+    border: 1px solid #d9e2de !important; border-radius: 7px !important;
+    background: #f7faf8 !important; color: #354f48 !important;
+    box-shadow: none !important; transform: none !important;
+}
+.st-key-rd_filters input {font-size: 14px !important; text-overflow: ellipsis; min-width: 0;}
+.st-key-rd_filters button {transform: none !important;}
+.st-key-rd_filters button p {font-size: 14px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+.st-key-rd_filters [data-testid="stPopoverButton"] {justify-content: space-between;}
+.st-key-rd_filters [data-testid="stPopoverButton"] [data-testid="stMarkdownContainer"] {min-width: 0; overflow: hidden;}
+.st-key-rd_filters :is([role="group"]:focus-within, button:focus-visible) {outline: 2px solid #88b9aa; outline-offset: 1px;}
+@media (min-width: 768px) and (max-width: 1399px) {
+    .st-key-rd_filters [data-testid="stHorizontalBlock"] {flex-wrap: wrap;}
+}
+@media (max-width: 767px) {
+    .st-key-rd_filters [data-testid="stHorizontalBlock"] {flex-wrap: wrap;}
 }
 .st-key-rd_statuses [data-testid="stMultiSelectTagsContainer"] {
     flex-wrap: wrap; gap: 6px; height: auto; min-height: 38px;

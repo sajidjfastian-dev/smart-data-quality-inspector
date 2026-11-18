@@ -1,0 +1,60 @@
+/* Read-only progress and real native actions share one numbered card.
+   Colors are always paired with explicit status text. */
+.st-key-demo_approval_steps {max-width: 1180px; gap: 15px; min-width: 0; padding-block: 8px 14px;}
+.approval-sequence-intro {padding: 18px 21px; border: 1px solid #cfdfd6; border-radius: 12px; background: #f1f7f2;}
+.approval-sequence-intro h3 {margin: 0 0 7px; padding: 0; color: #215446; font-size: clamp(21px, 1.4vw, 28px); line-height: 1.5;}
+.approval-sequence-intro p {margin: 0; color: #4b6659; max-width: 88ch; font-size: clamp(14px, .93vw, 18px); line-height: 1.75;}
+.st-key-demo_approval_steps [class*="st-key-demo_approval_step_"] {
+    position: relative; padding: 18px 21px;
+    border: 1px solid #d6dfd7; border-inline-start: 4px solid #c3cec4;
+    border-radius: 12px; background: #f8faf6; gap: 12px;
+    box-shadow: none; min-width: 0;
+}
+.st-key-demo_approval_steps [class*="st-key-demo_approval_step_"]:has(.approval-step-header--completed) {
+    border-color: #b3d1c2; border-inline-start-color: #257661; background: #eff7f1;
+}
+.st-key-demo_approval_steps [class*="st-key-demo_approval_step_"]:has(.approval-step-header--current) {
+    border-color: #dbc78c; border-inline-start-color: #ac8226; background: #fcf7e9;
+}
+.st-key-demo_approval_steps [class*="st-key-demo_approval_step_"]:has(.approval-step-header--rejected) {
+    border-color: #dfbcb6; border-inline-start-color: #a85147; background: #fbf0ed;
+}
+.approval-step-header {display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: start; gap: 14px; min-width: 0;}
+.approval-step-number {display: grid; place-items: center; width: 42px; height: 42px; border-radius: 11px; border: 1px solid #cad7cd; color: #50675a; background: #edf1e9; font-size: 21px; font-weight: 700; font-variant-numeric: tabular-nums;}
+.approval-step-header h4 {margin: 0; padding: 0; color: #2a5545; font-size: clamp(17px, 1.15vw, 23px); line-height: 1.6;}
+.approval-step-header p {margin: 5px 0 0; color: #4e675a; font-size: clamp(14px, .92vw, 18px); line-height: 1.7; overflow-wrap: anywhere;}
+.approval-step-status {align-self: start; padding: 5px 10px; border: 1px solid #ccd8ce; border-radius: 7px; color: #4c6354; background: #edf2e9; font-size: clamp(12px, .83vw, 16px); font-weight: 650; line-height: 1.6; white-space: normal; text-align: center; max-width: 21ch;}
+.approval-step-header--completed .approval-step-number,
+.approval-step-header--completed .approval-step-status {background: #d9eee0; color: #205e49; border-color: #acd0bc;}
+.approval-step-header--current .approval-step-number,
+.approval-step-header--current .approval-step-status {background: #f2e3b6; color: #705317; border-color: #d5bb72;}
+.approval-step-header--rejected .approval-step-number,
+.approval-step-header--rejected .approval-step-status {background: #f2dcd6; color: #8a3e37; border-color: #d6a79e;}
+.st-key-demo_approval_steps [data-testid="stWidgetLabel"] p,
+.st-key-demo_approval_steps button p {font-size: clamp(14px, .93vw, 18px); line-height: 1.65;}
+.st-key-demo_approval_steps [data-testid="stCaptionContainer"] {color: #4e6659; font-size: clamp(13px, .85vw, 17px); line-height: 1.7;}
+.st-key-demo_approval_steps button {min-height: 42px; border-radius: 8px;}
+.st-key-demo_approval_steps button p {color: inherit !important;}
+.st-key-demo_approval_steps :is(
+    [class*="st-key-owner_yes_"], [class*="st-key-ticket_"],
+    [class*="st-key-cab_"], [class*="st-key-simulate_"]
+) button:not(:disabled) {background: #216c59; border-color: #216c59; color: #f2faf4;}
+.st-key-demo_approval_steps [class*="st-key-owner_no_"] button:not(:disabled) {
+    background: #fbf4f1; border-color: #cfaca5; color: #8a3e37;
+}
+.st-key-demo_approval_steps button:is(:disabled, [aria-disabled="true"]) {
+    background: #edf0e8 !important; border-color: #d0d9cc !important;
+    color: #5d6c5d !important; opacity: 1; cursor: not-allowed;
+}
+.st-key-demo_approval_steps button:focus-visible {outline: 3px solid #9e7d28; outline-offset: 3px;}
+.st-key-demo_approval_steps [data-testid="stColumn"] {min-width: 0;}
+.st-key-demo_approval_steps :is(input,textarea) {font-size: 16px;}
+@media (max-width: 767px) {
+    .approval-sequence-intro {padding: 16px;}
+    .st-key-demo_approval_steps [class*="st-key-demo_approval_step_"] {padding: 15px 13px;}
+    .approval-step-header {grid-template-columns: 38px minmax(0, 1fr); gap: 9px 12px;}
+    .approval-step-number {width: 36px; height: 36px; font-size: 19px;}
+    .approval-step-status {grid-column: 2; justify-self: start; max-width: 100%;}
+    .st-key-demo_approval_steps [data-testid="stHorizontalBlock"] {flex-wrap: wrap;}
+    .st-key-demo_approval_steps [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {flex: 1 1 100% !important; width: 100% !important;}
+}

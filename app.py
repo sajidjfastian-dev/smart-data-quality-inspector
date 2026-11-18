@@ -17,6 +17,7 @@ from localization import language, native, st, translate, translate_issue_type, 
 from api_settings import render_api_settings
 from api_connections import ApiConnectionError, request_public_api
 from data_insights import render_data_insights
+from change_preview import render_change_preview
 from quality_overview import overview_translate, render_quality_overview
 from workspace_presentation import install_presentation_styles, remove_legacy_footer, render_account_panel, render_signed_out_sidebar, render_signed_in_sidebar
 from demo_session import is_signed_in
@@ -1705,6 +1706,32 @@ st.markdown(
     [data-testid="stStatusWidget"] {
         border: 1px solid #e4e9e5; border-radius: 12px; background: #fff;
     }
+    /* Follow Streamlit's real running state, rather than a simulated timer. */
+    [data-testid="stStatusWidget"]:has([data-testid="stStatusWidgetRunningIcon"]) {
+        position: fixed !important; inset: 50% auto auto 50% !important;
+        transform: translate(-50%, -50%) !important; z-index: 1000000;
+        display: flex; flex-direction: column; align-items: center; gap: 18px;
+        width: min(280px, calc(100vw - 40px)); padding: 26px 28px;
+        border: 1px solid #b7d8cd; border-radius: 18px;
+        background: #f8fcfa; box-shadow: 0 16px 64px #123e3540;
+    }
+    [data-testid="stStatusWidget"]:has([data-testid="stStatusWidgetRunningIcon"])::before {
+        content: "Processing…"; color: #174e43; font-size: 19px; font-weight: 650;
+    }
+    html[dir="rtl"] [data-testid="stStatusWidget"]:has([data-testid="stStatusWidgetRunningIcon"])::before {
+        content: "جارٍ المعالجة…";
+    }
+    [data-testid="stStatusWidgetRunningIcon"] {
+        width: 36px !important; height: 36px !important; margin: 0 14px 0 0 !important;
+        border: 4px solid #d7e9e2; border-top-color: #18766a;
+        border-right-color: #c7a54d; border-radius: 50%;
+        animation: centered-loading-spin 1s linear infinite;
+    }
+    [data-testid="stStatusWidgetRunningIcon"] > * {display: none !important;}
+    @keyframes centered-loading-spin {to {transform: rotate(360deg);}}
+    @media (prefers-reduced-motion: reduce) {
+        [data-testid="stStatusWidgetRunningIcon"] {animation: none;}
+    }
     .inspection-loader {
         display: flex; align-items: center; gap: 14px; padding: 14px 16px;
         margin: 4px 0 10px; border: 1px solid #d8ebe6; border-radius: 12px;
@@ -2509,12 +2536,7 @@ with native.container(key="inspection_workspace"):
     with workspace_guidance_col:
         native.markdown(
             '<div class="inspection-context"><h2>' + html.escape(overview_translate("One file. A complete quality picture."))
-            + '</h2><p>' + html.escape(overview_translate("Inspect the original, review proposed corrections, then preview what you share."))
-            + '</p><div class="inspection-context__facts"><span>'
-            + html.escape(overview_translate("{0} workspace files").format(len(datasets)))
-            + '</span><span>' + html.escape(overview_translate("{0} rows across the workspace").format(f"{sum(len(frame) for frame in datasets.values()):,}"))
-            + '</span></div><small><strong>' + html.escape(overview_translate("Original data stays unchanged."))
-            + '</strong></small></div>', unsafe_allow_html=True,
+            + '</h2></div>', unsafe_allow_html=True,
         )
 
 data = datasets[active_dataset]
@@ -3284,17 +3306,39 @@ with preview_tab:
     st.caption(
         f"Previewing **{active_dataset}**. The original data remains unchanged by export cleaning."
     )
-    st.dataframe(mask_dataframe(data.head(100), display_sensitive_columns), width="stretch", hide_index=True)
-    st.caption(
-        "Click once to remove exact duplicates, trim whitespace, and fill missing "
-        "selected numeric values with the median. A cleaned copy is created only "
-        "when you request the download; the original stays unchanged."
+    preview_fixed = fixed_datasets.get(active_dataset)
+    preview_changes = st.session_state.get("fix_change_indexes", {}).get(active_dataset)
+    preview_fixed_valid = (
+        preview_fixed is not None and preview_changes is not None
+        and preview_changes["original"] == frame_digest(data)
+        and preview_changes["fixed"] == frame_digest(preview_fixed)
     )
+    preview_options = ["Original data", "Fixed copy"] if preview_fixed_valid else ["Original data"]
+    preview_version = native.radio(
+        translate("Preview version"), preview_options, index=len(preview_options)-1,
+        format_func=lambda value, locale=language(): translate(value, locale), horizontal=True,
+        key=f"export_preview_version_{column_signature}_{int(preview_fixed_valid)}",
+    )
+    if preview_version == "Fixed copy":
+        render_change_preview(preview_fixed, preview_changes["changes"], display_sensitive_columns, column_signature)
+    else:
+        st.dataframe(mask_dataframe(data.head(100), display_sensitive_columns), width="stretch", hide_index=True)
+        st.caption(translate("Apply fixes in Review & fix to see corrected cells here."))
+    if preview_fixed is not None and not preview_fixed_valid:
+        st.warning(translate("Reapply fixes to refresh the corrected preview."))
+    if preview_fixed_valid:
+        st.caption(translate("The download uses this fixed copy without applying additional fixes."))
+    else:
+        st.caption(
+            "Click once to remove exact duplicates, trim whitespace, and fill missing "
+            "selected numeric values with the median. A cleaned copy is created only "
+            "when you request the download; the original stays unchanged."
+        )
 
     download_col, batch_col = st.columns([1, 1])
     with download_col:
         def build_cleaned_csv_download():
-            cleaned = clean_data(
+            cleaned = preview_fixed if preview_fixed_valid else clean_data(
                 data,
                 numeric_columns=numeric_columns,
             )
