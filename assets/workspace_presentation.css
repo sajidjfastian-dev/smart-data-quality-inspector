@@ -1,4 +1,287 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;650;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap');
+/* Signed-out introduction: editorial teal / brushed gold.
+   Presence of the real login widget scopes every landing change; signed-in
+   inspection, approval, account and navigation surfaces keep their styles.
+   Decorative layers never capture events or supply translated text. */
+.stApp:has(.st-key-sidebar_login) .welcome-copy {
+    position: relative;
+    isolation: isolate;
+    min-width: 0;
+    padding-block: 8px;
+    animation: landing-editorial-arrive .8s cubic-bezier(.2,.7,.2,1) both;
+}
+.stApp:has(.st-key-sidebar_login) .welcome-copy::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: -34px -22px;
+    border-radius: 30px;
+    background: radial-gradient(ellipse at 8% 12%, rgba(97, 188, 167, .13), transparent 65%);
+    pointer-events: none;
+    animation: landing-light-drift 12s ease-in-out infinite;
+}
+.stApp:has(.st-key-sidebar_login) .welcome-copy .welcome-eyebrow {
+    gap: 10px;
+    color: #226b60;
+    font-size: clamp(.73rem, .82vw, 1rem);
+    letter-spacing: .12em;
+    line-height: 1.7;
+}
+.stApp:has(.st-key-sidebar_login) .welcome-copy .welcome-eyebrow::before {
+    width: 19px;
+    height: 3px;
+    border-radius: 1px;
+    background: #af872d;
+    flex-shrink: 0;
+}
+.stApp:has(.st-key-sidebar_login) .welcome-copy .welcome-title {
+    color: #173f3c;
+    font-size: clamp(2.65rem, 4.5vw, 4.5rem);
+    font-weight: 700;
+    letter-spacing: -.055em;
+    line-height: 1.12;
+    margin-block: 22px 24px;
+    text-wrap: balance;
+}
+.stApp:has(.st-key-sidebar_login) .welcome-copy .welcome-accent {
+    position: relative;
+    display: inline-block;
+    color: #086d61;
+    background: none;
+    -webkit-text-fill-color: currentColor;
+}
+.stApp:has(.st-key-sidebar_login) .welcome-copy .welcome-accent::after {
+    content: "";
+    position: absolute;
+    inset-inline: 1%;
+    bottom: -.12em;
+    height: 3px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, #a7802c, #d8bc70 68%, transparent);
+    transform-origin: left center;
+    animation: landing-rule-arrive 1.1s .3s cubic-bezier(.2,.7,.2,1) both;
+    pointer-events: none;
+}
+.stApp:has(.st-key-sidebar_login) .welcome-copy p.welcome-description {
+    color: #3d5e58;
+    font-size: clamp(1rem, 1.12vw, 1.3rem);
+    line-height: 1.85;
+    max-width: 47ch;
+}
+.stApp:has(.st-key-sidebar_login) .welcome-copy .welcome-start {
+    position: relative;
+    margin-block-start: 28px;
+    gap: 14px;
+    padding: 20px;
+    border: 1px solid #c7ded3;
+    border-inline-start: 3px solid #368574;
+    border-radius: 4px 16px 16px 4px;
+    background: linear-gradient(110deg, #eaf5ee, #f6faf5);
+    box-shadow: 0 5px 16px rgba(26, 78, 61, .035);
+}
+.stApp:has(.st-key-sidebar_login) .welcome-copy .welcome-start-icon {
+    position: relative;
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
+    border: 1px solid #bddbcf;
+    background: #dbede3;
+    border-radius: 11px;
+    color: #176451;
+}
+.stApp:has(.st-key-sidebar_login) .welcome-copy .welcome-start-icon::after {
+    content: "";
+    position: absolute;
+    inset: -5px;
+    border: 1px solid #7fae9c;
+    border-radius: 15px;
+    pointer-events: none;
+    animation: landing-invitation-ring 5s 1s ease-out infinite;
+}
+.stApp:has(.st-key-sidebar_login) .welcome-copy .welcome-start strong {
+    color: #214d42;
+    font-size: clamp(.92rem, 1vw, 1.15rem);
+    line-height: 1.5;
+}
+.stApp:has(.st-key-sidebar_login) .welcome-copy .welcome-start-copy {
+    color: #48675d;
+    font-size: clamp(.85rem, .93vw, 1.05rem);
+    line-height: 1.75;
+    margin-block-start: 5px;
+}
+.stApp:has(.st-key-sidebar_login) .welcome-copy .welcome-meta {
+    gap: 8px;
+    margin-block-start: 22px;
+}
+.stApp:has(.st-key-sidebar_login) .welcome-copy .welcome-meta span {
+    padding: 8px 12px;
+    border-radius: 7px;
+    border-color: #d4e2d9;
+    background: #f7faf5;
+    color: #355e50;
+    font-size: clamp(.75rem, .82vw, .96rem);
+    line-height: 1.6;
+}
+.stApp:has(.st-key-sidebar_login) .welcome-copy p.landing-privacy-note {
+    margin-block-start: 24px;
+    padding: 11px 14px;
+    border-inline-start: 2px solid #b9943e;
+    border-radius: 0;
+    background: linear-gradient(90deg, rgba(239, 227, 188, .24), transparent);
+    color: #4e6253;
+    font-size: clamp(.86rem, .94vw, 1.08rem);
+    line-height: 1.8;
+    max-width: 58ch;
+}
+section[data-testid="stSidebar"]:has(.st-key-sidebar_login) .signed-out-guide {
+    border-top-color: #cddfd3;
+    padding-inline: 12px;
+}
+section[data-testid="stSidebar"] .signed-out-guide__motif {
+    filter: drop-shadow(0 5px 5px rgba(31, 80, 57, .07));
+    animation: landing-document-float 7s ease-in-out infinite;
+}
+section[data-testid="stSidebar"]:has(.st-key-sidebar_login) .signed-out-guide h3 {
+    color: #245a48;
+    font-weight: 700;
+    line-height: 1.65;
+    text-wrap: balance;
+}
+section[data-testid="stSidebar"]:has(.st-key-sidebar_login) .signed-out-guide li {
+    position: relative;
+    gap: 12px;
+}
+section[data-testid="stSidebar"] .signed-out-guide li:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    inset-inline-start: 5px;
+    top: 23px;
+    bottom: -7px;
+    width: 1px;
+    background: #d8e3d8;
+    pointer-events: none;
+}
+section[data-testid="stSidebar"]:has(.st-key-sidebar_login) .signed-out-guide__marker {
+    position: relative;
+    z-index: 1;
+    flex-basis: 11px;
+    width: 11px;
+    height: 11px;
+    background: #f2e7c0;
+    border-color: #a98a36;
+    box-shadow: 0 0 0 3px #f5f8f1;
+}
+section[data-testid="stSidebar"]:has(.st-key-sidebar_login) .signed-out-guide p {
+    color: #486457;
+    line-height: 1.8;
+}
+section[data-testid="stSidebar"]:has(.st-key-sidebar_login) .st-key-account_panel {
+    background: #edf4ee;
+    border-top: 1px solid #c9dccf;
+    box-shadow: 0 -8px 22px rgba(30, 73, 49, .035);
+    padding-block-start: 18px !important;
+}
+section[data-testid="stSidebar"]:has(.st-key-sidebar_login) .account-hint {
+    color: #3b5e4e;
+    font-size: .82rem;
+    line-height: 1.7;
+}
+.stApp .st-key-sidebar_login button {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    min-height: 48px;
+    border-radius: 11px;
+    background: #096d5e;
+    border-color: #096151;
+    box-shadow: inset 0 1px rgba(228, 249, 232, .18), 0 4px 9px rgba(21, 85, 58, .1);
+    transition: transform .2s ease;
+}
+.st-key-sidebar_login button::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(110deg, transparent 30%, rgba(246, 230, 175, .14) 50%, transparent 70%);
+    pointer-events: none;
+    transform: translateX(-110%);
+    animation: landing-sso-sheen 9s 2s ease-in-out infinite;
+}
+.stApp .st-key-sidebar_login button:hover {
+    background: #095b4f;
+    border-color: #095b4f;
+    transform: translateY(-1px);
+}
+.stApp .st-key-sidebar_login button:active {transform: translateY(0);}
+.stApp .st-key-sidebar_login button:focus-visible {outline: 3px solid #ac8127; outline-offset: 3px;}
+section[data-testid="stSidebar"]:has(.st-key-sidebar_login) .st-key-account_panel [data-testid="stCaptionContainer"] p {
+    color: #52654f;
+    font-size: .78rem;
+    line-height: 1.7;
+}
+[dir="rtl"] .stApp:has(.st-key-sidebar_login) .welcome-copy .welcome-title {
+    letter-spacing: normal;
+    line-height: 1.55;
+}
+[dir="rtl"] .stApp:has(.st-key-sidebar_login) .welcome-copy .welcome-eyebrow {letter-spacing: normal;}
+[dir="rtl"] .stApp:has(.st-key-sidebar_login) .welcome-copy .welcome-accent::after {transform-origin: right center;}
+[dir="rtl"] .stApp:has(.st-key-sidebar_login) .welcome-copy .welcome-start {border-radius: 16px 4px 4px 16px;}
+@keyframes landing-editorial-arrive {
+    from {opacity: 0; transform: translateY(10px);}
+    to {opacity: 1; transform: translateY(0);}
+}
+@keyframes landing-rule-arrive {
+    from {transform: scaleX(0); opacity: 0;}
+    to {transform: scaleX(1); opacity: 1;}
+}
+@keyframes landing-light-drift {
+    0%, 100% {transform: translate(0, 0); opacity: .6;}
+    50% {transform: translate(12px, 9px); opacity: 1;}
+}
+@keyframes landing-invitation-ring {
+    0%, 65%, 100% {transform: scale(.94); opacity: 0;}
+    12% {opacity: .65;}
+    48% {transform: scale(1.17); opacity: 0;}
+}
+@keyframes landing-document-float {
+    0%, 100% {transform: translateY(0);}
+    50% {transform: translateY(-4px);}
+}
+@keyframes landing-sso-sheen {
+    0%, 76% {transform: translateX(-110%); opacity: 0;}
+    80% {opacity: 1;}
+    97%, 100% {transform: translateX(110%); opacity: 0;}
+}
+@media (max-width: 767px) {
+    .stApp:has(.st-key-sidebar_login) .welcome-copy .welcome-title {
+        font-size: clamp(2.3rem, 9vw, 3.4rem);
+        margin-block: 20px 22px;
+    }
+    .stApp:has(.st-key-sidebar_login) .welcome-copy .welcome-start {padding: 16px 14px; gap: 12px;}
+    .stApp:has(.st-key-sidebar_login) .welcome-copy .welcome-meta span {padding: 7px 10px;}
+}
+/* Keep every safeguard readable even on short projectors: allow the existing
+   sidebar scroller to do its job rather than suppressing safety statements. */
+@media (max-height: 740px) {
+    section[data-testid="stSidebar"]:has(.st-key-sidebar_login) .signed-out-guide__motif {height: 48px; margin-block-end: 8px;}
+    section[data-testid="stSidebar"]:has(.st-key-sidebar_login) .signed-out-guide {margin-block: 8px 14px; padding-block-start: 12px;}
+    section[data-testid="stSidebar"]:has(.st-key-sidebar_login) .signed-out-guide p {display: block; font-size: .8rem;}
+}
+@media (prefers-reduced-motion: reduce) {
+    .stApp:has(.st-key-sidebar_login) .welcome-copy,
+    .stApp:has(.st-key-sidebar_login) .welcome-copy::before,
+    .stApp:has(.st-key-sidebar_login) .welcome-copy *,
+    .stApp:has(.st-key-sidebar_login) .welcome-copy *::after,
+    section[data-testid="stSidebar"] .signed-out-guide__motif,
+    .st-key-sidebar_login button,
+    .st-key-sidebar_login button::after {
+        animation: none !important;
+        transition: none !important;
+        transform: none !important;
+    }
+    .st-key-sidebar_login button::after,
+    .stApp:has(.st-key-sidebar_login) .welcome-copy .welcome-start-icon::after {opacity: 0;}
+}
 /* Focused enhancements to the existing inspector, not a second application. */
 .welcome-copy {animation: inspector-reveal .7s cubic-bezier(.2,.7,.2,1) both;}
 .welcome-preview {container-type: inline-size; animation: inspector-reveal .8s .12s both;}
