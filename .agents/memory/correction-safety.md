@@ -19,3 +19,9 @@ Preserve manual corrections when offering later automated actions, and keep corr
 **Why:** Rebuilding a copy from the original can silently erase manual work; losing row lineage makes the approval comparison misleading.
 
 **How to apply:** Compose corrections with reliable original-row lineage, or prevent a destructive rerun. Submission acknowledgements and approvals must refer to the exact corrected version. Exports must not silently apply extra fixes beyond the previewed copy.
+
+Offer row-level revert only for retained rows whose cell values were corrected. Do not offer restoration of removed duplicate rows.
+
+**Why:** The user clarified: “if any duplicate row is removed than its fine, i want revert option only if any change happened in row”.
+
+**How to apply:** Reverting a row restores its changed cell values while preserving duplicate removals and all other rows' corrections. Keep removed duplicates visible in the audit history without a revert control.
