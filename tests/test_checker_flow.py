@@ -20,11 +20,11 @@ class CheckerFlowTests(unittest.TestCase):
         self.assertEqual([e.message for e in self.app.exception], [])
 
     def fix(self):
-        self.widget("button", "Apply selected fixes").click().run()
+        self.widget("button", "Apply automatic fixes").click().run()
         self.assert_clean()
 
     def approve(self):
-        self.widget("checkbox", "Ready to submit this version to the demo approver").check().run()
+        self.widget("checkbox", "I reviewed all changes and remaining findings; this version is ready for review").check().run()
         self.widget("button", "Submit for review").click().run()
         self.widget("checkbox", "I reviewed the changes and remaining findings").check().run()
         self.widget("button", "Approve request").click().run()
@@ -42,16 +42,18 @@ class CheckerFlowTests(unittest.TestCase):
         self.assertNotIn("Demo role", [w.label for w in self.app.selectbox])
         self.widget("button", "Approve ticket").click().run()
         self.widget("button", "Confirm").click().run()
-        self.assertTrue(self.widget("button", "Simulate production application").disabled)
+        self.assertTrue(self.app.get("download_button")[0].disabled)
         self.widget("button", "Approve CAB step").click().run()
         self.widget("button", "Confirm").click().run()
         with patch("api_settings.push_api_data") as push:
-            self.widget("button", "Simulate production application").click().run()
-            self.widget("button", "Confirm").click().run()
+            from request_workflow import approved_download
+            ref = self.app.session_state["active_request_ref"]
+            payload = approved_download(dict(self.app.session_state._state.filtered_state), ref, 1)
+            self.assertIn(b"customer_id", payload)
         self.assert_clean()
         push.assert_not_called()
         ref = self.app.session_state["active_request_ref"]
-        self.assertEqual(self.app.session_state["demo_requests"][ref]["revisions"][-1]["status"], "Simulated")
+        self.assertEqual(self.app.session_state["demo_requests"][ref]["revisions"][-1]["status"], "CAB approved")
         self.widget("button", "Create new draft revision").click().run()
         self.assert_clean()
         self.fix()
@@ -59,11 +61,12 @@ class CheckerFlowTests(unittest.TestCase):
         self.assertTrue(self.widget("button", "Push data to API").disabled)
 
     def test_original_review_return_and_rule_invalidation(self):
-        self.widget("checkbox", "Ready to submit this version to the demo approver").check().run()
+        self.fix()
+        self.widget("checkbox", "I reviewed all changes and remaining findings; this version is ready for review").check().run()
         self.widget("button", "Submit for review").click().run()
-        self.widget("button", "Reject request").click().run()
-        self.assertIn("Enter a rejection reason.", [e.value for e in self.app.error])
+        self.assertTrue(self.widget("button", "Reject request").disabled)
         self.widget("text_area", "Rejection reason").input("Check the source").run()
+        self.assertFalse(self.widget("button", "Reject request").disabled)
         self.widget("button", "Reject request").click().run()
         self.widget("button", "Create new draft revision").click().run()
         self.widget("checkbox", "Missing values").uncheck().run()

@@ -58,7 +58,7 @@ class LocalizationTests(unittest.TestCase):
         app = signed_in(AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"), default_timeout=90)).run()
         load_test_fixture(app)
         app.segmented_control(key="language_choice").set_value("AR").run()
-        app.session_state["dashboard_tabs"] = "5 · المساعد"
+        app.session_state["dashboard_tabs"] = "4 · المساعد الذكي"
         app.run()
         for question, expected in [
             ("كم عدد الصفوف المكررة؟", "مكررة"),
@@ -82,14 +82,14 @@ class LocalizationTests(unittest.TestCase):
         name = app.selectbox(key="active_dataset").value
         original = app.session_state["inspector_datasets"][name].copy(deep=True)
         app.segmented_control(key="language_choice").set_value("AR").run()
-        app.session_state["dashboard_tabs"] = "3 · مراجعة وإصلاح"
+        app.session_state["dashboard_tabs"] = "2 · مراجعة وإصلاح"
         app.run()
-        button = next(button for button in app.button if button.label == "تطبيق الإصلاحات المحددة")
+        button = next(button for button in app.button if button.label == "تطبيق الإصلاحات التلقائية")
         button.click().run()
         self.assertFalse(app.exception)
         fixed = app.session_state["fixed_datasets"][name].copy(deep=True)
         assert_frame_equal(app.session_state["inspector_datasets"][name], original)
-        app.session_state["dashboard_tabs"] = "6 · رؤى البيانات"
+        app.session_state["dashboard_tabs"] = "5 · رؤى البيانات"
         app.run()
         self.assertTrue(any("حقولك في لمحة" in item.value for item in app.subheader))
         app.segmented_control(key="language_choice").set_value("EN").run()

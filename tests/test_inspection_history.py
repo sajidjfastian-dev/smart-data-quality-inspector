@@ -111,7 +111,7 @@ class HistoryUiTests(unittest.TestCase):
             app.session_state["active_dataset"] = "private.csv"
             app.run()
             self.assertFalse(app.exception)
-            self.assertTrue(app.button(key="save_history_summary").disabled)
+            self.assertNotIn("save_history_summary", [button.key for button in app.button])
             self.assertIn("private.csv", app.session_state["quality_scan_cache"])
 
 

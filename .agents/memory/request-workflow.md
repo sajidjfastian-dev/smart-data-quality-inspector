@@ -4,6 +4,12 @@ description: User-defined request lifecycle and explicit demo-only scope.
 ---
 Users from any department should log in and see a Request list in the left menu. The list needs DQ-current-year-six-random-digit references, submitter, submission date, status, rejected-by information, View actions, filters and status totals.
 
+Draft saving must happen when a file is loaded, independently of whether the correction or submission panel is visible.
+
+**Why:** Simplifying Review & fix once postponed saving until corrections were applied, so an imported shared sample did not exist in the request list yet.
+
+**How to apply:** Preserve the trusted-source/session-only boundary, and keep draft lifecycle updates outside optional review-screen gates. Verify a newly loaded, uncorrected file can be resumed.
+
 The workflow is configurable quality checks → 360-degree inspection → suggested fixes and AI assistance → submit for review → data-owner review → service-desk ticket → ticket/workflow and CAB approvals → explicit production application.
 
 **Why:** The user described this as the actual application workflow and requested minimum changes to the existing application.

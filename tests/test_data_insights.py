@@ -61,7 +61,7 @@ class DataInsightsUiTests(unittest.TestCase):
         app = signed_in(AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"), default_timeout=30)).run()
         load_test_fixture(app)
         next(item for item in app.checkbox if item.label == "I reviewed all columns for sensitive data").check().run()
-        app.session_state["dashboard_tabs"] = "6 · Data insights"
+        app.session_state["dashboard_tabs"] = "5 · Data insights"
         app.run()
         self.assertFalse(app.exception)
         self.assertTrue(any("Your fields at a glance" in item.value for item in app.subheader))

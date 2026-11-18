@@ -76,7 +76,7 @@ class PrivacyFlowTests(unittest.TestCase):
         with patch.object(st, "download_button", side_effect=capture):
             self.widget("checkbox", "I reviewed all columns for sensitive data").uncheck().run()
             self.assertTrue(downloads[-1]["disabled"])
-            self.assertTrue(any("All data values are hidden" in item.value for item in self.app.warning))
+            self.assertTrue(any("All data values are hidden" in item.value for item in self.app.markdown))
             self.widget("multiselect", "Protect additional columns").select("region").run()
             self.widget("checkbox", "I reviewed all columns for sensitive data").check().run()
             self.assertFalse(downloads[-1]["disabled"])

@@ -18,7 +18,8 @@ class SeamlessLoginTests(unittest.TestCase):
             return next(w for w in app.button if w.label == label)
         def check(label):
             next(w for w in app.checkbox if w.label == label).check().run()
-        check("Ready to submit this version to the demo approver")
+        button("Apply automatic fixes").click().run()
+        check("I reviewed all changes and remaining findings; this version is ready for review")
         button("Submit for review").click().run()
         ref = app.session_state["active_request_ref"]
         check("I reviewed the changes and remaining findings")

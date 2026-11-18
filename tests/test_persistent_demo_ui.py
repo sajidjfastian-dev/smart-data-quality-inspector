@@ -48,10 +48,10 @@ class PersistentDemoUITests(unittest.TestCase):
             ref = app.session_state["active_request_ref"]
             self.assertIn(ref, demo_store.list_requests())
             self.assertEqual(len(app.session_state["inspector_datasets"]["Synthetic quality sample"]), 520)
-            apply_button = next(b for b in app.button if b.label == "Apply selected fixes")
+            apply_button = next(b for b in app.button if b.label == "Apply automatic fixes")
             apply_button.click().run()
             self.clean(app)
-            next(c for c in app.checkbox if c.label == "Ready to submit this version to the demo approver").check().run()
+            next(c for c in app.checkbox if c.label == "I reviewed all changes and remaining findings; this version is ready for review").check().run()
             app.button(key="submit_"+ref).click().run()
             self.clean(app)
             self.assertEqual(demo_store.list_requests()[ref]["revisions"][-1]["status"], "Submitted")

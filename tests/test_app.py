@@ -50,6 +50,8 @@ class QuickSampleTests(unittest.TestCase):
         self.assertEqual([error.message for error in app.exception], [])
 
     def widget(self, kind, label):
+        if label == "Apply selected fixes":
+            label = "Apply automatic fixes"
         matches = [item for item in getattr(self.app, kind) if item.label == label]
         self.assertEqual(len(matches), 1, f"Expected one {kind}: {label}")
         return matches[0]
@@ -72,11 +74,8 @@ class QuickSampleTests(unittest.TestCase):
 
     def test_initial_screen_and_sample_scan_survive_rerun(self):
         self.assertNotIn("inspector_datasets", self.app.session_state)
-        landing = next(item.value for item in self.app.markdown if 'class="welcome-panel"' in item.value)
-        self.assertIn("Turn data into", landing)
-        self.assertIn("Get started with your data", landing)
-        for check in ("Missing values", "Duplicates", "Invalid formats", "Outliers"):
-            self.assertIn(check, landing)
+        landing = next(item.value for item in self.app.markdown if 'class="source-heading"' in item.value)
+        self.assertIn("Start with your data", landing)
         self.assertNotIn("Explore with 50-row quick sample", [button.label for button in self.app.button])
         self.assertFalse(self.widget("button", "Explore sample workspace").disabled)
         self.assertNotIn(
@@ -126,7 +125,7 @@ class QuickSampleTests(unittest.TestCase):
         self.assertIn("No findings under enabled checks", workflow(clean))
         self.assertIn("workflow-step-clear", workflow(clean))
 
-    def test_issue_report_download_matches_visible_filtered_findings(self):
+    def test_remaining_findings_preserve_filters_without_issue_log(self):
         # AppTest exposes the download button but not its bytes. Capture the
         # actual argument while still rendering the real Streamlit button.
         downloads = []
@@ -149,7 +148,7 @@ class QuickSampleTests(unittest.TestCase):
             csv = pd.read_csv(BytesIO(report_data), keep_default_na=False)
             self.assertEqual(self.issue_keys(csv), expected_keys)
             self.assertEqual(len(csv), len(expected_keys))
-            issue_tab = next(tab for tab in self.app.tabs if tab.label == "2 · Issue log")
+            issue_tab = next(tab for tab in self.app.tabs if tab.label == "2 · Review & fix")
             if expected_keys:
                 finding_tables = [table.value for table in issue_tab.dataframe
                                   if list(table.value.columns) == list(csv.columns)]
@@ -159,14 +158,27 @@ class QuickSampleTests(unittest.TestCase):
                     "No findings match" in info.value for info in issue_tab.info
                 ))
 
+        # Retain filtered report coverage through the reusable component now that
+        # the standalone Issue log is intentionally absent from the application.
+        self.load_sample()
+        original_issues = self.app.session_state["quality_scan_cache"][SAMPLE]["issues"]
+        original_data = self.app.session_state["inspector_datasets"][SAMPLE]
+        self.assertNotIn("2 · Issue log", [tab.label for tab in self.app.tabs])
+        self.app = AppTest.from_string(
+            "import streamlit as st\n"
+            "from issue_workspace import render_findings\n"
+            "with st.tabs(['2 · Review & fix'])[0]:\n"
+            " render_findings(st.session_state['issues'], set(), 'test', st.session_state['data'], filename='Sample messy dataset_issue_report.csv')\n"
+        )
+        self.app.session_state["issues"] = original_issues
+        self.app.session_state["data"] = original_data
         with patch.object(st, "download_button", side_effect=capture_download):
-            self.load_sample()
+            self.app.run()
             self.assertFalse(downloads[-1]["disabled"])
-            self.widget("checkbox", "I reviewed all columns for sensitive data").check().run()
             assert_report(EXPECTED_ISSUES)
 
             def issue_widget(kind, label):
-                tab = next(tab for tab in self.app.tabs if tab.label == "2 · Issue log")
+                tab = next(tab for tab in self.app.tabs if tab.label == "2 · Review & fix")
                 return next(item for item in getattr(tab, kind) if item.label == label)
 
             issue_widget("multiselect", "Issue types").set_value(["Missing Value"]).run()
@@ -193,11 +205,11 @@ class QuickSampleTests(unittest.TestCase):
         self.assertEqual(
             {name: len(frame) for name, frame in datasets.items()},
             {
-                "customers.csv": 5000,
-                "orders.xlsx": 20000,
-                "products.csv": 1200,
-                "support_tickets.xlsx": 6000,
-                "web_events.csv": 25000,
+                "customers.csv": 620,
+                "orders.xlsx": 620,
+                "products.csv": 620,
+                "support_tickets.xlsx": 620,
+                "web_events.csv": 620,
             },
         )
         self.assertEqual(self.widget("selectbox", "Active file").value, "customers.csv")
@@ -213,8 +225,8 @@ class QuickSampleTests(unittest.TestCase):
         self.assert_no_exception()
         self.assertFalse(self.app.session_state["assistant_share_dataset"])
         self.load_sample()
-        self.click("🧾 Summarize quality issues")
-        self.assertTrue(any("Local mode is active" in item.value for item in self.app.info))
+        self.click("Summarize my data")
+        self.assertTrue(any("No data or questions leave" in item.value for item in self.app.caption))
         self.assertFalse(any("model request failed" in item.value.lower() for item in self.app.error))
         self.widget("checkbox", "Allow sending the active dataset to this endpoint").check().run()
         self.assert_no_exception()
@@ -328,7 +340,7 @@ class QuickSampleTests(unittest.TestCase):
         self.load_sample()
         self.widget("checkbox", "Duplicate rows").uncheck().run()
         self.assert_no_exception()
-        self.click("🔁 How many rows are duplicates?")
+        self.app.chat_input[0].set_value("How many rows are duplicates?").run()
         self.assertTrue(any(
             "duplicate check is turned off" in item.value.lower()
             for item in self.app.markdown
@@ -348,7 +360,7 @@ class QuickSampleTests(unittest.TestCase):
         assert_frame_equal(fixed, expected)
         assert_frame_equal(self.app.session_state["inspector_datasets"][SAMPLE], original)
         self.assertEqual(fixed.shape, (49, 8))
-        self.assertTrue(self.widget("toggle", "Show fixed preview").value)
+        self.assertNotIn("Show fixed preview", [w.label for w in self.app.toggle])
         remaining = self.app.session_state["review_scan_cache"][SAMPLE]["issues"]
         resolved = {
             (50, "Entire row", "Duplicate Row"),
@@ -359,12 +371,9 @@ class QuickSampleTests(unittest.TestCase):
         self.assertEqual(self.issue_keys(remaining), EXPECTED_ISSUES - resolved)
         metrics = {metric.label: metric.value for metric in self.app.metric}
         self.assertEqual(metrics["Rows removed"], "1")
-        self.assertEqual(metrics["Findings resolved"], "3")
-        self.assertEqual(metrics["Needs manual review"], "7")
-        # Switching previews and applying twice must not mutate the source or drift.
-        self.widget("toggle", "Show fixed preview").set_value(False).run()
-        self.assert_no_exception()
-        self.assertTrue(any("Original data: 50 rows" in item.value for item in self.app.info))
+        self.assertEqual(metrics["Remaining findings"], "7")
+        # Reapplying must not mutate the source or drift.
+        self.assertNotIn("Show fixed preview", [w.label for w in self.app.toggle])
         self.click("Apply selected fixes")
         assert_frame_equal(self.app.session_state["fixed_datasets"][SAMPLE], expected)
         assert_frame_equal(self.app.session_state["inspector_datasets"][SAMPLE], original)

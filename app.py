@@ -3118,6 +3118,23 @@ with review_tab, st.container(key="correction_workspace"):
         and change_record["fixed"] == frame_digest(approval_data)
     )
     if not has_fixed_data and not issues.empty:
+        # Loading a file creates a resumable draft even before fixes are applied.
+        # The simplified review UI must not postpone the persistence boundary.
+        initial_payload = {
+            "file": active_dataset, "original": data, "selected": data,
+            "choice": "Original data", "changes": changes, "issues": issues,
+            "remaining": issues, "protected": set(sensitive_columns),
+            "privacy_reviewed": privacy_reviewed,
+            "rules": {"email": list(email_columns), "date": list(date_columns), "numeric": list(numeric_columns),
+                      "iqr": iqr_multiplier, "enabled": sorted(enabled_checks), "custom": list(custom_rules)},
+        }
+        try:
+            save_draft(st.session_state, request_reference, initial_payload)
+        except WorkflowError as error:
+            st.warning(translate(str(error)))
+            from persistent_demo import make_private
+            native.button(translate("Continue as a private request"), key="private_sample_copy",
+                          on_click=make_private, args=(st.session_state, request_reference, initial_payload))
         st.info("Apply automatic fixes above to prepare your review. Findings that cannot be corrected automatically will remain available for review.")
     elif lineage_valid:
         if approval_choice == "Fixed copy":

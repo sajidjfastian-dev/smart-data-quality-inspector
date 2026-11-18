@@ -30,6 +30,12 @@ from request_approval_translations import REQUEST_APPROVAL_ARABIC
 _ROOT = Path(__file__).resolve().parent
 _ARABIC = json.loads((_ROOT / "assets" / "translations" / "ar.json").read_text(encoding="utf-8"))
 _ARABIC.update({
+    "2 · Review & fix": "2 · مراجعة وإصلاح",
+    "3 · Preview & export": "3 · المعاينة والتصدير",
+    "4 · AI assistant": "4 · المساعد الذكي",
+    "5 · Data insights": "5 · رؤى البيانات",
+    "Apply automatic fixes": "تطبيق الإصلاحات التلقائية",
+    "I reviewed all changes and remaining findings; this version is ready for review": "راجعت جميع التغييرات والنتائج المتبقية؛ هذه النسخة جاهزة للمراجعة",
     "Share of findings": "نسبة النتائج",
     "All categories are listed below, including small slices.": "جميع الفئات مدرجة أدناه، بما فيها الشرائح الصغيرة.",
     "Column-level findings and duplicate rows, ranked by count.": "النتائج على مستوى الأعمدة والصفوف المكررة، مرتبة حسب العدد.",
