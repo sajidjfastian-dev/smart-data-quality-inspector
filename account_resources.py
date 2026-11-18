@@ -7,11 +7,9 @@ import hashlib
 import threading
 import time
 from pathlib import Path
-from urllib.parse import urlsplit
 
 _lock = threading.Lock()
 _bindings = {}
-_redirects = {}
 _public = set()
 
 
@@ -60,8 +58,6 @@ def allowed(path, token):
     now = time.time()
     with _lock:
         sessions = {sid for sid, (owner, expires) in _bindings.items() if owner == key and expires > now}
-        if _redirects.get((key, path), 0) > now:
-            return True
     if path.startswith("/_stcore/upload_file/"):
         return path.split("/")[3] in sessions
     manager = get_instance().media_file_mgr
@@ -70,13 +66,3 @@ def allowed(path, token):
                    for sid in sessions)
 
 
-def allow_redirect(token, location):
-    path = urlsplit(location).path
-    if not path.startswith("/media/") or urlsplit(location).netloc:
-        return
-    with _lock:
-        now = time.time()
-        for entry in list(_redirects):
-            if _redirects[entry] <= now:
-                del _redirects[entry]
-        _redirects[(token_key(token), path)] = now + 60

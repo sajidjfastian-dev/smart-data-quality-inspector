@@ -367,7 +367,7 @@ def render_request_details(state, reference):
                 st.text(t(reason) + ": " + str(count))
             st.caption(t("Validate in staging and take a verified backup before any real production change. This demo does neither."))
     _render_approval_steps(state, record, rev, latest, reference, number, snap, snapshot_verified)
-    if snapshot_verified:
+    if snapshot_verified and owns(state, record):
         from approval_evidence import render_evidence
         render_evidence(state, reference, number, t, st)
     st.subheader(t("Request timeline"))

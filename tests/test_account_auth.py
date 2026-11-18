@@ -270,6 +270,57 @@ class StreamlitAccountBoundaryTests(unittest.TestCase):
             self.assertTrue(resources.allowed("/_stcore/upload_file/stream-a/file", "token-a"))
             self.assertFalse(resources.allowed("/_stcore/upload_file/stream-a/file", "token-b"))
 
+    def test_real_streamlit_manager_authorizes_materialized_downloads(self):
+        import account_resources as resources
+        from streamlit.runtime.memory_media_file_storage import MemoryMediaFileStorage
+        from streamlit.runtime.media_file_manager import MediaFileManager
+        manager = MediaFileManager(MemoryMediaFileStorage("/media"))
+        with patch("streamlit.runtime.media_file_manager._get_session_id", return_value="stream-a"):
+            # This is the manager path used by eager st.download_button bytes.
+            url = manager.add(b"masked,csv\n1,2\n", "text/csv", "clean-copy", "clean.csv", True)
+            placeholder = manager.add_deferred(lambda: b"deferred", "text/csv", "legacy", "old.csv")
+            deferred_url = manager.execute_deferred(placeholder)
+        with patch.object(resources, "_bindings", {"stream-a": (resources.token_key("token-a"), time.time()+60)}), \
+                patch("streamlit.runtime.get_instance", return_value=SimpleNamespace(media_file_mgr=manager)):
+            self.assertTrue(resources.allowed(url, "token-a"))
+            self.assertFalse(resources.allowed(url, "token-b"))
+            # Streamlit does not map generated deferred IDs. Do not restore
+            # callable download payloads without adding a safe owner binding.
+            self.assertFalse(resources.allowed(deferred_url, "token-a"))
+        import ast
+        from pathlib import Path
+        for file in ("app.py", "issue_workspace.py"):
+            tree = ast.parse(Path(file).read_text())
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == "download_button":
+                    for argument in node.keywords:
+                        if argument.arg == "data":
+                            self.assertNotIsInstance(argument.value, ast.Lambda)
+                            self.assertFalse(isinstance(argument.value, ast.Name)
+                                             and argument.value.id == "build_cleaned_csv_download")
+
+    def test_submitted_public_example_renders_without_private_evidence(self):
+        from streamlit.testing.v1 import AppTest
+        script = '''
+import streamlit as st
+import request_workflow as flow
+from tests.test_request_workflow import payload
+from request_details import render_request_details
+seed = flow.sample_seed_state("Sample submitter")
+reference = flow.new_request(seed)
+flow.save_draft(seed, reference, payload())
+flow.submit(seed, reference)
+record = seed["demo_requests"][reference]
+record.update(synthetic=True, source_id="quality-v1", session_id="DEMO-HISTORY-TEST")
+state = {"demo_user": "Different account", "auth_subject": "different-account",
+         "demo_role": "Submitter", "demo_requests": {reference: record}}
+render_request_details(state, reference)
+'''
+        app = AppTest.from_string(script, default_timeout=30).run()
+        self.assertEqual([error.message for error in app.exception], [])
+        self.assertIn("Request timeline", [heading.value for heading in app.subheader])
+        self.assertFalse(any(str(button.key).startswith("evidence_download") for button in app.get("download_button")))
+
 
 if __name__ == "__main__":
     unittest.main()

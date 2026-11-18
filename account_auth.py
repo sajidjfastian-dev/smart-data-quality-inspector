@@ -213,7 +213,7 @@ class AccountResourceGuard:
         if scope["type"] == "http" and scope.get("path", "").startswith(("/media/", "/_stcore/upload_file/")):
             from starlette.requests import Request
             from starlette.responses import Response
-            from account_resources import is_public, allowed, allow_redirect
+            from account_resources import is_public, allowed
             request = Request(scope)
             if is_public(scope["path"]):
                 await self.app(scope, receive, send)
@@ -231,9 +231,6 @@ class AccountResourceGuard:
                     headers = [(k, v) for k, v in message.get("headers", []) if k.lower() != b"cache-control"]
                     headers.append((b"cache-control", b"no-store"))
                     message["headers"] = headers
-                    if message["status"] in (302, 303, 307):
-                        location = dict(headers).get(b"location", b"").decode()
-                        allow_redirect(cookie, location)
                 await send(message)
             await self.app(scope, receive, private_send)
             return

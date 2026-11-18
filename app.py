@@ -3317,7 +3317,7 @@ with preview_tab, st.container(key="preview_workspace"):
 
         st.download_button(
             "Download a clean copy",
-            data=build_cleaned_csv_download,
+            data=build_cleaned_csv_download() if privacy_reviewed else b"",
             file_name=f"{Path(active_dataset).stem}_cleaned.csv",
             mime="text/csv",
             type="primary",
