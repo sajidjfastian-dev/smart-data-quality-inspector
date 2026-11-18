@@ -62,6 +62,14 @@
 .st-key-rd_pagination {padding-top: 4px;}
 .st-key-rd_pagination [data-testid="stHorizontalBlock"] {align-items: center;}
 .st-key-rd_pagination [data-testid="stCaptionContainer"] {text-align: center;}
+/* Review pass: align native row actions with the ledger and keep quiet copy legible. */
+.st-key-rd_table [data-testid="stHorizontalBlock"] {align-items: center;}
+.request-register-heading h2, .request-register-section h3 {scroll-margin-top: 100px;}
+.request-register-heading p {max-width: 72ch;}
+.request-register-notice {font-size: .8125rem; line-height: 1.65;}
+.st-key-request_dashboard [data-testid="stCaptionContainer"] {font-size: .8125rem; line-height: 1.6;}
+.st-key-rd_filters [data-testid="stWidgetLabel"] {min-height: 24px;}
+.st-key-rd_pagination {padding-block-start: 10px;}
 @media (max-width: 767px) {
     .request-register-heading h2 {font-size: 1.18rem;}
     .request-register-heading p {font-size: .73rem;}
