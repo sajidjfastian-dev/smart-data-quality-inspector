@@ -6,6 +6,8 @@ PERSISTENT_DEMO_ARABIC = {
     "Current private session": "الجلسة الخاصة الحالية",
     "Synthetic quality sample": "عينة جودة اصطناعية",
     "Shared synthetic example stored in the database.": "مثال اصطناعي مشترك محفوظ في قاعدة البيانات.",
+    "Personal sample copy · approval history is simulated.": "نسخة عينة شخصية · سجل الموافقات تجريبي.",
+    "Personal sample copy stored in the database.": "نسخة عينة شخصية محفوظة في قاعدة البيانات.",
     "Private request: cleared on logout.": "طلب خاص: يُحذف عند تسجيل الخروج.",
     "No real service-desk request or production change is performed.": "لا يتم إرسال طلب دعم فعلي أو إجراء تغيير في الإنتاج.",
     "Continue as a private request": "المتابعة كطلب خاص",

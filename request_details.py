@@ -285,11 +285,14 @@ def render_request_details(state, reference):
     st.header(reference)
     if public_example(record):
         st.info(t("Public sample example · read-only · not your request"))
+    elif record.get("sample_copy_of"):
+        st.info(t("Personal sample copy · approval history is simulated."))
     from public_sample import SOURCE_ID, ATTRIBUTION, NOTICE
     if record.get("source_id") == SOURCE_ID:
         st.caption(ATTRIBUTION + " " + NOTICE)
     else:
-        st.caption(t("Shared synthetic example stored in the database.") if record.get("synthetic")
+        st.caption(t("Personal sample copy stored in the database.") if record.get("sample_copy_of")
+                   else t("Shared synthetic example stored in the database.") if record.get("synthetic")
                    else t("Private request: cleared on logout."))
     st.caption(t("No real service-desk request or production change is performed."))
     st.text(t("Session") + ": " + record.get("session_id", t("Current private session")))

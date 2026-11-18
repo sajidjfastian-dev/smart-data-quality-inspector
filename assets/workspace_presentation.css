@@ -570,6 +570,10 @@ section[data-testid="stSidebar"] [data-testid="stSidebarHeader"] {
     height: 32px; min-height: 32px; margin: 0; padding: 0; z-index: 6;
 }
 .welcome-panel {margin-top: 0 !important;}
+@media (min-width: 761px) {
+    /* Align both columns at the top rather than centering the shorter copy. */
+    .welcome-panel {align-items: start;}
+}
 .welcome-panel .welcome-meta {margin-top: 20px;}
 .welcome-panel p.landing-privacy-note {margin: 20px 0 0; font-size: .86rem;}
 .welcome-panel .welcome-steps {margin-top: 6px;}
