@@ -9,7 +9,7 @@ from localization import native as st, translate, language
 from request_approval_translations import REQUEST_APPROVAL_ARABIC
 from request_workflow import (
     requests, open_draft, revise,
-    WorkflowError, valid_snapshot, demo_review_action, approved_download,
+    WorkflowError, valid_snapshot, demo_review_action, approved_download, record_delivery_step,
 )
 from review_approval import is_approved
 from review_ui import render_checker_review
@@ -71,6 +71,13 @@ def _render_approval_steps(state, record, rev, latest, reference, number, snap, 
         "CAB approved": 3, "Simulated": 3, "Rejected": 0,
     }
     active = {"Submitted": 0, "Approved": 1, "Ticket approved": 2, "CAB approved": 3, "Simulated": 3}.get(status)
+    if status in ("CAB approved", "Simulated") and rev.get("download_requested"):
+        completed[status], active = (5, None) if rev.get("implementation") else (4, 4)
+    def delivery(implement=False):
+        try:
+            record_delivery_step(state, reference, number, implement)
+        except WorkflowError as error:
+            state["approval_confirmation_error"] = str(error)
     can_act = bool(
         latest and snapshot_verified and state.get("demo_user")
         and state.get("demo_role", "Submitter") == "Submitter"
@@ -101,21 +108,23 @@ def _render_approval_steps(state, record, rev, latest, reference, number, snap, 
         (
             "Download approved file",
             "Download the reviewed version after all approvals. Privacy masking remains applied; no production system is changed.",
-            "Approved file ready for download.", None, None,
+            "Approved file download requested.", None, None,
         ),
+        ("Implemented on production", "Record a simulated implementation. No production system is changed.",
+         "Implementation confirmed (simulated).", None, None),
     ]
     locked = [
         "Submit this draft to begin request review.",
         "Locked until request review is approved.",
         "Locked until the service-desk ticket is approved.",
         "Locked until CAB approval is recorded.",
+        "Locked until the approved file download is requested.",
     ]
     with st.container(key="demo_approval_steps"):
         st.markdown(
             '<div class="approval-sequence-intro"><h3>' + escape(t("Approval steps"))
             + '</h3><p>' + escape(t(
-                "Follow the numbered sequence. Only the current step of the latest revision can be acted on. "
-                "This is a demo; no external ticket or production change is sent."
+                "Complete each step in order. Approvals and implementation are simulated. Times are Asia/Dubai."
             )) + '</p></div>', unsafe_allow_html=True,
         )
         if status not in completed:
@@ -142,11 +151,17 @@ def _render_approval_steps(state, record, rev, latest, reference, number, snap, 
             elif status == "Draft" and index == 0:
                 badge = "Not started"
             with st.container(key=f"demo_approval_step_{index + 1}"):
+                event_names = ["Request approved; demo ticket generated", "Ticket approved", "CAB approved",
+                               "Approved file download requested", "Implemented on production (simulated)"]
+                match = next((entry for entry in reversed(rev.get("timeline", []))
+                              if entry["Action"] == event_names[index]), None)
+                metadata = ('<div class="approval-step-meta">' + escape(str(match["By"])) + ' · '
+                            + escape(_display_datetime(match["Date (Asia/Dubai)"])) + '</div>') if match else ""
                 st.markdown(
                     f'<div class="approval-step-header approval-step-header--{phase}">'
                     f'<span class="approval-step-number">{index + 1}</span><div><h4>'
                     + escape(t(title)) + '</h4><p>' + escape(t(detail))
-                    + '</p></div><span class="approval-step-status">' + escape(t(badge))
+                    + '</p>' + metadata + '</div><span class="approval-step-status">' + escape(t(badge))
                     + '</span></div>', unsafe_allow_html=True,
                 )
                 if latest and index == active:
@@ -156,7 +171,16 @@ def _render_approval_steps(state, record, rev, latest, reference, number, snap, 
                         st.caption(t("Demo decisions are not available in this view."))
                     elif index > 0 and not ticket_ready:
                         st.caption(t("A current approved demo ticket is required."))
-                if index == 3:
+                if index == 4:
+                    eligible = bool(latest and ticket_ready and status in ("CAB approved", "Simulated")
+                                    and rev.get("download_requested") and not rev.get("implementation"))
+                    if not rev.get("implementation"):
+                        ack = st.checkbox(t("I confirm implementation for this revision in the demo only."),
+                                          key=f"implementation_ack_{reference}_{number}", disabled=not eligible)
+                        st.button(t("Confirm simulated implementation"), type="primary",
+                                  key=f"implement_{reference}_{number}", disabled=not (eligible and ack),
+                                  on_click=delivery, args=(True,))
+                elif index == 3:
                     ready = latest and ticket_ready and status in ("CAB approved", "Simulated")
                     payload = b""
                     if ready:
@@ -171,11 +195,11 @@ def _render_approval_steps(state, record, rev, latest, reference, number, snap, 
                         t("Download approved file"),
                         data=payload,
                         file_name=f"{reference}_r{number}_approved.csv",
-                        mime="text/csv", disabled=not ready, on_click="ignore",
+                        mime="text/csv", disabled=not ready, on_click=delivery,
                         key=f"approved_download_{reference}_{number}", type="primary",
                     )
                     if ready:
-                        st.caption(t("Approvals authorize this version, not a guarantee that every finding is resolved. Review the remaining findings before use."))
+                        st.caption(t("A download request is not proof of receipt or production implementation."))
                 elif latest and index == 0 and status == "Submitted":
                     checked = st.checkbox(
                         t("I reviewed the changes and remaining findings"),
@@ -306,13 +330,11 @@ def render_request_details(state, reference):
         for rule in rules["custom"]:
             expected = mask_text_with_dataset(rule["expected"], snap["original"], protected)
             st.text(str(rule["column"]) + " · " + t(rule["kind"]) + " · " + expected)
-    with st.expander(t("Original findings")):
-        render_findings(snap["issues"], protected, f"request_{reference}_{number}_original",
-                        snap["original"], downloads=False)
     if rev.get("snapshot"):
         namespace = f"{reference}/r{number}"
         render_checker_review(rev["approval_state"], namespace, snap["original"], snap["selected"],
-                              snap["changes"], snap["remaining"], snap["protected"], snap["choice"], actions=False)
+                              snap["changes"], snap["remaining"], snap["protected"], snap["choice"], actions=False,
+                              show_findings=False)
     elif latest and role == "Submitter" and rev["status"] == "Draft":
         st.info(t("Continue the draft to review changes and submit."))
     ticket = rev.get("ticket")

@@ -22,6 +22,12 @@ For the judges' presentation, process actual uploaded data through the real insp
 
 **How to apply:** Gate the final download on request, ticket and CAB approval of the same revision. Label demo identity and tickets honestly; do not claim session-only history survives logout or that the demo is production-authorized.
 
+The user requested a final “Implemented on production” step after approved download; keep this an explicit, revision-specific simulated confirmation.
+
+**Why:** The agreed workflow remains demo-only. A download request does not prove receipt or a production change.
+
+**How to apply:** Record download requests and simulated implementation separately; retain approval and privacy gates, and never perform a real destination write.
+
 Use only two demo roles: Submitter and Approver.
 
 **Why:** The user explicitly requested “only two roles. submitter/approver.”

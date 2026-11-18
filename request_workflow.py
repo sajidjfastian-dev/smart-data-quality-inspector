@@ -190,6 +190,33 @@ def owner_decision(state, reference, approved, reason=""):
     return rev
 
 
+def record_delivery_step(state, reference, number, implement=False):
+    """Record a download request or an explicit simulated implementation.
+
+    A browser download event is not evidence of file receipt or a production write.
+    Revalidate inside the stored-request transaction to reject concurrent revisions.
+    """
+    record = requests(state).get(reference)
+    if record and record.get("_db_version") and not state.get("_db_transaction"):
+        from persistent_demo import transaction
+        return transaction(state, reference, lambda local: record_delivery_step(local, reference, number, implement))
+    approved_download(state, reference, number)
+    rev = current(state, reference)
+    digest = valid_snapshot(rev)["selected_digest"]
+    if implement:
+        if rev.get("download_requested", {}).get("digest") != digest:
+            raise WorkflowError("Request the approved file download before confirming implementation.")
+        if rev.get("implementation"):
+            return rev
+        rev["implementation"] = {"digest": digest, "by": state["demo_user"], "at": timestamp(), "simulated": True}
+        rev["status"] = "Simulated"
+        event(rev, "Implemented on production (simulated)", state["demo_user"])
+    elif not rev.get("download_requested"):
+        rev["download_requested"] = {"digest": digest, "by": state["demo_user"], "at": timestamp()}
+        event(rev, "Approved file download requested", state["demo_user"])
+    return rev
+
+
 def advance(state, reference, stage):
     if requests(state)[reference].get("_db_version") and not state.get("_db_transaction"):
         from persistent_demo import transaction

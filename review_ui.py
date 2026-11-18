@@ -7,7 +7,7 @@ from security_guardrails import MASK, mask_dataframe
 from review_approval import approve, is_approved, return_for_revision
 
 
-def render_checker_review(state, dataset, original, corrected, changes, remaining, protected, choice, actions=True):
+def render_checker_review(state, dataset, original, corrected, changes, remaining, protected, choice, actions=True, show_findings=True):
     context = state["review_contexts"][dataset]
     version = context["version"]
     key = f"checker_{version}_{choice}"
@@ -84,11 +84,11 @@ def render_checker_review(state, dataset, original, corrected, changes, remainin
             st.caption(t("On small screens, scroll the comparison horizontally to see both values."))
         if actions or not remaining.empty:
             st.warning(t("Approval does not mean error-free data. Review all remaining findings before proceeding."))
-            if actions:
+            if actions and show_findings:
                 with st.expander(t("Review unresolved issues")):
                     from issue_workspace import render_findings
                     render_findings(remaining, protected, key + "_remaining", corrected, downloads=False)
-            elif not remaining.empty:
+            elif not remaining.empty and show_findings:
                 with st.expander(t("Review unresolved issues")):
                     from security_guardrails import mask_findings
                     safe = mask_findings(remaining, protected)

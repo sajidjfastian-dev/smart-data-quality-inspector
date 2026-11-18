@@ -93,6 +93,18 @@ def run():
         assert float(rows[1]["amount"]) == 20
         assert "@example.test" not in payload
         assert reference in event.value.suggested_filename
+        settle()
+        assert page.get_by_text("Findings explorer", exact=True).count() == 0
+        assert page.get_by_role("button", name="Confirm simulated implementation", exact=True).is_disabled()
+        checked("I confirm implementation for this revision in the demo only.")
+        click("Confirm simulated implementation")
+        assert page.get_by_text("Implementation confirmed (simulated).", exact=True).count() == 1
+        assert page.locator(".approval-step-meta").count() == 5
+        page.set_viewport_size({"width": 390, "height": 844})
+        settle()
+        assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+        page.screenshot(path="/tmp/approval-mobile.png")
+        page.set_viewport_size({"width": 1440, "height": 1000})
         page.locator(".st-key-demo_approval_steps").scroll_into_view_if_needed()
         page.screenshot(path="/tmp/judges-approved-download.png")
         print("PASS upload → charts/issues → applied fixes → masked comparison → submission → approvals → exact approved download.")

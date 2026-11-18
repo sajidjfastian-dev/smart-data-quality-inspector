@@ -1,5 +1,14 @@
 """Application-owned demo approval sequence copy, without production claims."""
 REQUEST_APPROVAL_ARABIC = {
+    "Approved file download requested.": "تم طلب تنزيل الملف المعتمد.",
+    "Implemented on production": "تم التنفيذ في بيئة الإنتاج",
+    "Record a simulated implementation. No production system is changed.": "سجّل تنفيذًا محاكى. لا يتم تغيير أي نظام إنتاج.",
+    "Implementation confirmed (simulated).": "تم تأكيد التنفيذ (محاكاة).",
+    "Locked until the approved file download is requested.": "مقفل حتى طلب تنزيل الملف المعتمد.",
+    "I confirm implementation for this revision in the demo only.": "أؤكد تنفيذ هذه المراجعة في العرض التوضيحي فقط.",
+    "Confirm simulated implementation": "تأكيد التنفيذ المحاكى",
+    "Complete each step in order. Approvals and implementation are simulated. Times are Asia/Dubai.": "أكمل الخطوات بالترتيب. الموافقات والتنفيذ محاكاة. الأوقات بتوقيت دبي.",
+    "A download request is not proof of receipt or production implementation.": "طلب التنزيل ليس دليلًا على استلام الملف أو التنفيذ في الإنتاج.",
     "Approval steps": "مراحل الموافقة",
     "Production-change ticket": "تذكرة تغيير الإنتاج",
     "Ticket reference": "مرجع التذكرة",

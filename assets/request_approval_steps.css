@@ -48,8 +48,15 @@
 }
 .st-key-demo_approval_steps button:focus-visible {outline: 3px solid #9e7d28; outline-offset: 3px;}
 .st-key-demo_approval_steps [data-testid="stColumn"] {min-width: 0;}
+.approval-step-meta {margin-top: 10px; font-size: 14px; font-weight: 600; color: #365c50;}
+.st-key-demo_approval_steps .stElementContainer:has(> :is(.stButton, .stDownloadButton)) {width: 100% !important;}
+.st-key-demo_approval_steps [data-testid="stMarkdownContainer"] {margin-bottom: 0 !important;}
+.st-key-demo_approval_steps :is(.stButton, .stDownloadButton) {display: flex; justify-content: flex-end; padding-top: 12px;}
+.st-key-demo_approval_steps :is(.stButton, .stDownloadButton) button {min-width: 180px; min-height: 46px;}
+.st-key-demo_approval_steps [class*="st-key-demo_approval_step_"] {padding: 24px; gap: 18px;}
 .st-key-demo_approval_steps :is(input,textarea) {font-size: 16px;}
 @media (max-width: 767px) {
+    .st-key-demo_approval_steps :is(.stButton, .stDownloadButton) button {width: 100%; min-width: 0;}
     .approval-sequence-intro {padding: 16px;}
     .st-key-demo_approval_steps [class*="st-key-demo_approval_step_"] {padding: 15px 13px;}
     .approval-step-header {grid-template-columns: 38px minmax(0, 1fr); gap: 9px 12px;}

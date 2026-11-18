@@ -62,6 +62,23 @@ class PersistentDemoTests(unittest.TestCase):
         for method in ("POST","PUT","PATCH","DELETE"):
             self.assertEqual(asyncio.run(request(method))[0], 405)
 
+    def test_implementation_survives_database_roundtrip(self):
+        ref, _ = self.request()
+        flow.submit(self.state, ref)
+        for action in ("approve", "ticket", "cab"):
+            flow.demo_review_action(self.state, ref, 1, action)
+        flow.record_delivery_step(self.state, ref, 1)
+        flow.record_delivery_step(self.state, ref, 1, True)
+        stored = store.list_requests()[ref]
+        rev = stored["revisions"][-1]
+        self.assertTrue(rev["implementation"]["simulated"])
+        self.assertEqual(rev["implementation"]["digest"], flow.valid_snapshot(rev)["selected_digest"])
+        self.assertEqual(rev["timeline"][-1]["Action"], "Implemented on production (simulated)")
+        self.state["demo_requests"][ref] = stored
+        count = len(rev["timeline"])
+        flow.record_delivery_step(self.state, ref, 1, True)
+        self.assertEqual(len(store.list_requests()[ref]["revisions"][-1]["timeline"]), count)
+
     def test_seed_histories_and_all_snapshots(self):
         seeded = [r for r in store.list_requests().values() if r["session_id"].startswith("DEMO-HISTORY-")]
         self.assertEqual(len(seeded), 20)
