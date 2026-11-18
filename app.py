@@ -1889,6 +1889,11 @@ def request_list_page():
     st.session_state["request_view"] = None
 
 
+def landing_page():
+    # Navigation only: retain the session, request revision and all working data.
+    st.session_state["workspace_page"] = "home"
+
+
 def change_demo_role():
     st.session_state["workspace_page"] = "requests"
 
@@ -2187,6 +2192,10 @@ with st.container(key="app_header"):
             f'</div></header>',
             unsafe_allow_html=True,
         )
+        native.button(
+            "الصفحة الرئيسية" if _rtl else "Go to landing page",
+            key="header_home", on_click=landing_page, help="الصفحة الرئيسية" if _rtl else "Go to landing page",
+        )
     with language_col:
         # Show both codes with the active one highlighted; reselecting it is a no-op.
         native.session_state["language_choice"] = "AR" if _rtl else "EN"
@@ -2461,7 +2470,7 @@ if is_signed_in() and (
         render_request_dashboard(st.session_state)
     st.stop()
 
-if not datasets:
+if not datasets or st.session_state.get("workspace_page") == "home":
     render_settings(settings_anchor)
     if is_signed_in() and st.session_state.get("workspace_page") == "inspection":
         st.stop()
