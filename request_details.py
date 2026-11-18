@@ -45,14 +45,27 @@ def _timeline_frame(events):
 
 
 def confirm_demo_action(state, reference, number, action):
+    from approval_evidence import binding
+    expected_seal = binding(state, reference, number)
     @st.dialog(t("Confirm approval"))
     def confirmation():
         st.write(t("Confirm this action for request {0}, revision {1}?").format(reference, number))
         st.caption(t("This is a demo approval. No external ticket or production change will be sent."))
+        evidence = None
+        if action in ("ticket", "cab"):
+            st.caption(t("Optional evidence: PNG, JPEG or UTF-8 text, up to 5 MB per file and 20 MB per session. Cleared on logout; never saved to shared sample history."))
+            evidence = st.file_uploader(t("Approval evidence"), type=["png", "jpg", "jpeg", "txt"],
+                                        max_upload_size=5, key=f"evidence_{reference}_{number}_{action}")
         yes, no = st.columns(2)
         def apply_confirmation():
             try:
-                demo_review_action(state, reference, number, action)
+                if action in ("ticket", "cab"):
+                    from approval_evidence import approve_with_evidence
+                    approve_with_evidence(state, reference, number, action,
+                                          {"name": evidence.name, "data": evidence.getvalue()} if evidence else None,
+                                          expected_seal=expected_seal)
+                else:
+                    demo_review_action(state, reference, number, action)
             except WorkflowError as error:
                 state["approval_confirmation_error"] = str(error)
         if yes.button(t("Confirm"), key="confirm_demo_approval", type="primary", on_click=apply_confirmation):
@@ -351,6 +364,9 @@ def render_request_details(state, reference):
                 st.text(t(reason) + ": " + str(count))
             st.caption(t("Validate in staging and take a verified backup before any real production change. This demo does neither."))
     _render_approval_steps(state, record, rev, latest, reference, number, snap, snapshot_verified)
+    if snapshot_verified:
+        from approval_evidence import render_evidence
+        render_evidence(state, reference, number, t, st)
     st.subheader(t("Request timeline"))
     timeline = _timeline_frame(rev["timeline"])
     if not timeline.empty:

@@ -13,3 +13,4 @@
 - [Deferred download sessions](deferred-download-session.md) — authorize session-bound downloads on the script thread; deferred workers cannot read the session proxy.
 - [Correction safety](correction-safety.md) — automatic corrections only, no typed cell edits; never guess facts; review the exact submitted version.
 - [Public demo data](public-demo-data.md) — genuine public observations with labelled, reversible demo defects; preserve attribution and old history.
+- [Private approval evidence](approval-evidence.md) — optional revision-bound attachments stay session-only, never in public sample history.

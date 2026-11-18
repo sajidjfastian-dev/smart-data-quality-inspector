@@ -25,3 +25,5 @@ Offer row-level revert only for retained rows whose cell values were corrected. 
 **Why:** The user clarified: “if any duplicate row is removed than its fine, i want revert option only if any change happened in row”.
 
 **How to apply:** Reverting a row restores its changed cell values while preserving duplicate removals and all other rows' corrections. Keep removed duplicates visible in the audit history without a revert control.
+
+Keep row rejection choices when automatic fixes run again. Never identify a row by its current index or values alone. Partial corrections of shared examples belong in private requests when the canonical public catalog cannot represent them.

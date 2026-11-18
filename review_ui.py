@@ -7,7 +7,7 @@ from security_guardrails import MASK, mask_dataframe
 from review_approval import approve, is_approved, return_for_revision
 
 
-def render_checker_review(state, dataset, original, corrected, changes, remaining, protected, choice, actions=True, show_findings=True):
+def render_checker_review(state, dataset, original, corrected, changes, remaining, protected, choice, actions=True, show_findings=True, on_reject=None):
     context = state["review_contexts"][dataset]
     version = context["version"]
     key = f"checker_{version}_{choice}"
@@ -76,11 +76,26 @@ def render_checker_review(state, dataset, original, corrected, changes, remainin
                 "<tr>" + "".join("<td><bdi>" + html.escape(str(record[label])) + "</bdi></td>" for label in headings) + "</tr>"
                 for record in records
             )
-            st.markdown(
-                '<div class="checker-comparison" dir="ltr" tabindex="0"><table><thead><tr>'
-                + header + "</tr></thead><tbody>" + body + "</tbody></table></div>",
-                unsafe_allow_html=True,
-            )
+            if on_reject:
+                # One native action per original row, beside that row's changes.
+                for origin in dict.fromkeys(record[t("Original row")] for record in records):
+                    grouped = [record for record in records if record[t("Original row")] == origin]
+                    row_body = "".join("<tr>" + "".join("<td><bdi>" + html.escape(str(record[label]))
+                        + "</bdi></td>" for label in headings) + "</tr>" for record in grouped)
+                    with st.container(border=True):
+                        comparison, action = st.columns([5, 1], vertical_alignment="center")
+                        comparison.markdown('<div class="checker-comparison" dir="ltr" tabindex="0"><table><thead><tr>'
+                            + header + "</tr></thead><tbody>" + row_body + "</tbody></table></div>", unsafe_allow_html=True)
+                        retained = changes.loc[changes["Original row"] == origin, "Column position"].notna().any()
+                        if retained:
+                            action.button(t("Reject fix"), key=f"{key}_reject_{origin}", on_click=on_reject, args=(origin,),
+                                          help=t("Restore original values for this row. Removed duplicates stay removed."))
+            else:
+                st.markdown(
+                    '<div class="checker-comparison" dir="ltr" tabindex="0"><table><thead><tr>'
+                    + header + "</tr></thead><tbody>" + body + "</tbody></table></div>",
+                    unsafe_allow_html=True,
+                )
             st.caption(t("On small screens, scroll the comparison horizontally to see both values."))
         if actions or not remaining.empty:
             st.warning(t("Approval does not mean error-free data. Review all remaining findings before proceeding."))

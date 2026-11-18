@@ -30,6 +30,19 @@ from request_approval_translations import REQUEST_APPROVAL_ARABIC
 _ROOT = Path(__file__).resolve().parent
 _ARABIC = json.loads((_ROOT / "assets" / "translations" / "ar.json").read_text(encoding="utf-8"))
 _ARABIC.update({
+    "Inspect. Improve. Trust your data.": "افحص. حسّن. ثق ببياناتك.",
+    "Find quality issues, apply safe corrections, and review every change.": "اكتشف مشكلات الجودة، وطبّق التصحيحات الآمنة، وراجع كل تغيير.",
+    "Reject fix": "رفض التصحيح",
+    "Restore original values for this row. Removed duplicates stay removed.": "استعد القيم الأصلية لهذا الصف. تبقى الصفوف المكررة المحذوفة محذوفة.",
+    "Rejected rows keep their original values when fixes are reapplied.": "تحتفظ الصفوف المرفوضة بقيمها الأصلية عند إعادة تطبيق التصحيحات.",
+    "Approval evidence": "دليل الموافقة",
+    "Private approval evidence": "أدلة الموافقة الخاصة",
+    "Download evidence": "تنزيل الدليل",
+    "No evidence attached.": "لم يتم إرفاق دليل.",
+    "Session-only: cleared on logout or session loss. Not a permanent audit archive.": "لهذه الجلسة فقط: تُحذف عند تسجيل الخروج أو فقدان الجلسة. ليست أرشيف تدقيق دائماً.",
+    "Optional evidence: PNG, JPEG or UTF-8 text, up to 5 MB per file and 20 MB per session. Cleared on logout; never saved to shared sample history.": "دليل اختياري: PNG أو JPEG أو نص UTF-8 بحد أقصى 5 ميغابايت للملف و20 ميغابايت للجلسة. يُحذف عند الخروج ولا يُحفظ في سجل العينات المشترك.",
+    "Initiated by": "بدأ الإجراء",
+    "Rejecting a row fix creates a private session-only request; the shared example is unchanged.": "يؤدي رفض تصحيح صف إلى إنشاء طلب خاص بهذه الجلسة؛ ولا تتغير العينة المشتركة.",
     "Invalid numeric values": "القيم الرقمية غير الصالحة",
     "Invalid Number": "رقم غير صالح",
     "Validating numeric values": "التحقق من القيم الرقمية",

@@ -2478,8 +2478,8 @@ if not datasets or st.session_state.get("workspace_page") == "home":
         start_title = "Get started with your data"
         start_copy = "Use the sidebar to upload a file, or connect an API in settings."
     else:
-        start_title = "Log in to get started"
-        start_copy = "Use Login at the bottom of the sidebar, then upload a file or connect an API."
+        start_title = "Inspect. Improve. Trust your data."
+        start_copy = "Find quality issues, apply safe corrections, and review every change."
     welcome_placeholder.markdown(
         f"""
         <section class="welcome-panel" aria-label="Data quality introduction">
@@ -3164,6 +3164,10 @@ with review_tab, st.container(key="correction_workspace"):
                         fixed_copy = fixed_copy.iloc[np.flatnonzero(keep)].reset_index(drop=True)
                         changes = build_changes(data, fixed_copy, retained, changes,
                                                 removed_reasons=normalized_removals)
+                from row_rejections import restore_rows, choices
+                rejected = choices(st.session_state, request_reference, data)
+                if rejected:
+                    fixed_copy, changes = restore_rows(data, fixed_copy, changes, rejected)
                 fixed_datasets[active_dataset] = fixed_copy
                 st.session_state.setdefault("fix_change_indexes", {})[active_dataset] = {
                     "original": frame_digest(data), "fixed": frame_digest(fixed_copy), "changes": changes,
@@ -3219,9 +3223,24 @@ with review_tab, st.container(key="correction_workspace"):
     elif lineage_valid:
         if approval_choice == "Fixed copy":
             changes = change_record["changes"]
+        def reject_this_row(row):
+            from row_rejections import reject_row
+            try:
+                reject_row(st.session_state, request_reference, active_dataset, data, approval_data, changes, row)
+            except WorkflowError as error:
+                st.session_state["row_rejection_error"] = str(error)
+        if st.session_state.get("row_rejection_error"):
+            st.error(st.session_state.pop("row_rejection_error"))
+        from row_rejections import choices
+        rejected_count = len(choices(st.session_state, request_reference, data))
+        if rejected_count:
+            st.caption(translate("Rejected rows keep their original values when fixes are reapplied.") + f" ({rejected_count})")
+        if st.session_state["demo_requests"][request_reference].get("synthetic"):
+            st.caption("Rejecting a row fix creates a private session-only request; the shared example is unchanged.")
         render_checker_review(st.session_state, active_dataset, data, approval_data,
                               changes, fixed_findings if approval_choice == "Fixed copy" else issues,
-                              display_sensitive_columns, approval_choice, actions=False)
+                              display_sensitive_columns, approval_choice, actions=False,
+                              on_reject=reject_this_row if has_fixed_data else None)
         draft_payload = {
             "file": active_dataset, "original": data, "selected": approval_data,
             "choice": approval_choice, "changes": changes, "issues": issues,

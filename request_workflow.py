@@ -92,9 +92,12 @@ def save_draft(state, reference, payload):
         return
     # Working references only. A detached snapshot is taken exactly once on submission.
     revision["working"] = payload
+    revision.pop("_needs_rescan", None)
 
 
 def submit(state, reference):
+    if current(state, reference).get("_needs_rescan"):
+        raise WorkflowError("Refresh the correction review before submitting.")
     if requests(state)[reference].get("_db_version") and not state.get("_db_transaction"):
         from persistent_demo import transaction
         return transaction(state, reference, lambda local: submit(local, reference))
@@ -259,6 +262,8 @@ def revise(state, reference):
                 "rejected_by": "", "rejection_reason": "", "timeline": [], "snapshot": None,
                 "approval_state": {}, "working": deepcopy(snap)}
     revision["working"].pop("seal", None)
+    if old.get("row_rejections"):
+        revision["row_rejections"] = deepcopy(old["row_rejections"])
     if "variant" in old:
         revision["variant"] = old["variant"]
     event(revision, "New draft revision", state["demo_user"])
