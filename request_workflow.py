@@ -136,11 +136,15 @@ def submit(state, reference):
 
 
 def snapshot_seal(snap):
-    return hashlib.sha256(repr((
+    contents = (
         frame_digest(snap["original"]), frame_digest(snap["selected"]),
         frame_digest(snap["issues"]), frame_digest(snap["remaining"]), frame_digest(snap["changes"]),
         json.dumps(snap["rules"], sort_keys=True), sorted(map(str, snap["protected"])), snap["privacy_reviewed"], snap["choice"],
-    )).encode()).hexdigest()
+    )
+    # Older sealed histories did not contain selection metadata.
+    if "rule_selections" in snap:
+        contents += (json.dumps(snap["rule_selections"], sort_keys=True),)
+    return hashlib.sha256(repr(contents).encode()).hexdigest()
 
 
 def valid_snapshot(revision):
@@ -303,6 +307,11 @@ def open_draft(state, reference):
             "changes": working["changes"],
         }} if working["choice"] == "Fixed copy" else {}
         state["request_restore_rules"] = working["rules"]
+        state["request_restore_rule_selections"] = deepcopy(working.get("rule_selections"))
+        state["request_restore_fixed_rules"] = (
+            {"reference": reference, "rules": deepcopy(working["rules"])}
+            if working["choice"] == "Fixed copy" else None
+        )
         state["request_restore_protected"] = working["protected"]
         state["request_restore_reviewed"] = working["privacy_reviewed"]
         for key in ("quality_scan_cache", "review_scan_cache", "privacy_detection_cache",

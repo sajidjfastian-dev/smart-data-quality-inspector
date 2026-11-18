@@ -4,7 +4,7 @@ from pathlib import Path
 import pandas as pd
 from streamlit.testing.v1 import AppTest
 from business_rules import apply_rules
-from business_rule_review import rule_results
+from business_rule_review import rule_results, selection_key, saved_selections, restore_selections
 
 
 def rule(**updates):
@@ -14,6 +14,20 @@ def rule(**updates):
 
 
 class RuleReviewTests(unittest.TestCase):
+    def test_selection_metadata_remaps_scope_and_preserves_legacy_definitions(self):
+        legacy = {"column": "status", "kind": "Allowed values", "expected": "Open, Closed"}
+        keys = [selection_key("old", "standard", "duplicates"),
+                selection_key("old", "fix", "whitespace"),
+                selection_key("old", "business", rule()),
+                selection_key("old", "legacy_0", legacy)]
+        saved = saved_selections("old", dict(zip(keys, [False, True, False, False])), [legacy])
+        restored = {}
+        restore_selections("new", saved, restored)
+        for key, expected in zip(keys, [False, True, False, False]):
+            self.assertEqual(restored[key.replace("review_rule_old_", "review_rule_new_")], expected)
+        self.assertEqual(saved["legacy_rules"], [legacy])
+        self.assertTrue(restored.get(selection_key("new", "business", rule(id="new")), True))
+
     def test_every_rule_and_current_copy(self):
         data = pd.DataFrame({"status": ["pending", "other"]})
         rules = [rule(), rule(enabled=False), rule(column="absent")]
@@ -136,6 +150,50 @@ render_business_rule_review(
         self.assertNotIn("one.csv", app.session_state["fixed_datasets"])
         next(w for w in app.button if w.label == "Apply automatic fixes").click().run()
         self.assertEqual(len(app.session_state["fixed_datasets"]["one.csv"]), 1)
+        self.assertFalse(app.exception)
+
+    def test_revision_carries_selections_and_invalidates_outdated_fixes(self):
+        from demo_login import signed_in
+        app = signed_in(AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"), default_timeout=60))
+        app.session_state["business_rules"] = [
+            rule(id="kept"), rule(id="off", kind="Trim whitespace", expected=""),
+        ]
+        app.session_state["inspector_datasets"] = {
+            "one.csv": pd.DataFrame({"status": [" pending ", " pending ", "other"]}),
+        }
+        app.session_state["active_dataset"] = "one.csv"
+        app.run()
+        def widget(kind, label):
+            return next(w for w in getattr(app, kind) if w.label == label)
+        widget("checkbox", "Duplicate rows").uncheck().run()
+        widget("checkbox", "Trim leading and trailing whitespace").uncheck().run()
+        widget("checkbox", "2 · Trim whitespace · status").uncheck().run()
+        widget("button", "Apply automatic fixes").click().run()
+        widget("checkbox", "I reviewed all changes and remaining findings; this version is ready for review").check().run()
+        widget("button", "Submit for review").click().run()
+        self.assertFalse(app.exception)
+        ref = app.session_state["active_request_ref"]
+        old = app.session_state["demo_requests"][ref]["revisions"][0]
+        old_selections = old["snapshot"]["rule_selections"]
+        app.session_state["business_rules"] = [
+            rule(id="kept"), rule(id="off", kind="Trim whitespace", expected=""),
+            rule(id="new", kind="Must contain", expected="x", mode="Check only"),
+        ]
+        widget("button", "Create new draft revision").click().run()
+        self.assertFalse(app.exception)
+        self.assertFalse(widget("checkbox", "Duplicate rows").value)
+        self.assertFalse(widget("checkbox", "Trim leading and trailing whitespace").value)
+        self.assertTrue(widget("checkbox", "1 · Value mapping · status").value)
+        self.assertFalse(widget("checkbox", "2 · Trim whitespace · status").value)
+        self.assertTrue(widget("checkbox", "3 · Must contain · status").value)
+        self.assertNotIn("one.csv", app.session_state["fixed_datasets"])
+        revisions = app.session_state["demo_requests"][ref]["revisions"]
+        self.assertEqual(revisions[0]["snapshot"]["rule_selections"], old_selections)
+        self.assertEqual(revisions[1]["approval_state"], {})
+        widget("button", "Apply automatic fixes").click().run()
+        self.assertEqual(len(app.session_state["fixed_datasets"]["one.csv"]), 3)
+        widget("checkbox", "2 · Trim whitespace · status").check().run()
+        self.assertNotIn("one.csv", app.session_state["fixed_datasets"])
         self.assertFalse(app.exception)
 
 

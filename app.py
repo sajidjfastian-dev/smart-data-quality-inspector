@@ -2550,13 +2550,19 @@ column_signature = hashlib.sha256(
     ).encode("utf-8")
 ).hexdigest()[:12]
 restored_rules = st.session_state.pop("request_restore_rules", None)
-if restored_rules:
+restored_selections = st.session_state.pop("request_restore_rule_selections", None)
+if restored_rules is not None:
     st.session_state[f"rule_iqr_{column_signature}"] = float(restored_rules["iqr"])
     for kind in ("email", "date", "numeric"):
         st.session_state[f"rule_{kind}_columns_{column_signature}"] = list(restored_rules[kind])
-    st.session_state[f"custom_rules_{column_signature}"] = restored_rules["custom"]
-    from business_rule_review import selection_key
+    st.session_state[f"custom_rules_{column_signature}"] = (
+        restored_selections["legacy_rules"] if restored_selections is not None
+        else restored_rules["custom"]
+    )
+    from business_rule_review import selection_key, restore_selections
     choices = st.session_state.setdefault("review_rule_choices", {}).setdefault(column_signature, {})
+    if restored_selections is not None:
+        restore_selections(column_signature, restored_selections, choices)
     for check in ("missing", "duplicates", "email", "date", "outliers", "numeric"):
         choices.setdefault(selection_key(column_signature, "standard", check), check in restored_rules["enabled"])
 restored_protected = st.session_state.pop("request_restore_protected", None)
@@ -2636,6 +2642,25 @@ rule_signature = column_rule_signature(
     enabled_checks,
     custom_rules,
 )
+pending_fixed_rules = st.session_state.get("request_restore_fixed_rules")
+if pending_fixed_rules is not None and pending_fixed_rules["reference"] == request_reference:
+    prior_fixed_rules = pending_fixed_rules["rules"]
+    prior_signature = column_rule_signature(
+        prior_fixed_rules["email"], prior_fixed_rules["date"], prior_fixed_rules["numeric"],
+        prior_fixed_rules["iqr"], prior_fixed_rules["enabled"], prior_fixed_rules["custom"],
+    )
+    if prior_signature != rule_signature:
+        invalidate(st.session_state, active_dataset)
+        prior_changes = st.session_state.get("fix_change_indexes", {}).get(active_dataset)
+        if (prior_changes is not None
+                and prior_changes["changes"]["Change reason"].str.startswith("Manual correction").any()):
+            st.error("Business rules changed since this copy was prepared. Restore the previous rules to preserve its manual corrections, or start a new request.")
+            st.stop()
+        for cache in ("fixed_datasets", "fix_change_indexes", "quality_scan_cache", "review_scan_cache", "fixed_export_cache"):
+            st.session_state.setdefault(cache, {}).pop(active_dataset, None)
+        st.session_state["batch_export_cache"] = None
+        st.info("Business rules changed since this copy was prepared. Apply fixes again before review.")
+    st.session_state.pop("request_restore_fixed_rules", None)
 quality_scan_cache = st.session_state.setdefault("quality_scan_cache", {})
 cached_scan = quality_scan_cache.get(active_dataset)
 original_digest = frame_digest(data)
@@ -3020,6 +3045,8 @@ with review_tab, st.container(key="correction_workspace"):
         rule for rule in st.session_state.get(f"custom_rules_{column_signature}", [])
         if not rule.get("business")
     ]
+    from business_rule_review import saved_selections
+    rule_selections = saved_selections(column_signature, selection_choices, configured_legacy_rules)
     whitespace_enabled = selection_choices.get(selection_key(column_signature, "fix", "whitespace"), True)
     render_business_rule_review(
         fixed_datasets.get(active_dataset, data),
@@ -3176,6 +3203,7 @@ with review_tab, st.container(key="correction_workspace"):
             "choice": "Original data", "changes": changes, "issues": issues,
             "remaining": issues, "protected": set(sensitive_columns),
             "privacy_reviewed": privacy_reviewed,
+            "rule_selections": rule_selections,
             "rules": {"email": list(email_columns), "date": list(date_columns), "numeric": list(numeric_columns),
                       "iqr": iqr_multiplier, "enabled": sorted(enabled_checks), "custom": list(custom_rules)},
         }
@@ -3213,6 +3241,7 @@ with review_tab, st.container(key="correction_workspace"):
             "choice": approval_choice, "changes": changes, "issues": issues,
             "remaining": fixed_findings if approval_choice == "Fixed copy" else issues,
             "protected": set(sensitive_columns), "privacy_reviewed": privacy_reviewed,
+            "rule_selections": rule_selections,
             "rules": {"email": list(email_columns), "date": list(date_columns), "numeric": list(numeric_columns),
                       "iqr": iqr_multiplier, "enabled": sorted(enabled_checks), "custom": list(custom_rules)},
         }

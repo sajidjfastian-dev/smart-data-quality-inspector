@@ -72,6 +72,22 @@ def canonical_payload(state, payload, source_id=None):
     result = deepcopy(variants[variant])
     result["protected"] = set(payload["protected"])
     result["privacy_reviewed"] = bool(payload["privacy_reviewed"])
+    if "rule_selections" in payload:
+        from business_rule_review import STANDARD_RULES, selection_key
+        saved = payload["rule_selections"]
+        allowed = {selection_key("", "standard", key).removeprefix("review_rule__")
+                   for key, *_ in STANDARD_RULES}
+        allowed.add(selection_key("", "fix", "whitespace").removeprefix("review_rule__"))
+        if (not isinstance(saved, dict) or set(saved) != {"choices", "legacy_rules"}
+                or saved["legacy_rules"] != [] or not isinstance(saved["choices"], dict)
+                or any(key not in allowed or type(value) is not bool
+                       for key, value in saved["choices"].items())):
+            raise WorkflowError("Shared examples use the standard sample checks. Continue as a private request to use custom data or rules.")
+        for key, *_ in STANDARD_RULES:
+            identity = selection_key("", "standard", key).removeprefix("review_rule__")
+            if saved["choices"].get(identity, True) != (key in expected["enabled"]):
+                raise WorkflowError("Shared examples use the standard sample checks. Continue as a private request to use custom data or rules.")
+        result["rule_selections"] = deepcopy(saved)
     return variant, result
 
 

@@ -108,6 +108,41 @@ class RequestWorkflowTests(unittest.TestCase):
         with self.assertRaises(flow.WorkflowError):
             flow.owner_decision(self.state, self.ref, True)
 
+    def test_selection_metadata_is_sealed_and_revision_local(self):
+        self.data["rule_selections"] = {"choices": {"business_abc": False}, "legacy_rules": []}
+        self.submitted()
+        old = flow.current(self.state, self.ref)
+        self.state["demo_role"] = "Submitter"
+        new = flow.revise(self.state, self.ref)
+        self.assertEqual(new["working"]["rule_selections"], old["snapshot"]["rule_selections"])
+        new["working"]["rule_selections"]["choices"]["business_abc"] = True
+        self.assertFalse(old["snapshot"]["rule_selections"]["choices"]["business_abc"])
+        flow.valid_snapshot(old)
+        old["snapshot"]["rule_selections"]["choices"]["business_abc"] = True
+        with self.assertRaises(flow.WorkflowError):
+            flow.valid_snapshot(old)
+
+    def test_shared_sample_selection_metadata_is_allowlisted(self):
+        from business_rule_review import STANDARD_RULES, selection_key
+        from demo_codec import stable_roundtrip
+        from persistent_demo import canonical_payload
+        sample = payload()
+        sample["rules"]["enabled"] = [key for key, *_ in STANDARD_RULES]
+        state = {"demo_catalog": {"variants": {"original": deepcopy(sample)}}}
+        whitespace = selection_key("", "fix", "whitespace").removeprefix("review_rule__")
+        sample["rule_selections"] = {"choices": {whitespace: False}, "legacy_rules": []}
+        _, trusted = canonical_payload(state, sample)
+        self.assertEqual(trusted["rule_selections"], sample["rule_selections"])
+        flow.save_draft(self.state, self.ref, trusted)
+        flow.submit(self.state, self.ref)
+        flow.valid_snapshot(stable_roundtrip(flow.current(self.state, self.ref)))
+        sample["rule_selections"]["choices"]["business_sensitive"] = False
+        with self.assertRaises(flow.WorkflowError):
+            canonical_payload(state, sample)
+        sample["rule_selections"] = {"choices": {}, "legacy_rules": [{"expected": "private"}]}
+        with self.assertRaises(flow.WorkflowError):
+            canonical_payload(state, sample)
+
     def test_privacy_unreviewed_and_resubmit_blocked(self):
         self.data["privacy_reviewed"] = False
         with self.assertRaises(flow.WorkflowError):

@@ -31,6 +31,23 @@ def selection_key(scope, category, rule):
     digest = hashlib.sha256(identity.encode()).hexdigest()[:16]
     return f"review_rule_{scope}_{category}_{digest}"
 
+def saved_selections(scope, choices, legacy_rules):
+    """Capture choices without the revision-specific widget prefix."""
+    prefix = f"review_rule_{scope}_"
+    return {
+        "choices": {key[len(prefix):]: value for key, value in choices.items()
+                    if key.startswith(prefix) and isinstance(value, bool)},
+        "legacy_rules": [dict(rule) for rule in legacy_rules],
+    }
+
+
+def restore_selections(scope, saved, choices):
+    """Restore only this revision's choices; unknown definitions default to selected."""
+    prefix = f"review_rule_{scope}_"
+    for identity, value in saved.get("choices", {}).items():
+        if isinstance(identity, str) and isinstance(value, bool):
+            choices.setdefault(prefix + identity, value)
+
 
 def rule_results(data, rules):
     """Use the inspection engine's predicates, without caching session results."""

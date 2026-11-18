@@ -124,6 +124,22 @@ class PersistentDemoTests(unittest.TestCase):
         self.assertEqual(latest["number"], 2)
         self.assertEqual(original["seal"], store.list_requests()[ref]["revisions"][0]["snapshot"]["seal"])
 
+    def test_selection_metadata_survives_shared_revision_roundtrip(self):
+        from business_rule_review import selection_key
+        ref, sample = self.request()
+        key = selection_key("", "fix", "whitespace").removeprefix("review_rule__")
+        selections = {"choices": {key: False}, "legacy_rules": []}
+        sample["rule_selections"] = selections
+        flow.save_draft(self.state, ref, sample)
+        flow.submit(self.state, ref)
+        stored = store.list_requests()[ref]
+        flow.valid_snapshot(stored["revisions"][0])
+        self.assertEqual(stored["revisions"][0]["snapshot"]["rule_selections"], selections)
+        flow.revise(self.state, ref)
+        stored = store.list_requests()[ref]
+        self.assertEqual(stored["revisions"][-1]["working"]["rule_selections"], selections)
+        self.assertEqual(stored["revisions"][-1]["approval_state"], {})
+
     def test_stale_decision_cannot_overwrite_other_session(self):
         ref, _ = self.request()
         flow.submit(self.state, ref)
