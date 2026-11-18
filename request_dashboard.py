@@ -9,11 +9,13 @@ import streamlit as st
 
 import localization
 import request_workflow
+from account_identity import owns, public_example
 
 
 _DUBAI = ZoneInfo("Asia/Dubai")
 _PAGE_SIZE = 10
 _APPROVED = {"Approved", "Ticket approved", "CAB approved", "Simulated"}
+_HIDDEN_PUBLIC_EXAMPLES = {"DQ-2026-251761"}
 _FILTER_DEFAULTS = {
     "rd_reference": "",
     "rd_submitter": None,
@@ -115,8 +117,11 @@ def render_request_dashboard(state):
                 st.error(localization.translate(str(error)))
         records = list(request_workflow.requests(state).values())
         if role == "Submitter":
-            from account_identity import owns, public_example
             records = [item for item in records if owns(state, item) or public_example(item)]
+        # Hide only the requested public example from the register. Keep its
+        # stored history and never hide an owned request with the same reference.
+        records = [item for item in records
+                   if item["reference"] not in _HIDDEN_PUBLIC_EXAMPLES or not public_example(item)]
         records.sort(key=lambda item: (item.get("created_at", ""), item["reference"]), reverse=True)
 
         if st.session_state.pop("rd_creation_error", False):
@@ -301,7 +306,6 @@ def _render_register_rows(state, filtered, start):
                 + escape(localization.translate("Action")) + "</span>", unsafe_allow_html=True,
             )
     for index, item in enumerate(filtered[start:start + _PAGE_SIZE], start=start):
-        from account_identity import public_example
         revision = item["revisions"][-1]
         status = revision["status"]
         tone = "approved" if status in _APPROVED else (

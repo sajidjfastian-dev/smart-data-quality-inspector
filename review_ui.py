@@ -83,16 +83,16 @@ def render_checker_review(state, dataset, original, corrected, changes, remainin
                 widths = [0.85, 1.35, 1.9, 1.9, 1.45, 0.7]
                 with st.container(key="checker_action_table"):
                     with st.container(key="checker_action_header"):
-                        for column, label in zip(st.columns(widths, gap=None), headings + [t("Action")]):
-                            column.markdown('<div class="checker-grid-heading">' + html.escape(label) + "</div>",
+                        for column, label in zip(st.columns(widths, gap=None, wrap=False), headings + [t("Action")]):
+                            column.markdown('<div class="checker-grid-heading"><bdi>' + html.escape(label) + "</bdi></div>",
                                             unsafe_allow_html=True)
                     for index, record in enumerate(records):
                         origin = record[t("Original row")]
                         with st.container(key=f"checker_action_row_{index}"):
-                            columns = st.columns(widths, gap=None, vertical_alignment="center")
+                            columns = st.columns(widths, gap=None, vertical_alignment="center", wrap=False)
                             for column, label in zip(columns, headings):
                                 column.markdown(
-                                    '<div class="checker-grid-cell"><bdi>' + html.escape(str(record[label]))
+                                    '<div class="checker-grid-cell checker-comparison-cell"><bdi>' + html.escape(str(record[label]))
                                     + "</bdi></div>", unsafe_allow_html=True,
                                 )
                             if not record["_removed"]:

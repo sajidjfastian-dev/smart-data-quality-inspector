@@ -285,9 +285,7 @@ def render_request_details(state, reference):
         st.warning(t("Request not found in this session."))
         return
     st.header(reference)
-    if public_example(record):
-        st.info(t("Public sample example · read-only · not your request"))
-    elif record.get("sample_copy_of"):
+    if not public_example(record) and record.get("sample_copy_of"):
         st.info(t("Personal sample copy · approval history is simulated."))
     from public_sample import SOURCE_ID, ATTRIBUTION, NOTICE
     if record.get("source_id") == SOURCE_ID:

@@ -732,6 +732,7 @@ section[data-testid="stSidebar"] [data-testid="stSidebarUserContent"] > div > [d
 }
 .checker-grid-no-action {text-align: center; color: #859791;}
 [data-testid="stMarkdownContainer"]:has(> .checker-comparison) {margin-bottom: 0 !important;}
+
 [data-testid="stMarkdownContainer"]:has(> :is(.overview-heading, .overview-table-wrap, .overview-note, .overview-step)) {margin-bottom: 0 !important;}
 .st-key-overview_composition, .st-key-overview_detail {gap: 1rem;}
 .st-key-overview_columns, .st-key-overview_types,

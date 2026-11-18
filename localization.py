@@ -61,7 +61,6 @@ _ARABIC.update({
     "A numeric business measure may need a lower limit agreed by the data owner.": "قد يحتاج المقياس الرقمي إلى حد أدنى يتفق عليه مالك البيانات.",
     "Show public sample examples": "عرض أمثلة البيانات العامة",
     "Public examples are read-only and are not your requests.": "الأمثلة العامة للقراءة فقط وليست طلباتك.",
-    "Public sample example · read-only · not your request": "مثال بيانات عامة · للقراءة فقط · ليس طلبك",
     "Your account session expired. Sign in again.": "انتهت جلسة حسابك. سجّل الدخول مرة أخرى.",
     "Inspect. Improve. Trust your data.": "افحص. حسّن. ثق ببياناتك.",
     "Find quality issues, apply safe corrections, and review every change.": "اكتشف مشكلات الجودة، وطبّق التصحيحات الآمنة، وراجع كل تغيير.",

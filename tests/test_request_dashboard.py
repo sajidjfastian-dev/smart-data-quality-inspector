@@ -38,6 +38,37 @@ class DashboardTests(unittest.TestCase):
         self.assertNotIn("rd_public_examples", [checkbox.key for checkbox in app.checkbox])
         self.assertIn("Public sample", "\n".join(item.value for item in app.markdown))
 
+    def test_specific_public_sample_is_hidden_without_deleting_history(self):
+        app = self.app()
+        state = sample_seed_state("Sajid")
+        own, public, other = (new_request(state) for _ in range(3))
+        hidden = "DQ-2026-251761"
+        state["demo_requests"][own]["owner_id"] = TEST_SUBJECT
+        record = state["demo_requests"].pop(public)
+        record.update(reference=hidden, synthetic=True, source_id="quality-v1", session_id="DEMO-HISTORY-01")
+        state["demo_requests"][hidden] = record
+        state["demo_requests"][other].update(
+            synthetic=True, source_id="quality-v1", session_id="DEMO-HISTORY-02"
+        )
+        app.session_state["demo_requests"] = state["demo_requests"]
+        for locale in ("EN", "AR"):
+            app.segmented_control(key="language_choice").set_value(locale).run()
+            self.clean(app)
+            keys = {button.key for button in app.button}
+            self.assertNotIn(f"rd_view_{hidden}", keys)
+            self.assertIn(f"rd_view_{own}", keys)
+            self.assertIn(f"rd_view_{other}", keys)
+            self.assertIn(hidden, app.session_state["demo_requests"])
+            self.assertEqual([metric.value for metric in app.metric], ["2", "0", "0", "0"])
+
+        # A private owned record with that reference must remain visible.
+        record["owner_id"] = TEST_SUBJECT
+        app = self.app()
+        app.session_state["demo_requests"] = {hidden: record}
+        app.run()
+        self.clean(app)
+        self.assertIn(f"rd_view_{hidden}", {button.key for button in app.button})
+
     def test_login_and_request_upload_visibility(self):
         app = AppTest.from_file(APP, default_timeout=45).run()
         self.clean(app)

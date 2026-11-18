@@ -200,6 +200,15 @@ class AuthenticatedOwnershipTests(unittest.TestCase):
                    "session_id": "DEMO-HISTORY-01"}
         self.assertTrue(public_example(example))
         self.assertFalse(owns(self.state, example))
+        self.state["demo_requests"]["public"] = example
+        for operation in (
+            lambda: flow.open_draft(self.state, "public"),
+            lambda: flow.revise(self.state, "public"),
+            lambda: flow.demo_review_action(self.state, "public", 1, "approve"),
+            lambda: flow.approved_download(self.state, "public", 1),
+        ):
+            with self.assertRaises(flow.WorkflowError):
+                operation()
         example["owner_id"] = "account-b"
         self.assertFalse(public_example(example))
 
@@ -299,27 +308,58 @@ class StreamlitAccountBoundaryTests(unittest.TestCase):
                             self.assertFalse(isinstance(argument.value, ast.Name)
                                              and argument.value.id == "build_cleaned_csv_download")
 
-    def test_submitted_public_example_renders_without_private_evidence(self):
+    def test_public_and_personal_sample_details_in_both_languages(self):
         from streamlit.testing.v1 import AppTest
+        from localization import translate
+        from public_sample import ATTRIBUTION, NOTICE
         script = '''
 import streamlit as st
 import request_workflow as flow
 from tests.test_request_workflow import payload
 from request_details import render_request_details
+from public_sample import SOURCE_ID
+st.session_state["interface_language"] = LOCALE
 seed = flow.sample_seed_state("Sample submitter")
 reference = flow.new_request(seed)
 flow.save_draft(seed, reference, payload())
 flow.submit(seed, reference)
 record = seed["demo_requests"][reference]
-record.update(synthetic=True, source_id="quality-v1", session_id="DEMO-HISTORY-TEST")
+record.update(synthetic=True, source_id=SOURCE_ID, session_id="DEMO-HISTORY-TEST")
+if PERSONAL:
+    record.update(owner_id="different-account", sample_copy_of="public-reference")
 state = {"demo_user": "Different account", "auth_subject": "different-account",
-         "demo_role": "Submitter", "demo_requests": {reference: record}}
+         "_auth_session": "valid", "demo_role": "Submitter", "demo_requests": {reference: record}}
 render_request_details(state, reference)
 '''
-        app = AppTest.from_string(script, default_timeout=30).run()
-        self.assertEqual([error.message for error in app.exception], [])
-        self.assertIn("Request timeline", [heading.value for heading in app.subheader])
-        self.assertFalse(any(str(button.key).startswith("evidence_download") for button in app.get("download_button")))
+        for locale in ("English", "العربية"):
+            for personal in (False, True):
+                with self.subTest(locale=locale, personal=personal):
+                    source = script.replace("LOCALE", repr(locale)).replace("PERSONAL", repr(personal))
+                    with patch.object(auth, "session_identity", return_value={"subject": "different-account"}):
+                        app = AppTest.from_string(source, default_timeout=30).run()
+                    self.assertEqual([error.message for error in app.exception], [])
+                    self.assertTrue(app.header)
+                    self.assertIn(translate("Request timeline", locale), [heading.value for heading in app.subheader])
+                    info = [element.value for element in app.info]
+                    self.assertNotIn("Public sample example · read-only · not your request", info)
+                    self.assertNotIn("مثال بيانات عامة · للقراءة فقط · ليس طلبك", info)
+                    self.assertEqual(
+                        translate("Personal sample copy · approval history is simulated.", locale) in info,
+                        personal,
+                    )
+                    captions = [element.value for element in app.caption]
+                    self.assertIn(ATTRIBUTION + " " + NOTICE, captions)
+                    self.assertIn(translate("No real service-desk request or production change is performed.", locale),
+                                  captions)
+                    if not personal:
+                        self.assertFalse(any(str(button.key).startswith("evidence_download")
+                                             for button in app.get("download_button")))
+                        self.assertFalse(any(str(button.key).startswith(("continue_", "revise_"))
+                                             for button in app.button))
+                        self.assertTrue(any(str(button.key).startswith("owner_yes_") for button in app.button))
+                        for button in app.button:
+                            if str(button.key).startswith(("owner_yes_", "owner_no_")):
+                                self.assertTrue(button.disabled)
 
 
 if __name__ == "__main__":
