@@ -100,6 +100,39 @@ render_business_rule_review(
         widget("selectbox", "Active file").set_value("two.csv").run()
         self.assertIn("Not applicable", captions())
 
+    def test_standard_rules_are_the_same_in_settings_and_review(self):
+        from demo_login import signed_in
+        from business_rule_review import STANDARD_RULES
+        app = signed_in(AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"), default_timeout=60))
+        app.session_state["inspector_datasets"] = {
+            "one.csv": pd.DataFrame({"status": [" a ", " a "], "amount": [1, 1]}),
+        }
+        app.session_state["active_dataset"] = "one.csv"
+        app.run()
+        self.assertFalse(app.exception)
+        self.assertIn("Business rules", [tab.label for tab in app.tabs])
+        self.assertNotIn("Inspection checks", [tab.label for tab in app.tabs])
+        self.assertIn("Configured business rules · 7", [exp.label for exp in app.expander])
+        self.assertTrue(all(any(box.label == label for box in app.checkbox) for _, label, *_ in STANDARD_RULES))
+        captions = "\n".join(i.value for i in app.caption)
+        self.assertIn("Inspection flags: 1", captions)
+        next(w for w in app.button if w.label == "Apply automatic fixes").click().run()
+        self.assertIn("one.csv", app.session_state["fixed_datasets"])
+        next(w for w in app.checkbox if w.label == "Duplicate rows").uncheck().run()
+        self.assertNotIn("one.csv", app.session_state["fixed_datasets"])
+        self.assertIn("Not evaluated — rule is disabled.", "\n".join(i.value for i in app.caption))
+        self.assertFalse(app.exception)
+        next(w for w in app.checkbox if w.label == "Duplicate rows").check().run()
+        next(w for w in app.checkbox if w.label == "Remove exact duplicate rows").uncheck().run()
+        self.assertIn("Automatic correction off or not applicable", "\n".join(i.value for i in app.caption))
+        next(w for w in app.button if w.label == "Apply automatic fixes").click().run()
+        self.assertEqual(len(app.session_state["fixed_datasets"]["one.csv"]), 2)
+        next(w for w in app.checkbox if w.label == "Remove exact duplicate rows").check().run()
+        self.assertNotIn("one.csv", app.session_state["fixed_datasets"])
+        next(w for w in app.button if w.label == "Apply automatic fixes").click().run()
+        self.assertEqual(len(app.session_state["fixed_datasets"]["one.csv"]), 1)
+        self.assertFalse(app.exception)
+
 
 if __name__ == "__main__":
     unittest.main()

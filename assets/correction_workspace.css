@@ -292,6 +292,11 @@
     min-width: 0;
 }
 
+.st-key-correction_workspace [data-testid="stExpanderDetails"] bdi {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
 @media (max-width: 767px) {
     .st-key-dashboard_tabs > div > [role="tablist"] {
         padding: 6px;

@@ -2,6 +2,7 @@
 import unittest
 from copy import deepcopy
 from pathlib import Path
+from unittest.mock import patch
 
 import pandas as pd
 from pandas.testing import assert_frame_equal
@@ -79,11 +80,13 @@ class RuleEngineTests(unittest.TestCase):
         self.assertEqual(visible_rules([r], {"status"})[0]["expected"], "••••")
         self.assertEqual(visible_rules([r], set())[0]["expected"], r["expected"])
 
-    def test_custom_rules_cannot_enter_shared_catalog(self):
+    @patch("account_auth.session_identity", return_value={"subject": "apptest-account"})
+    def test_custom_rules_cannot_enter_shared_catalog(self, _identity):
         from persistent_demo import canonical_payload, make_private, eligible, register_source
         import request_workflow as flow
         frame = pd.DataFrame({"status": ["pending"]})
-        state = {"demo_user": "Sajid", "demo_role": "Submitter", "_persistent_demo_ready": True}
+        state = {"demo_user": "Sajid", "demo_role": "Submitter", "_persistent_demo_ready": True,
+                 "auth_subject": "apptest-account", "_auth_session": "apptest-session"}
         ref = flow.new_request(state)
         payload = {"file": "source.csv", "original": frame, "selected": frame, "choice": "Original data",
                    "rules": {"custom": [], "email": [], "date": [], "numeric": [], "enabled": [], "iqr": 1.5},
@@ -197,7 +200,8 @@ class RuleUiTests(unittest.TestCase):
         self.clean()
         from request_workflow import approved_download
         state = dict(self.app.session_state._state.filtered_state)
-        payload = approved_download(state, state["active_request_ref"], 1)
+        with patch("account_auth.session_identity", return_value={"subject": state["auth_subject"]}):
+            payload = approved_download(state, state["active_request_ref"], 1)
         self.assertIn(b"Complete", payload)
         self.assertNotIn(b"pending", payload)
         self.assertNotIn(b"Approved", payload)

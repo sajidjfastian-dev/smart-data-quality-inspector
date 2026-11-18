@@ -43,7 +43,7 @@ with sync_playwright() as p:
     settle()
     page.get_by_role("button", name="Settings", exact=True).first.click()
     settle()
-    page.get_by_role("dialog").get_by_role("tab").filter(has_text="Inspection checks").click()
+    page.get_by_role("dialog").get_by_role("tab").filter(has_text="Business rules").click()
     choose("Rule column", 0)
     choose("Rule type", 1)
     page.get_by_role("textbox", name="Expected value", exact=True).fill("North,South,East")
@@ -53,9 +53,6 @@ with sync_playwright() as p:
     settle()
     page.get_by_role("tab", name="2 · Review & fix", exact=True).click()
     settle()
-    page.get_by_text("Optional fix settings", exact=True).click()
-    if not page.get_by_role("checkbox", name="Normalize case and spacing to allowed values", exact=True).is_checked():
-        check("Normalize case and spacing to allowed values")
     click("Apply automatic fixes")
     assert page.get_by_role("heading", name="2 · Review and submit").is_visible()
     assert page.get_by_role("textbox", name="Verified replacement value", exact=True).count() == 0

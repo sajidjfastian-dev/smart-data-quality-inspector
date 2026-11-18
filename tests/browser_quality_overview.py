@@ -57,7 +57,7 @@ def run():
         page.get_by_role("button", name="Settings", exact=True).first.click()
         settle()
         page.get_by_role("dialog").wait_for()
-        page.get_by_role("dialog").get_by_role("tab").filter(has_text="Inspection checks").click()
+        page.get_by_role("dialog").get_by_role("tab").filter(has_text="Business rules").click()
         settle()
         page.get_by_role("dialog").get_by_text("Missing values", exact=True).click()
         settle()

@@ -1925,12 +1925,13 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                 unsafe_allow_html=True,
             )
             st.markdown("## Settings")
-            st.caption("Choose inspection checks, review data privacy, and manage optional connections.")
+            st.caption("Configure business rules, review data privacy, and manage optional connections.")
             st.caption("Settings stay in this session.")
-            checks_tab, business_tab, privacy_tab, model_tab, api_tab = st.tabs(
-                ["Inspection checks", "Business rules", "Data privacy", "LLM assistant", "Data APIs"],
+            business_tab, privacy_tab, model_tab, api_tab = st.tabs(
+                ["Business rules", "Data privacy", "LLM assistant", "Data APIs"],
                 key="settings_navigation", on_change="rerun",
             )
+            checks_tab = business_tab
             if st.session_state.pop("business_rule_reset_selection", False):
                 st.session_state["business_rule_selection"] = 0
             with business_tab:
@@ -2032,31 +2033,45 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                         width="stretch", key="clear_assistant_settings",
                     )
             with checks_tab:
-                st.markdown("### Built-in checks")
-                st.caption("Choose which checks run. Changes rescan the active file. You can set these before loading data.")
+                st.markdown("### Standard business rules")
+                st.caption("Choose which standard rules run. Changes rescan the active file. Configure these before loading data.")
                 st.button(translate("Apply all built-in checks"), key="apply_all_quality_checks", on_click=apply_all_checks)
                 checks = {}
-                for key, label in (
-                    ("missing", "Missing values"),
-                    ("duplicates", "Duplicate rows"),
-                    ("email", "Invalid email formats"),
-                    ("date", "Invalid and inconsistent dates"),
-                    ("outliers", "Numeric outliers"),
-                    ("numeric", "Invalid numeric values"),
-                ):
+                from business_rule_review import STANDARD_RULES
+                for key, label, _, _, _ in STANDARD_RULES:
                     checks[key] = st.checkbox(
                         translate(label), value=True, key=f"check_{key}",
                         help=translate("Accepts finite numbers, optional currency prefixes, comma groups of three, parentheses for negatives, and scientific notation. Other formats require source verification.") if key == "numeric" else None,
                     )
                 enabled_checks = {key for key, enabled in checks.items() if enabled}
+                with st.expander("Automatic correction options", expanded=False):
+                    st.caption("These options apply only safe supported corrections. Other findings remain for source verification.")
+                    for suffix, label, default in (
+                        ("duplicates", "Remove exact duplicate rows", True),
+                        ("whitespace", "Trim leading and trailing whitespace", True),
+                        ("missing_numeric", "Fill missing values in selected Numeric columns with the median", True),
+                        ("dates", "Standardize valid dates to YYYY-MM-DD", True),
+                        ("allowed", "Normalize case and spacing to allowed values", True),
+                    ):
+                        st.checkbox(label, value=default, key=f"business_fix_{suffix}")
                 global_checks = tuple(sorted(enabled_checks))
                 previous_checks = st.session_state.get("approval_global_checks")
-                if previous_checks is not None and previous_checks != global_checks:
+                fix_settings = tuple(st.session_state[f"business_fix_{name}"] for name in
+                                     ("duplicates", "whitespace", "missing_numeric", "dates", "allowed"))
+                previous_fixes = st.session_state.get("approval_fix_settings")
+                if (previous_checks is not None and previous_checks != global_checks) or (
+                    previous_fixes is not None and previous_fixes != fix_settings
+                ):
                     for name in list(st.session_state.get("review_contexts", {})):
                         invalidate(st.session_state, name)
+                    st.session_state["fixed_datasets"] = {}
+                    st.session_state["review_scan_cache"] = {}
+                    st.session_state["fixed_export_cache"] = {}
+                    st.session_state["batch_export_cache"] = None
                 st.session_state["approval_global_checks"] = global_checks
+                st.session_state["approval_fix_settings"] = fix_settings
                 if columns is None:
-                    st.info("Define business rules now in Business rules, or load a file to configure detected column types.")
+                    st.info("Load a file to configure detected column types.")
                     with api_tab:
                         render_api_settings()
                     return None
@@ -3060,7 +3075,7 @@ with review_tab, st.container(key="correction_workspace"):
     suggested_rules = suggest_business_rules(data, custom_rules, numeric_columns, display_sensitive_columns)
     if suggested_checks or suggested_rules:
         with st.expander("Suggested quality controls", expanded=False):
-            st.caption("Consider these in Settings → Inspection checks. Enabling a control does not automatically fix its findings.")
+            st.caption("Consider these in Settings → Business rules. Enabling a rule does not automatically fix its findings.")
             for suggestion in suggested_checks:
                 st.markdown("- " + translate(suggestion))
             if suggested_rules:
@@ -3077,6 +3092,12 @@ with review_tab, st.container(key="correction_workspace"):
         st.session_state.get("business_rules", []),
         display_sensitive_columns,
         corrected=active_dataset in fixed_datasets,
+        enabled_checks=enabled_checks,
+        standard_findings=fixed_findings if active_dataset in fixed_datasets else issues,
+        email_columns=email_columns, date_columns=date_columns, numeric_columns=numeric_columns,
+        legacy_rules=[rule for rule in custom_rules if not rule.get("business")],
+        fix_settings={name: st.session_state.get(f"business_fix_{name}", True) for name in
+                      ("duplicates", "whitespace", "missing_numeric", "dates", "allowed")},
     )
     current_change_record = st.session_state.get("fix_change_indexes", {}).get(active_dataset)
     manual_edits = current_change_record is not None and current_change_record["changes"]["Change reason"].str.startswith("Manual correction").any()
@@ -3085,45 +3106,13 @@ with review_tab, st.container(key="correction_workspace"):
     notice = st.session_state.pop("resolve_" + column_signature + "_notice", None)
     if notice:
         st.success(notice)
-    with st.expander("Optional fix settings", expanded=False):
-        fix_duplicates = st.checkbox(
-            "Remove exact duplicate rows",
-            value="duplicates" in enabled_checks,
-            key=f"fix_duplicates_{column_signature}",
-            disabled="duplicates" not in enabled_checks,
-        )
-        fix_whitespace = st.checkbox(
-            "Trim leading and trailing whitespace",
-            value=True,
-            key=f"fix_whitespace_{column_signature}",
-        )
-        fix_missing_numeric = st.checkbox(
-            "Fill missing values in selected Numeric columns with the median",
-            value="missing" in enabled_checks,
-            key=f"fix_missing_numeric_{column_signature}",
-            disabled=not numeric_columns or "missing" not in enabled_checks,
-        )
-        fix_date_formats = st.checkbox(
-            "Standardize valid dates to YYYY-MM-DD",
-            value="date" in enabled_checks,
-            key=f"fix_date_formats_{column_signature}",
-            disabled=not date_columns or "date" not in enabled_checks,
-        )
-        fix_allowed = st.checkbox(
-            "Normalize case and spacing to allowed values",
-            value=True, key=f"fix_allowed_{column_signature}",
-            disabled=not any(rule["kind"] == "Allowed values" and not rule.get("business") for rule in custom_rules),
-        )
-        fix_duplicates = fix_duplicates and "duplicates" in enabled_checks
-        fix_missing_numeric = fix_missing_numeric and "missing" in enabled_checks
-        fix_date_formats = fix_date_formats and "date" in enabled_checks
-        fix_allowed = fix_allowed and any(rule["kind"] == "Allowed values" and not rule.get("business") for rule in custom_rules)
-        st.caption(
-            "Only enabled controls drive duplicate, missing-value and date corrections. Whitespace cleanup is optional. "
-            "Median fills are estimates—review them before submission. Allowed-value fixes require one unambiguous match. "
-            "Exact duplicates are also removed if cleanup makes rows identical, except rows with estimated fills. Invalid numbers and emails, ambiguous dates, "
-            "numeric limits and outliers remain flagged for source verification."
-        )
+    fix_duplicates = st.session_state.get("business_fix_duplicates", True) and "duplicates" in enabled_checks
+    fix_whitespace = st.session_state.get("business_fix_whitespace", True)
+    fix_missing_numeric = st.session_state.get("business_fix_missing_numeric", True) and bool(numeric_columns) and "missing" in enabled_checks
+    fix_date_formats = st.session_state.get("business_fix_dates", True) and bool(date_columns) and "date" in enabled_checks
+    fix_allowed = st.session_state.get("business_fix_allowed", True) and any(
+        rule["kind"] == "Allowed values" and not rule.get("business") for rule in custom_rules
+    )
     with st.container():
         if st.button(
             "Apply automatic fixes",

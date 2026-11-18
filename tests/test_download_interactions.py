@@ -165,10 +165,13 @@ class DownloadInteractionTests(unittest.TestCase):
 
     def test_excel_input_export_honors_duplicate_option(self):
         self.upload([{"name": "sales.xlsx", "mimeType": "application/octet-stream", "buffer": excel_bytes()}])
-        self.tab("2 · Review & fix")
-        self.page.get_by_text("Optional fix settings", exact=True).click()
+        self.page.get_by_role("button", name="Settings", exact=True).first.click()
+        self.page.get_by_role("tab", name="Business rules", exact=True).click()
+        self.page.get_by_text("Automatic correction options", exact=True).click()
         self.page.get_by_text("Remove exact duplicate rows", exact=True).click()
         self.settle()
+        self.page.keyboard.press("Escape")
+        self.tab("2 · Review & fix")
         self.click("Apply automatic fixes")
         self.tab("3 · Preview & export")
         _, payload = self.download("Download a clean copy")

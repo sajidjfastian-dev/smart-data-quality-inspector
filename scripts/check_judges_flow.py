@@ -61,7 +61,7 @@ def run():
         assert page.locator(".st-key-quality_overview .js-plotly-plot").count() == 6
         assert page.get_by_role("tab", name="2 · Issue log", exact=True).count() == 0
         page.get_by_role("tab", name="2 · Review & fix", exact=True).click()
-        assert not page.get_by_text("Optional fix settings", exact=True).locator("xpath=ancestor::details").evaluate("e => e.open")
+        assert page.get_by_text("Configured business rules ·", exact=False).count() > 0
         click("Apply automatic fixes")
         assert page.get_by_role("combobox", name="Version for checker approval", exact=True).count() == 0
         assert page.get_by_text("Show fixed preview", exact=True).count() == 0

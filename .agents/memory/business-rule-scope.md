@@ -7,3 +7,9 @@ Business rules are defined first in Settings after login, independently of any u
 **Why:** The user clarified: “Business rule will be applied on any type of data. So first rules will be defined as part of setting”.
 
 **How to apply:** Keep configuration available before upload. Evaluate applicability for each incoming dataset; show missing fields and incompatible types instead of silently ignoring them or forcing unsafe corrections. Review & fix should display all configured rules, including disabled and non-applicable ones. Preserve the existing session-only scope unless the user explicitly requests durable rule storage.
+
+The user considers inspection checks and business rules one combined "Business rules" experience, with the same set visible in Review & fix.
+
+**Why:** The user wants to define controls such as duplicate removal and format checks in one place, rather than distinguish inspection checks from business rules.
+
+**How to apply:** Present built-in controls and custom rules together while keeping their actual check and correction capabilities clear; do not imply that check-only findings can be automatically corrected.
