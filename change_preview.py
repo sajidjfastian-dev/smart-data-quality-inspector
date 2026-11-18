@@ -12,11 +12,13 @@ PREVIEW_ARABIC = {
     "The download uses this fixed copy without applying additional fixes.": "يستخدم التنزيل هذه النسخة المصححة دون تطبيق تصحيحات إضافية.",
     "Reapply fixes to refresh the corrected preview.": "أعد تطبيق التصحيحات لتحديث المعاينة المصححة.",
     "Corrected data preview": "معاينة البيانات المصححة",
+    "Submitted data preview": "معاينة البيانات المقدّمة",
     "No rows to preview.": "لا توجد صفوف للمعاينة.",
+    "No corrected cells in this version.": "لا توجد خلايا مصححة في هذا الإصدار.",
 }
 
 
-def preview_html(safe_frame, changes, start, translate):
+def preview_html(safe_frame, changes, start, translate, label="Corrected data preview"):
     """Accept ONLY already masked data; tooltip contents are fix types, not values."""
     reasons = {}
     for _, change in changes.iterrows():
@@ -49,13 +51,13 @@ def preview_html(safe_frame, changes, start, translate):
         '.fixed-preview-table td.fixed-preview-cell{background:#d9f0e4!important;color:#174c3b;box-shadow:inset 3px 0 #268368;cursor:help}'
         '.fixed-preview-cell:focus{outline:2px solid #176653;outline-offset:-2px}'
         '</style><div class="fixed-preview-wrap" tabindex="0" role="region" aria-label="'
-        + escape(translate("Corrected data preview"), quote=True)
+        + escape(translate(label), quote=True)
         + '"><table class="fixed-preview-table"><thead><tr>' + header
         + "</tr></thead><tbody>" + "".join(body) + "</tbody></table></div>"
     )
 
 
-def render_change_preview(frame, changes, protected, key):
+def render_change_preview(frame, changes, protected, key, label="Corrected data preview"):
     from localization import native as st, translate as t
     from security_guardrails import mask_dataframe
     if frame.empty:
@@ -69,8 +71,11 @@ def render_change_preview(frame, changes, protected, key):
                            key=page_key) if pages > 1 else 1
     start = (page - 1) * 100
     safe = mask_dataframe(frame.iloc[start:start + 100], protected)
-    st.caption(t("Highlighted cells were corrected. Hover over a cell to see the applied fix."))
-    st.markdown(preview_html(safe, changes, start, t), unsafe_allow_html=True)
+    if changes["Column position"].notna().any():
+        st.caption(t("Highlighted cells were corrected. Hover over a cell to see the applied fix."))
+    else:
+        st.caption(t("No corrected cells in this version."))
+    st.markdown(preview_html(safe, changes, start, t, label), unsafe_allow_html=True)
     st.caption(t("Rows {0}–{1} of {2}. Downloads include all rows.").format(start + 1, start + len(safe), len(frame)))
     removed = int(changes["Column position"].isna().sum())
     if removed:

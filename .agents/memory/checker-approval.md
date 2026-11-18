@@ -10,7 +10,7 @@ The user wants the checker to review applied fixes with incorrect/original data 
 
 Use demo approval for now, not a separate authenticated checker.
 
-**Why:** The user selected “Demo approval for now.”
+**Why:** The user selected demo approval and later confirmed that the approver should review in the same session.
 
 **How to apply:** Clearly label the approval as a demo session action; do not claim independent reviewer identity or production separation of duties.
 

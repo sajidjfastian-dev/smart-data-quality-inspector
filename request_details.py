@@ -66,6 +66,8 @@ def confirm_demo_action(state, reference, number, action):
                                           {"name": evidence.name, "data": evidence.getvalue()} if evidence else None,
                                           expected_seal=expected_seal)
                 else:
+                    if binding(state, reference, number) != expected_seal:
+                        raise WorkflowError("The submitted snapshot changed. Reopen approval.")
                     demo_review_action(state, reference, number, action)
             except WorkflowError as error:
                 state["approval_confirmation_error"] = str(error)
@@ -351,12 +353,24 @@ def render_request_details(state, reference):
             st.text(str(rule["column"]) + " · " + t(rule["kind"]) + " · " + expected)
     if rev.get("snapshot"):
         namespace = f"{reference}/r{number}"
-        render_checker_review(rev["approval_state"], namespace, snap["original"], snap["selected"],
-                              snap["changes"], snap["remaining"], snap["protected"], snap["choice"], actions=False,
-                              show_findings=False)
+        with st.container(key="submitted_preview"):
+            st.subheader(t("Preview & export"))
+            st.caption(t("Demo approver review in this session. Review this submitted revision before deciding."))
+            data_label = "Corrected data preview" if snap["choice"] == "Fixed copy" else "Submitted data preview"
+            comparison_tab, data_tab = st.tabs([t("Compare changes"), t(data_label)])
+            with comparison_tab:
+                render_checker_review(rev["approval_state"], namespace, snap["original"], snap["selected"],
+                                      snap["changes"], snap["remaining"], protected, snap["choice"], actions=False,
+                                      show_findings=False)
+            with data_tab:
+                from change_preview import render_change_preview
+                render_change_preview(snap["selected"], snap["changes"], protected,
+                                      f"submitted_{reference}_{number}_{snap['seal']}", label=data_label)
     elif latest and role == "Submitter" and rev["status"] == "Draft":
         st.info(t("Continue the draft to review changes and submit."))
     ticket = rev.get("ticket")
+    if not ticket:
+        _render_approval_steps(state, record, rev, latest, reference, number, snap, snapshot_verified)
     if ticket:
         with st.container(border=True):
             st.subheader(t("Production-change ticket"))
@@ -369,7 +383,7 @@ def render_request_details(state, reference):
             for reason, count in ticket["fixes"].items():
                 st.text(t(reason) + ": " + str(count))
             st.caption(t("Validate in staging and take a verified backup before any real production change. This demo does neither."))
-    _render_approval_steps(state, record, rev, latest, reference, number, snap, snapshot_verified)
+        _render_approval_steps(state, record, rev, latest, reference, number, snap, snapshot_verified)
     if snapshot_verified and owns(state, record):
         from approval_evidence import render_evidence
         render_evidence(state, reference, number, t, st)

@@ -1,5 +1,11 @@
 """Application-owned demo approval sequence copy, without production claims."""
 REQUEST_APPROVAL_ARABIC = {
+    "Preview & export": "المعاينة والتصدير",
+    "Compare changes": "مقارنة التغييرات",
+    "Corrected data preview": "معاينة البيانات المصححة",
+    "Submitted data preview": "معاينة البيانات المقدّمة",
+    "Demo approver review in this session. Review this submitted revision before deciding.": "مراجعة تجريبية للموافق في هذه الجلسة. راجع الإصدار المقدّم قبل اتخاذ القرار.",
+    "The submitted snapshot changed. Reopen approval.": "تغيّرت النسخة المقدّمة. أعد فتح الموافقة.",
     "Approved file download requested.": "تم طلب تنزيل الملف المعتمد.",
     "Implemented on production": "تم التنفيذ في بيئة الإنتاج",
     "Record a simulated implementation. No production system is changed.": "سجّل تنفيذًا محاكى. لا يتم تغيير أي نظام إنتاج.",
