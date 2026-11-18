@@ -2234,36 +2234,64 @@ show_request_upload = (
     and not st.session_state.get("request_view")
 )
 if show_request_upload:
+    st.markdown(
+        "<style>" + (Path(__file__).resolve().parent / "assets" / "source_panel.css").read_text(encoding="utf-8") + "</style>",
+        unsafe_allow_html=True,
+    )
     with st.container(key="source_panel", border=True):
         st.markdown(
-            '<div class="sidebar-source-heading"><span class="sidebar-source-kicker">Data sources</span>'
-            '<strong>Add your data</strong><span>Upload files to begin your quality assessment.</span></div>',
+            '<div class="source-heading"><span class="source-kicker">New request · Data source</span>'
+            '<h2>Start with your data</h2>'
+            '<p>Upload files for a quality assessment, or explore the workflow with synthetic sample data.</p></div>',
             unsafe_allow_html=True,
         )
         if is_signed_in() and st.session_state.get("demo_role", "Submitter") == "Submitter":
-            uploaded_files = st.file_uploader(
-                "Upload CSV or Excel files",
-                type=["csv", "xlsx"],
-                accept_multiple_files=True,
-                label_visibility="collapsed",
-                key=upload_widget_key(st.session_state),
-            )
+            source_upload_column, source_sample_column = st.columns([1.65, 1], gap="large")
+            with source_upload_column:
+                with st.container(key="source_upload_choice"):
+                    st.markdown(
+                        '<div class="source-choice-heading"><span class="source-choice-icon">'
+                        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/>'
+                        '<path d="M14 3v6h6M12 17v-5m-3 3 3-3 3 3"/></svg></span>'
+                        '<div><strong>Upload your files</strong><small>Choose one or more CSV or Excel (.xlsx) files.</small></div></div>',
+                        unsafe_allow_html=True,
+                    )
+                    uploaded_files = st.file_uploader(
+                        "Upload CSV or Excel files",
+                        type=["csv", "xlsx"],
+                        accept_multiple_files=True,
+                        label_visibility="collapsed",
+                        key=upload_widget_key(st.session_state),
+                    )
+                    st.markdown(
+                        '<div class="source-helper">Large Excel files may require additional memory.</div>',
+                        unsafe_allow_html=True,
+                    )
+            with source_sample_column:
+                with st.container(key="source_sample_choice"):
+                    st.markdown(
+                        '<div class="source-choice-heading"><span class="source-choice-icon">'
+                        '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/>'
+                        '<path d="M3 10h18M9 10v10M15 10v10"/></svg></span>'
+                        '<div><strong>Try a sample first</strong><small>Explore quality checks, corrections and approval.</small></div></div>',
+                        unsafe_allow_html=True,
+                    )
+                    load_connected_clicked = st.button(
+                        "Explore sample workspace",
+                        width="content",
+                        type="secondary",
+                        icon=":material/table_view:",
+                        key="sidebar_sample",
+                        help="Load five related CSV and Excel files containing synthetic data.",
+                    )
+                    st.markdown(
+                        '<div class="source-helper">Five related CSV and Excel files · Synthetic data</div>',
+                        unsafe_allow_html=True,
+                    )
             st.markdown(
-                '<div class="sidebar-helper">Large Excel files may require additional memory.</div>',
-                unsafe_allow_html=True,
-            )
-            st.markdown('<div class="sidebar-divider">OR</div>', unsafe_allow_html=True)
-            load_connected_clicked = st.button(
-                "Explore sample workspace",
-                width="stretch",
-                type="secondary",
-                icon=":material/table_view:",
-                key="sidebar_sample",
-                help="Load five related CSV and Excel files containing synthetic data.",
-            )
-            st.markdown(
-                '<div class="sidebar-helper">Five related files · Synthetic data</div>'
-                '<div class="sidebar-session-note">Files are available for this session.</div>',
+                '<div class="source-session-note"><svg viewBox="0 0 24 24" aria-hidden="true">'
+                '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'
+                '<span>Files are available for this session.</span></div>',
                 unsafe_allow_html=True,
             )
         elif is_signed_in():
@@ -2434,7 +2462,6 @@ if is_signed_in() and (
 if not datasets:
     render_settings(settings_anchor)
     if is_signed_in() and st.session_state.get("workspace_page") == "inspection":
-        native.info(translate("Upload CSV or Excel files above, or use sample data to start this request."))
         st.stop()
     if is_signed_in():
         start_title = "Get started with your data"

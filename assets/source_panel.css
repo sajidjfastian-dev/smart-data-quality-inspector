@@ -1,0 +1,120 @@
+/* Source selection only. Native upload controls and file metadata stay visible. */
+.st-key-source_panel {
+    --source-ink: #193f3b;
+    --source-muted: #506b64;
+    --source-line: #d4e3da;
+    --source-teal: #14685b;
+    border: 1px solid var(--source-line) !important;
+    border-radius: 18px !important;
+    background: #fcfcf6;
+    padding: clamp(20px, 2.2vw, 34px) !important;
+    max-width: 1180px;
+    margin-inline: auto;
+}
+.st-key-source_panel [data-testid="stVerticalBlock"] {gap: .8rem;}
+.st-key-source_panel [data-testid="stMarkdownContainer"]:has(> :is(.source-heading, .source-choice-heading, .source-helper, .source-session-note)) {margin-bottom: 0 !important;}
+.st-key-source_panel .source-heading {padding-block-end: 12px;}
+.st-key-source_panel .source-kicker {
+    display: block; color: #78612b; font-size: .78rem;
+    font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+    margin-block-end: 8px;
+}
+.st-key-source_panel .source-heading h2 {
+    margin: 0 0 8px; padding: 0; color: var(--source-ink);
+    font-family: inherit; font-weight: 700;
+    font-size: clamp(1.65rem, 2.1vw, 2.15rem); line-height: 1.2;
+    letter-spacing: -.035em;
+}
+.st-key-source_panel .source-heading p {
+    margin: 0; max-width: 65ch; color: var(--source-muted);
+    font-size: clamp(.98rem, 1.1vw, 1.12rem); line-height: 1.65;
+}
+.st-key-source_panel [data-testid="stColumn"] {min-width: 0;}
+.st-key-source_panel .source-choice-heading {
+    display: flex; align-items: flex-start; gap: 12px;
+    color: var(--source-ink); padding-block: 4px;
+}
+.st-key-source_panel .source-choice-icon {
+    display: grid; place-items: center; flex: 0 0 38px; height: 38px;
+    border: 1px solid #c5ddd0; border-radius: 11px;
+    background: #eaf3ec; color: var(--source-teal);
+}
+.st-key-source_panel .source-choice-icon svg {
+    width: 21px; height: 21px; fill: none; stroke: currentColor;
+    stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;
+}
+.st-key-source_panel .source-choice-heading strong {
+    display: block; font-size: clamp(1rem, 1.15vw, 1.18rem);
+    font-weight: 700; line-height: 1.45;
+}
+.st-key-source_panel .source-choice-heading small {
+    display: block; color: var(--source-muted); font-size: .9rem;
+    line-height: 1.6; margin-block-start: 3px;
+}
+.st-key-source_panel .st-key-source_sample_choice {
+    background: #f5f1e3; border: 1px solid #e3d8b5;
+    border-radius: 13px; padding: 20px !important;
+}
+.st-key-source_panel .st-key-source_sample_choice .source-choice-icon {
+    background: #f9f4e4; border-color: #dfd0a3; color: #806420;
+}
+.st-key-source_panel [data-testid="stFileUploaderDropzone"] {
+    background: #eef5ef; border: 1px dashed #91b7a5; border-radius: 12px;
+    padding: 20px 16px; min-height: 126px;
+}
+.st-key-source_panel [data-testid="stFileUploaderDropzone"] [data-testid="stFileUploaderDropzoneInstructions"] {
+    min-width: 0;
+}
+.st-key-source_panel [data-testid="stFileUploaderDropzone"] span {
+    color: var(--source-ink); font-size: 1rem; line-height: 1.5;
+}
+.st-key-source_panel [data-testid="stFileUploaderDropzone"] small {
+    color: var(--source-muted); font-size: .85rem; line-height: 1.5;
+}
+.st-key-source_panel [data-testid="stFileUploader"] :is(button, [data-testid="stFileUploaderFileName"]) {
+    overflow-wrap: anywhere;
+}
+.st-key-source_panel button {
+    min-height: 44px; border-radius: 9px;
+    transition: transform .16s ease, opacity .16s ease;
+}
+.st-key-source_panel [data-testid="stFileUploaderDropzone"] button {
+    background: var(--source-teal); border-color: var(--source-teal); color: #fafbf3;
+    flex-shrink: 0;
+}
+.st-key-source_panel [data-testid="stFileUploaderDropzone"] button p {color: inherit; font-weight: 650; font-size: .95rem;}
+.st-key-source_panel [data-testid="stFileUploaderDropzone"] button,
+.st-key-source_panel [data-testid="stFileUploaderDropzone"] button :is(span, p, svg) {
+    color: #fafbf3 !important;
+    -webkit-text-fill-color: #fafbf3 !important;
+}
+.st-key-source_panel .st-key-sidebar_sample button {
+    background: #fcfaf1; border-color: #ac9250; color: #4f481f;
+    padding-inline: 16px;
+}
+.st-key-source_panel .st-key-sidebar_sample button p {font-size: .95rem; font-weight: 650; color: inherit;}
+.st-key-source_panel button:hover {transform: translateY(-1px);}
+.st-key-source_panel [data-testid="stFileUploaderDropzone"] button:hover {background: #10594e; border-color: #10594e; color: #fafbf3;}
+.st-key-source_panel .st-key-sidebar_sample button:hover {background: #eee4c5; border-color: #8c722e; color: #4f481f;}
+.st-key-source_panel button:focus-visible {outline: 3px solid #b18c2b; outline-offset: 3px;}
+.st-key-source_panel .source-helper {color: var(--source-muted); font-size: .87rem; line-height: 1.6;}
+.st-key-source_panel .source-session-note {
+    display: flex; align-items: center; gap: 9px; border-top: 1px solid var(--source-line);
+    padding-block-start: 15px; margin-block-start: 4px;
+    color: var(--source-muted); font-size: .9rem; line-height: 1.6;
+}
+.st-key-source_panel .source-session-note svg {
+    flex: 0 0 18px; width: 18px; height: 18px; fill: none;
+    stroke: #51756a; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;
+}
+@media (max-width: 767px) {
+    .st-key-source_panel {padding: 19px !important;}
+    .st-key-source_panel [data-testid="stHorizontalBlock"] {flex-direction: column; gap: 18px;}
+    .st-key-source_panel [data-testid="stColumn"] {width: 100% !important; flex: 1 1 100% !important;}
+    .st-key-source_panel [data-testid="stFileUploaderDropzone"] {flex-wrap: wrap; gap: 14px; padding: 16px;}
+    .st-key-source_panel .st-key-source_sample_choice {padding: 16px !important;}
+}
+@media (prefers-reduced-motion: reduce) {
+    .st-key-source_panel button {transition: none;}
+    .st-key-source_panel button:hover {transform: none;}
+}
