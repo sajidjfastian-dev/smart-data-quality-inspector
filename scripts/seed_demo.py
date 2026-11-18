@@ -115,7 +115,7 @@ def seed(*, apply_development_schema=False):
             conn.execute("INSERT INTO dq_demo_sessions(id,created_at,synthetic_history) VALUES (%s,%s,true)",
                          (f"DEMO-HISTORY-{i+1:02}", datetime.now(ZoneInfo("Asia/Dubai"))-timedelta(days=10-i, hours=4)))
         for i in range(20):
-            state = {"demo_user": "Sajid", "demo_role": "Submitter"}
+            state = flow.sample_seed_state("Sajid")
             ref = flow.new_request(state, lambda: 700001+i)
             record = flow.requests(state)[ref]
             record.update(file="Synthetic quality sample", session_id=f"DEMO-HISTORY-{i%5+1:02}",

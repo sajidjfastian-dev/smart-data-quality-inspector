@@ -1,3 +1,17 @@
+.st-key-sidebar_login [data-testid="stLinkButton"] a {
+    background: #00796f !important;
+    border: 1px solid #00796f !important;
+    color: #fff !important;
+    border-radius: 12px;
+    min-height: 46px;
+    text-decoration: none !important;
+}
+.st-key-sidebar_login [data-testid="stLinkButton"] a * {
+    color: #fff !important;
+}
+.st-key-sidebar_login [data-testid="stLinkButton"] a:hover {
+    background: #00675f !important;
+}
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;650;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap');
 /* Native navigation overlays only the brand mark; no page reload or lost session. */
 .st-key-app_header [data-testid="stColumn"]:first-child {position: relative;}

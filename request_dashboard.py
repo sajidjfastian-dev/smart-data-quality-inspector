@@ -115,7 +115,15 @@ def render_request_dashboard(state):
                 st.error(localization.translate(str(error)))
         records = list(request_workflow.requests(state).values())
         if role == "Submitter":
-            records = [item for item in records if item["submitted_by"] == user]
+            from account_identity import owns, public_example
+            public_mode = st.checkbox(
+                localization.translate("Show public sample examples"),
+                key="rd_public_examples",
+                help=localization.translate("Public examples are read-only and are not your requests."),
+            )
+            records = [item for item in records if public_example(item)] if public_mode else [
+                item for item in records if owns(state, item)
+            ]
         records.sort(key=lambda item: (item.get("created_at", ""), item["reference"]), reverse=True)
 
         if st.session_state.pop("rd_creation_error", False):

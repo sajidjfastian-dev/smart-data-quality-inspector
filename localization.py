@@ -30,6 +30,10 @@ from request_approval_translations import REQUEST_APPROVAL_ARABIC
 _ROOT = Path(__file__).resolve().parent
 _ARABIC = json.loads((_ROOT / "assets" / "translations" / "ar.json").read_text(encoding="utf-8"))
 _ARABIC.update({
+    "Show public sample examples": "عرض أمثلة البيانات العامة",
+    "Public examples are read-only and are not your requests.": "الأمثلة العامة للقراءة فقط وليست طلباتك.",
+    "Public sample example · read-only · not your request": "مثال بيانات عامة · للقراءة فقط · ليس طلبك",
+    "Your account session expired. Sign in again.": "انتهت جلسة حسابك. سجّل الدخول مرة أخرى.",
     "Inspect. Improve. Trust your data.": "افحص. حسّن. ثق ببياناتك.",
     "Find quality issues, apply safe corrections, and review every change.": "اكتشف مشكلات الجودة، وطبّق التصحيحات الآمنة، وراجع كل تغيير.",
     "Reject fix": "رفض التصحيح",

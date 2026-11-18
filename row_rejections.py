@@ -27,7 +27,8 @@ def choices(state, reference, original):
 
 def reject_row(state, reference, dataset, original, corrected, changes, row):
     require_role(state, "Submitter")
-    if state["demo_requests"][reference]["submitted_by"] != state["demo_user"]:
+    from account_identity import owns
+    if not owns(state, state["demo_requests"][reference]):
         raise WorkflowError("Request not found in this session.")
     rev = current(state, reference)
     if rev["status"] != "Draft":

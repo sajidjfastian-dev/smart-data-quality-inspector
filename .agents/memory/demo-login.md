@@ -1,9 +1,15 @@
 ---
-name: Demo login
-description: The pretend "Sajid" login that gates data intake; what it must and must not do.
+name: Account login scope
+description: Verified Replit identities replace the former demo identity without authorizing production approvals or private persistence.
 ---
-Login is a demonstration session only: a single SSO-styled button signs in directly as Sajid/Submitter, without a preliminary dialog. Hide role choices and role explanations. Log out clears the session (except interface language).
+Use actual verified Replit accounts for login, not the creator's/chat participant's name or a pretend fixed user.
 
-**Why:** the user requested seamless SSO-style demo sign-in, confirmed “Hide role details”, and requested confirmation on approval.
+**Why:** On 2026-11-18 the user explicitly selected Replit account login after asking to display whoever clicked SSO. This supersedes the earlier demo-only sign-in decision.
 
-**How to apply:** never collect or store credentials, never tie it to inspection history, and keep the UI honest that it is a demo session. Login/Logout and the Settings icon share one row at the bottom-left of the sidebar; the header language switch is an EN/AR segmented control (radio group); the app has no footer. Render anything conditional (e.g. toasts) after the account panel, never before it — shifting its position makes Streamlit briefly show duplicate panels. AppTest-based tests must start sessions signed in (tests/demo_login.py helper).
+**How to apply:** Keep identities separate from display labels, and never give someone old request ownership merely because names match. Public sample history is not personal history. Private uploaded data still stays session-only.
+
+Hide role details and retain the sidebar account controls. Approval, ticket, CAB and implementation decisions remain explicit simulations, not permissions conferred by a Replit account.
+
+**Why:** The user asked to hide role details and keep third-party workflow steps simulated. Replacing sign-in did not change that scope.
+
+**How to apply:** Do not treat a verified Replit account as proof of department membership or production approver authority.

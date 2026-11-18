@@ -14,6 +14,7 @@ import pandas as pd
 
 from review_approval import frame_digest, sync_context, approve
 from demo_change_ticket import generate_ticket
+from account_identity import owns, auth_state, is_seed, sample_seed_state
 
 ROLES = ("Submitter", "Approver")
 STATUSES = ("Draft", "Submitted", "Approved", "Rejected", "Ticket approved", "CAB approved", "Simulated")
@@ -29,6 +30,11 @@ def timestamp():
 
 
 def require_role(state, role):
+    if not is_seed(state):
+        from account_auth import session_identity
+        identity = session_identity(state.get("_auth_session"))
+        if not identity or identity["subject"] != state.get("auth_subject"):
+            raise WorkflowError("Your account session expired. Sign in again.")
     if not state.get("demo_user") or state.get("demo_role", "Submitter") != role:
         raise WorkflowError("Switch to the required demo role before performing this action.")
 
@@ -38,6 +44,8 @@ def requests(state):
 
 
 def current(state, reference):
+    if not owns(state, requests(state).get(reference)):
+        raise WorkflowError("Request not found in this session.")
     return requests(state)[reference]["revisions"][-1]
 
 
@@ -62,6 +70,8 @@ def new_request(state, number_factory=None):
     all_requests[reference] = {"reference": reference, "submitted_by": state["demo_user"],
                                "created_at": timestamp(), "revisions": [rev], "file": "",
                                "session_id": state.get("demo_session_id", "Current private session")}
+    if state.get("auth_subject"):
+        all_requests[reference]["owner_id"] = state["auth_subject"]
     state["active_request_ref"] = reference
     return reference
 
@@ -144,7 +154,7 @@ def approved_download(state, reference, number):
     """Validate the latest approved revision again when preparing its download."""
     require_role(state, "Submitter")
     record = requests(state).get(reference)
-    if not record or record["submitted_by"] != state["demo_user"]:
+    if not owns(state, record):
         raise WorkflowError("Request not found in this session.")
     rev = record["revisions"][-1]
     if rev["number"] != number or rev["status"] not in ("CAB approved", "Simulated"):
@@ -325,10 +335,11 @@ def demo_review_action(state, reference, number, action, reason=""):
     """Explicit simulation from the signed-in user's own request, not real authorization."""
     require_role(state, "Submitter")
     record = requests(state)[reference]
-    if record["submitted_by"] != state["demo_user"] or current(state, reference)["number"] != number:
+    if not owns(state, record) or current(state, reference)["number"] != number:
         raise WorkflowError("This request changed. Reopen it before confirming.")
     simulated = {"demo_user": state["demo_user"], "demo_role": "Approver", "demo_requests": requests(state),
                  "demo_catalog": state.get("demo_catalog")}
+    simulated.update(auth_state(state))
     if action in ("approve", "reject"):
         return owner_decision(simulated, reference, action == "approve", reason)
     return advance(simulated, reference, action)

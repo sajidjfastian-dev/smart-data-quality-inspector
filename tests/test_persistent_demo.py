@@ -27,7 +27,7 @@ class PersistentDemoTests(unittest.TestCase):
 
     def setUp(self):
         self.session = store.create_session()
-        self.state = dict(demo_user="Sajid", demo_role="Submitter",
+        self.state = dict(flow.sample_seed_state("Sajid"),
                           demo_session_id=self.session, demo_catalog=deepcopy(self.catalog),
                           _persistent_demo_ready=True)
 
@@ -170,7 +170,7 @@ class PersistentDemoTests(unittest.TestCase):
     def test_reload_retains_only_shared_data(self):
         ref, _ = self.request()
         private, _ = self.request(trusted=False)
-        reloaded = {"demo_user":"Sajid", "demo_session_id":self.session}
+        reloaded = dict(flow.sample_seed_state("Sajid"), demo_session_id=self.session)
         persistence.initialize(reloaded)
         self.assertIn(ref, flow.requests(reloaded))
         self.assertNotIn(private, flow.requests(reloaded))

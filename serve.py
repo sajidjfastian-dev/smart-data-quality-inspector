@@ -7,6 +7,8 @@ from starlette.routing import Route
 from sample_endpoint import sample_rows
 from demo_store import DemoStoreError
 from scripts.seed_public_sample import seed_public
+from account_auth import ROUTES, AccountResourceGuard
+from starlette.middleware import Middleware
 
 
 @asynccontextmanager
@@ -24,8 +26,8 @@ async def lifespan(app):
     yield
 
 
-app = st.App("app.py", lifespan=lifespan,
-             routes=[Route("/api/demo/sample", sample_rows, methods=["GET"])])
+app = st.App("app.py", lifespan=lifespan, middleware=[Middleware(AccountResourceGuard)],
+             routes=[Route("/api/demo/sample", sample_rows, methods=["GET"]), *ROUTES])
 
 if __name__ == "__main__":
     app.run()

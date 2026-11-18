@@ -1,4 +1,11 @@
 -- Development/post-merge schema only. Publishing manages production schema.
+CREATE TABLE IF NOT EXISTS dq_auth_records (
+    token_hash text PRIMARY KEY,
+    kind text NOT NULL CHECK (kind IN ('login', 'session')),
+    payload jsonb NOT NULL,
+    expires_at timestamptz NOT NULL
+);
+CREATE INDEX IF NOT EXISTS dq_auth_records_expiry ON dq_auth_records(expires_at);
 CREATE TABLE IF NOT EXISTS dq_demo_sessions (
     id text PRIMARY KEY,
     created_at timestamptz NOT NULL DEFAULT now(),

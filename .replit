@@ -42,3 +42,8 @@ run = ["python", "-m", "streamlit", "run", "serve.py", "--server.address=0.0.0.0
 [postMerge]
 path = "scripts/post-merge.sh"
 timeoutMs = 180000
+
+[userenv]
+
+[userenv.shared]
+AUTH_PUBLIC_ORIGIN = "https://SmartDetectives.replit.app"

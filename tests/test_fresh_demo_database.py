@@ -54,7 +54,7 @@ class FreshDemoDatabaseTests(unittest.TestCase):
                 result = sample_endpoint.sample_rows(None)
                 self.assertEqual(result.status_code, 200)
                 self.assertEqual(json.loads(result.body)["count"], 620)
-                state = {"demo_user":"Sajid", "demo_role":"Submitter"}
+                state = flow.sample_seed_state("Sajid")
                 persistent_demo.initialize(state)
                 payload = state["demo_catalog"]["variants"]["fix-1111"]
                 persistent_demo.register_source(state, payload["original"])

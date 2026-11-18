@@ -25,7 +25,7 @@ def seed_public():
         for i in range(4):
             session = f"{SOURCE_ID.upper()}-{i+1:02}"
             conn.execute("INSERT INTO dq_demo_sessions(id,synthetic_history) VALUES (%s,true)", (session,))
-            state = {"demo_user":"Sajid", "demo_role":"Submitter"}
+            state = flow.sample_seed_state("Sajid")
             # Do not collide with either existing history or live request references.
             while True:
                 ref = flow.new_request(state)

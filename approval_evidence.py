@@ -39,7 +39,10 @@ def validate_file(name, data):
 
 def binding(state, reference, number):
     record = state.get("demo_requests", {}).get(reference)
-    if not record or not state.get("demo_user") or record["submitted_by"] != state["demo_user"]:
+    from account_identity import owns
+    from request_workflow import require_role
+    require_role(state, "Submitter")
+    if not state.get("demo_user") or not owns(state, record):
         raise WorkflowError("Request not found in this session.")
     if number < 1 or number > len(record["revisions"]):
         raise WorkflowError("Revision not found.")
