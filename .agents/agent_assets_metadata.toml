@@ -14,3 +14,17 @@ mtime_ms = 1794903748348
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:c6580a21-09fe-4762-bb04-2899d2de9424/e4a430a9-ec67-473d-a3ff-398880aac465/9c4d9713-993b-4263-bdfe-d31cd8945dcb"
 storage_version_token = "1794903852301013"
 content_type = "video/mp4"
+
+[[outputs]]
+id = "S-M2yeZRxk3yku7WOWJh4"
+uri = "file://docs/external-deployment-runbook.html"
+type = "html"
+title = "External Deployment Guide & Runbook"
+description = "Downloadable guide covering Linux installation, PostgreSQL, systemd, Nginx/TLS, go-live checklists, operations, backups and rollback. Includes production security prerequisites."
+logical_id = "68fe038e-38a6-402f-be96-8ffe664f93d1"
+content_hash = "sha256:509b44a3a46e9a6fc3de8da4cec9c32205c0984c441da6635b055cd5543ccded"
+size = 22365
+mtime_ms = 1794967559858
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:c6580a21-09fe-4762-bb04-2899d2de9424/68fe038e-38a6-402f-be96-8ffe664f93d1/39ee566b-1991-40cc-a6f7-c4bcadee4eb5"
+storage_version_token = "1794967560766655"
+content_type = "text/html"
