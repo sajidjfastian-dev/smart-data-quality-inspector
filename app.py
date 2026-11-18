@@ -81,13 +81,6 @@ DEMO_VIDEO_PATH = (
     / "smart_data_quality_demo.mp4"
 )
 from public_sample import FILES as CONNECTED_SAMPLE_FILES
-SAMPLE_RELATIONSHIPS = pd.DataFrame(
-    [
-        ("ecb_fx_original.csv", "observation_date", "ecb_fx_demo_errors.csv", "observation_date"),
-        ("ecb_fx_original.xlsx", "observation_date", "ecb_fx_demo_errors.xlsx", "observation_date"),
-    ],
-    columns=["Source file", "Source key", "Related file", "Related key"],
-)
 MAX_ASSISTANT_REQUEST_BYTES = 10 * 1024 * 1024
 
 
@@ -2829,13 +2822,6 @@ if len(enabled_checks) < 5:
     st.warning(
         "Some built-in checks are turned off. Results only reflect the checks enabled in settings."
     )
-if set(CONNECTED_SAMPLE_FILES).issubset(datasets):
-    with st.expander("How the sample files connect"):
-        st.caption(
-            "These files share the same ECB snapshot. Original copies preserve published values; "
-            "demo-error copies add formatting defects and duplicate rows."
-        )
-        st.dataframe(SAMPLE_RELATIONSHIPS.rename(columns=translate), width="stretch", hide_index=True)
 
 metric_cards = [
     ("health", "📈 Data Health Score", f"{health_score}%", "How the quality score is calculated"),

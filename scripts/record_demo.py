@@ -80,12 +80,6 @@ def main():
             caption(page, "Explore the workspace and quality overview")
             page.wait_for_timeout(4000)
 
-            caption(page, "See how the sample files connect")
-            relationships = page.get_by_text("How the sample files connect", exact=True)
-            move_and_click(page, relationships)
-            page.wait_for_timeout(3500)
-            move_and_click(page, relationships)
-
             caption(page, "Explore detailed findings")
             move_and_click(page, page.get_by_role("tab", name="2 · Issue log"))
             page.get_by_text("Issue explorer").wait_for(timeout=60000)
