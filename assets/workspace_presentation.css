@@ -67,8 +67,14 @@
     font-weight: 700;
     letter-spacing: -.045em;
     line-height: 1.13;
-    margin-block: 18px 22px;
+    margin-block: 14px 22px;
+    padding: 0;
     text-wrap: balance;
+}
+/* Streamlit inserts a heading-link control inside our HTML headings. Its
+   extra line creates a large empty area below the two-line landing title. */
+.stApp:has(.st-key-sidebar_login) .welcome-panel [data-testid="stHeaderActionElements"] {
+    display: none;
 }
 .stApp:has(.st-key-sidebar_login) .welcome-copy .welcome-accent {
     position: relative;
@@ -91,8 +97,8 @@
 }
 .stApp:has(.st-key-sidebar_login) .welcome-copy p.welcome-description {
     color: #3d5e58;
-    font-size: clamp(1.02rem, 1.12vw, 1.2rem);
-    line-height: 1.7;
+    font-size: clamp(1.08rem, 1.3vw, 1.32rem);
+    line-height: 1.6;
     max-width: 46ch;
     padding-block-start: 4px;
 }
@@ -126,12 +132,12 @@
 }
 .stApp:has(.st-key-sidebar_login) .welcome-copy .welcome-start strong {
     color: #214d42;
-    font-size: clamp(1rem, 1.04vw, 1.16rem);
+    font-size: clamp(1.05rem, 1.2vw, 1.24rem);
     line-height: 1.5;
 }
 .stApp:has(.st-key-sidebar_login) .welcome-copy .welcome-start-copy {
     color: #3e6055;
-    font-size: clamp(.95rem, 1vw, 1.08rem);
+    font-size: clamp(1rem, 1.12vw, 1.18rem);
     line-height: 1.65;
     margin-block-start: 6px;
 }
@@ -151,7 +157,7 @@
     border-radius: 0;
     background: transparent;
     color: #355b51;
-    font-size: clamp(.88rem, .95vw, 1.04rem);
+    font-size: clamp(.96rem, 1.04vw, 1.12rem);
     line-height: 1.6;
 }
 .stApp:has(.st-key-sidebar_login) .welcome-copy .welcome-meta span::before {
@@ -170,7 +176,7 @@
     border-radius: 0;
     background: none;
     color: #496258;
-    font-size: clamp(.92rem, .98vw, 1.08rem);
+    font-size: clamp(1rem, 1.05vw, 1.15rem);
     line-height: 1.65;
     max-width: 58ch;
 }
