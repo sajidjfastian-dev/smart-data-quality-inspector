@@ -77,22 +77,19 @@ class CheckerFlowTests(unittest.TestCase):
         self.assertEqual(self.app.session_state["demo_requests"][ref]["revisions"][0]["status"], "Rejected")
 
     def test_rule_crud_and_validation(self):
-        self.widget("selectbox", "Business rule type").select("Minimum number")
-        self.widget("text_input", "Target column name").input("age")
-        self.widget("text_input", "Business rule value").input("nan")
+        self.widget("text_input", "Business rule").input("age must be at least nan")
         self.widget("button", "Add business rule").click().run()
         self.assertIn("Enter a finite number for the limit.", [e.value for e in self.app.error])
-        self.widget("text_input", "Business rule value").input("30")
+        self.widget("text_input", "Business rule").input("age must be at least 30")
         self.widget("button", "Add business rule").click().run()
         self.assert_clean()
-        self.widget("selectbox", "Business rule to edit").select(1).run()
-        self.widget("text_input", "Business rule value").input("40")
+        self.widget("button", "Edit").click().run()
+        self.widget("text_input", "Business rule").input("age must be at least 40")
         self.widget("button", "Save business rule").click().run()
         self.assert_clean()
-        self.widget("selectbox", "Business rule to edit").select(1).run()
-        self.widget("button", "Delete business rule").click().run()
+        self.widget("button", "Delete").click().run()
         self.assert_clean()
-        self.assertEqual(len(self.widget("selectbox", "Business rule to edit").options), 1)
+        self.assertEqual(len(self.app.session_state["business_rules"]), 0)
 
     def test_arabic_and_logout(self):
         self.fix()

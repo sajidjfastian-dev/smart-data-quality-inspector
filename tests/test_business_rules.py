@@ -18,6 +18,24 @@ def rule(kind="Value mapping", expected='{"pending":"Approved"}', **kwargs):
 
 
 class RuleEngineTests(unittest.TestCase):
+    def test_rule_sentences_round_trip_and_reject_ambiguous_requests(self):
+        from business_rule_text import parse_rule_text, rule_as_text
+        for text in (
+            "age must be at least 18",
+            "status must be one of Open, Closed",
+            'replace " pending " with Approved in status',
+            "trim whitespace in name",
+            "uppercase country",
+        ):
+            parsed = parse_rule_text(text)
+            self.assertEqual(parse_rule_text(rule_as_text(parsed), parsed["id"]), parsed)
+        parsed = parse_rule_text('replace " pending " with Approved in status')
+        fixed, _ = apply_rules(pd.DataFrame({"status": [" pending ", "pending"]}), [parsed])
+        self.assertEqual(fixed.status.tolist(), ["Approved", "pending"])
+        for text in ("age greater than 18", "fix all values", "amount must be at least nan"):
+            with self.assertRaises(ValueError):
+                parse_rule_text(text)
+
     def test_mapping_and_original_and_reasons(self):
         original = pd.DataFrame({"status": ["pending", "unknown", None]})
         before = original.copy(deep=True)
@@ -117,10 +135,7 @@ class RuleUiTests(unittest.TestCase):
         self.assertEqual([e.message for e in self.app.exception], [])
 
     def add(self):
-        self.widget("text_input", "Target column name").set_value("status")
-        self.widget("selectbox", "Business rule type").set_value("Value mapping")
-        self.widget("text_input", "Business rule value").set_value('{"pending":"Approved"}')
-        self.widget("selectbox", "Rule behavior").set_value("Correct automatically")
+        self.widget("text_input", "Business rule").set_value("replace pending with Approved in status")
         self.widget("button", "Add business rule").click().run()
         self.clean()
 
@@ -142,8 +157,7 @@ class RuleUiTests(unittest.TestCase):
         self.widget("checkbox", "1 · Value mapping · status").uncheck().run()
         self.clean()
         self.assertNotIn("Custom: Value mapping", self.app.session_state["quality_scan_cache"]["two.csv"]["issues"]["Issue Type"].tolist())
-        self.widget("selectbox", "Business rule to edit").set_value(1).run()
-        self.widget("button", "Delete business rule").click().run()
+        self.widget("button", "Delete").click().run()
         self.clean()
         self.assertEqual(self.app.session_state["business_rules"], [])
 
@@ -156,13 +170,32 @@ class RuleUiTests(unittest.TestCase):
         self.assertNotIn("inspector_datasets", self.app.session_state)
 
     def test_invalid_rule_is_not_saved(self):
-        self.widget("text_input", "Target column name").set_value("amount")
-        self.widget("selectbox", "Business rule type").set_value("Minimum number")
-        self.widget("text_input", "Business rule value").set_value("nan")
+        self.widget("text_input", "Business rule").set_value("amount must be at least nan")
         self.widget("button", "Add business rule").click().run()
         self.clean()
         self.assertEqual(self.app.session_state["business_rules"], [])
         self.assertTrue(self.app.error)
+
+    def test_unclear_rule_keeps_input_for_correction(self):
+        self.widget("text_input", "Business rule").set_value("fix all missing values automatically")
+        self.widget("button", "Add business rule").click().run()
+        self.clean()
+        self.assertEqual(self.app.session_state["business_rules"], [])
+        self.assertTrue(any("Rule not understood" in error.value for error in self.app.error))
+        self.assertEqual(self.widget("text_input", "Business rule").value, "fix all missing values automatically")
+
+    def test_protected_rule_values_are_hidden_in_the_list_and_editor(self):
+        self.add()
+        self.app.session_state["inspector_datasets"] = {"private.csv": pd.DataFrame({"status": ["pending"]})}
+        self.app.session_state["active_dataset"] = "private.csv"
+        self.app.run()
+        self.widget("multiselect", "Protect additional columns").set_value(["status"]).run()
+        rule_rows = [item.value for item in self.app.markdown if "protected values hidden" in item.value]
+        self.assertEqual(len(rule_rows), 1)
+        self.assertNotIn("pending", rule_rows[0])
+        self.assertNotIn("Approved", rule_rows[0])
+        self.widget("button", "Edit").click().run()
+        self.assertEqual(self.widget("text_input", "Business rule").value, "")
 
     def test_rule_edit_preserves_row_rejection_choices(self):
         self.add()
@@ -172,8 +205,8 @@ class RuleUiTests(unittest.TestCase):
         self.widget("button", "Apply automatic fixes").click().run()
         self.widget("button", "Reject fix").click().run()
         self.clean()
-        self.widget("selectbox", "Business rule to edit").set_value(1).run()
-        self.widget("text_input", "Business rule value").set_value('{"pending":"Complete"}')
+        self.widget("button", "Edit").click().run()
+        self.widget("text_input", "Business rule").set_value("replace pending with Complete in status")
         self.widget("button", "Save business rule").click().run()
         self.widget("button", "Apply automatic fixes").click().run()
         self.clean()
@@ -186,8 +219,8 @@ class RuleUiTests(unittest.TestCase):
         self.app.run()
         self.widget("button", "Apply automatic fixes").click().run()
         old_version = self.app.session_state["review_contexts"]["private.csv"]["version"]
-        self.widget("selectbox", "Business rule to edit").set_value(1).run()
-        self.widget("text_input", "Business rule value").set_value('{"pending":"Complete"}')
+        self.widget("button", "Edit").click().run()
+        self.widget("text_input", "Business rule").set_value("replace pending with Complete in status")
         self.widget("button", "Save business rule").click().run()
         self.clean()
         self.assertNotEqual(old_version, self.app.session_state["review_contexts"]["private.csv"]["version"])

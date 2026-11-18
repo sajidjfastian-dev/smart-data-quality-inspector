@@ -10,12 +10,7 @@ with sync_playwright() as p:
     page.get_by_role("button", name="Continue with SSO", exact=True).click(timeout=60000)
     page.get_by_role("button", name="Settings", exact=True).click()
     page.get_by_role("tab", name="Business rules", exact=True).click()
-    page.get_by_role("textbox", name="Target column name", exact=True).fill("status")
-    page.get_by_role("combobox", name="Business rule type", exact=True).click()
-    page.get_by_role("option", name="Value mapping", exact=True).click()
-    page.get_by_role("textbox", name="Business rule value", exact=True).fill('{"pending":"Approved"}')
-    page.get_by_role("combobox", name="Rule behavior", exact=True).click()
-    page.get_by_role("option", name="Correct automatically", exact=True).click()
+    page.get_by_role("textbox", name="Business rule", exact=True).fill("replace pending with Approved in status")
     page.get_by_role("button", name="Add business rule", exact=True).click()
     page.wait_for_timeout(600)
     assert page.get_by_test_id("stException").count() == 0

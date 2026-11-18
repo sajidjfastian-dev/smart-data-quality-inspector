@@ -19,3 +19,9 @@ All business rules are selected by default. Users can deselect rules for the cur
 **Why:** The user wants Settings to define rules and Review & fix to provide a simple, file-specific choice.
 
 **How to apply:** Show the full rule list there, keep selections independent per file, and invalidate the previous corrected preview and approval when choices change.
+
+Users define business rules in one text field and manage them from a list with edit and delete actions.
+
+**Why:** The user requested a simpler rule-authoring experience instead of separate column, rule-type, value, and behavior controls.
+
+**How to apply:** Interpret only supported, unambiguous rule sentences; reject unclear text rather than silently inventing rule behavior, and keep protected values masked.

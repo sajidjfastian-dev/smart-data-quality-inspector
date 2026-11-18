@@ -35,10 +35,7 @@ class InspectionCorrectionTests(unittest.TestCase):
         self.assertNotIn("Invalid Number", set(self.app.session_state["quality_scan_cache"]["test.csv"]["issues"]["Issue Type"]))
         self.widget("checkbox", "Invalid numeric values").check().run()
 
-        self.widget("text_input", "Target column name").set_value("region")
-        self.widget("selectbox", "Business rule type").select("Allowed values")
-        self.widget("text_input", "Business rule value").set_value("North,South,West,East")
-        self.widget("selectbox", "Rule behavior").select("Correct automatically")
+        self.widget("text_input", "Business rule").set_value("region must be one of North,South,West,East")
         self.widget("button", "Add business rule").click().run()
         self.assertTrue(self.widget("checkbox", "1 · Allowed values · region").value)
         self.widget("button", "Apply automatic fixes").click().run()

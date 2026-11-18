@@ -1,7 +1,7 @@
 """Session-wide business rules, using the existing custom-rule contract."""
 import json
 import math
-import uuid
+from html import escape
 
 import pandas as pd
 
@@ -179,55 +179,98 @@ def apply_rules(data, rules):
     return corrected, reasons
 
 
-def render_editor(st, state, data=None):
+def render_editor(st, state, data=None, protected_columns=()):
     from localization import translate
+    from business_rule_text import parse_rule_text, rule_as_text
+
     rules = state.setdefault("business_rules", [])
+    reset_input = state.pop("business_rule_reset_input", None)
+    if reset_input:
+        state.pop(reset_input, None)
+    editing_id = state.get("business_rule_edit_id")
+    selected = next((r for r in rules if r.get("id") == editing_id), None)
+    if editing_id and selected is None:
+        state.pop("business_rule_edit_id", None)
+        editing_id = None
+    input_key = f"business_rule_text_{editing_id or 'new'}"
+    protected = {str(c) for c in protected_columns}
+    hide_values = bool(selected and str(selected["column"]) in protected and selected.get("expected"))
+
     st.markdown("### Business rules")
-    st.caption("Define column names before upload. Rules apply to matching columns in every file in this session.")
-    st.caption("Built-in cleanup runs first. Business corrections must agree and satisfy the other rules for their column. No missing facts are invented.")
+    st.caption("Use the examples and the exact column name. Rules apply to matching files.")
     if state.pop("business_rules_notice", False):
         st.success("Rules updated. Apply automatic fixes again to prepare a fresh correction preview.")
-    selection = st.selectbox("Business rule to edit", range(len(rules) + 1),
-                            format_func=lambda i: "New rule" if i == 0 else f"{i}. {rules[i-1]['column']} · {rules[i-1]['kind']}",
-                            key="business_rule_selection")
-    selected = rules[selection - 1] if selection else None
-    with st.form(f"business_rule_editor_{selection}"):
-        column = st.text_input("Target column name", value=selected["column"] if selected else "",
-                               help="Matches the column name exactly, including spaces and case.")
-        kind = st.selectbox("Business rule type", KINDS, index=KINDS.index(selected["kind"]) if selected else 0,
-                            format_func=translate)
-        expected = st.text_input("Business rule value", value=selected["expected"] if selected else "",
-                                 help='Text, comma-separated allowed values, numeric limit, or JSON mapping. Formatting rules need no value.')
-        mode = st.selectbox("Rule behavior", ["Check only", "Correct automatically"],
-                            index=int(bool(selected and selected.get("mode") == "Correct automatically")),
-                            format_func=translate)
+    if hide_values:
+        st.info("Protected values are hidden. Re-enter the full rule to update it.")
+    with st.form(f"business_rule_editor_{editing_id or 'new'}"):
+        text = st.text_input(
+            "Business rule",
+            value=rule_as_text(selected) if selected and not hide_values else "",
+            placeholder=translate("Example: age must be at least 18"),
+            key=input_key,
+        )
+        st.caption('Examples: “age must be at least 18”, “status must be one of Open, Closed”, “replace pending with approved in status”, or “trim whitespace in name”.')
         save = st.form_submit_button("Save business rule" if selected else "Add business rule")
-    delete = st.button("Delete business rule", disabled=not selected)
-    if save or delete:
+    if selected and st.button("Cancel editing", key="cancel_business_rule_edit"):
+        state["business_rule_reset_input"] = input_key
+        state.pop("business_rule_edit_id", None)
+        st.rerun()
+
+    def invalidate_changes():
+        from review_approval import invalidate
+        for dataset in list(state.get("review_contexts", {})):
+            invalidate(state, dataset)
+        for key in ("quality_scan_cache", "review_scan_cache", "fixed_export_cache"):
+            state[key] = {}
+        state["batch_export_cache"] = None
+        state["fixed_datasets"] = {}
+        state["business_rules_notice"] = True
+
+    def has_manual_corrections():
+        for dataset, record in state.get("fix_change_indexes", {}).items():
+            if (dataset in state.get("fixed_datasets", {}) and
+                    record["changes"]["Change reason"].str.startswith("Manual correction").any()):
+                return True
+        return False
+
+    if save:
         try:
-            if delete:
-                rules.pop(selection - 1)
+            if has_manual_corrections():
+                raise ValueError("Existing manual corrections are preserved. Resolve them before changing business rules.")
+            rule = parse_rule_text(text, selected["id"] if selected else None)
+            if selected:
+                rules[rules.index(selected)] = rule
             else:
-                rule = validate(dict(column=column, kind=kind, expected=expected.strip(),
-                                     mode=mode, enabled=True, business=True,
-                                     id=selected["id"] if selected else uuid.uuid4().hex))
-                if selected:
-                    rules[selection - 1] = rule
-                else:
-                    rules.append(rule)
-            from review_approval import invalidate
-            for dataset in list(state.get("review_contexts", {})):
-                invalidate(state, dataset)
-            for key in ("quality_scan_cache", "review_scan_cache", "fixed_export_cache"):
-                state[key] = {}
-            state["batch_export_cache"] = None
-            # A proposal generated under old rules must not be submitted as if it
-            # used the new rules. Keep originals, lineage and row-choice stores;
-            # the next Apply regenerates only the corrected working copies.
-            state["fixed_datasets"] = {}
-            state["business_rules_notice"] = True
-            state["business_rule_reset_selection"] = True
+                rules.append(rule)
+            invalidate_changes()
+            state["business_rule_reset_input"] = input_key
+            state.pop("business_rule_edit_id", None)
             st.rerun()
         except ValueError as error:
             st.error(str(error))
+
+    if rules:
+        st.markdown("#### Your business rules")
+        for rule in list(rules):
+            label, edit, delete = st.columns([4, 1.5, 1.5], vertical_alignment="center")
+            with label:
+                text = rule_as_text(rule, str(rule["column"]) in protected)
+                st.markdown("<span>" + escape(text) + "</span>", unsafe_allow_html=True)
+                st.caption(translate("Automatic correction" if rule["mode"] == "Correct automatically" else "Check only"))
+            with edit:
+                if st.button("Edit", key=f"business_rule_edit_{rule['id']}"):
+                    state["business_rule_edit_id"] = rule["id"]
+                    state["business_rule_reset_input"] = f"business_rule_text_{rule['id']}"
+                    st.rerun()
+            with delete:
+                if st.button("Delete", key=f"business_rule_delete_{rule['id']}"):
+                    if has_manual_corrections():
+                        st.error("Existing manual corrections are preserved. Resolve them before changing business rules.")
+                    else:
+                        rules.remove(rule)
+                        invalidate_changes()
+                        if editing_id == rule["id"]:
+                            state.pop("business_rule_edit_id", None)
+                            state["business_rule_reset_input"] = input_key
+                        st.rerun()
     return [{**r, "enabled": True} for r in rules]

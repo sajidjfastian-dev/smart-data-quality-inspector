@@ -66,7 +66,7 @@ def render_checker_review(state, dataset, original, corrected, changes, remainin
                 records.append({
                     t("Original row"): int(original_row), t("Column"): label,
                     t("Original value"): str(old), t("Corrected value"): str(new),
-                    t("Change reason"): t(reason),
+                    t("Change reason"): t(reason), "_removed": pd.isna(column_pos),
                 })
             # Keep original physically left of corrected even in Arabic. A single
             # table keeps corresponding values aligned when long content wraps.
@@ -77,19 +77,32 @@ def render_checker_review(state, dataset, original, corrected, changes, remainin
                 for record in records
             )
             if on_reject:
-                # One native action per original row, beside that row's changes.
-                for origin in dict.fromkeys(record[t("Original row")] for record in records):
-                    grouped = [record for record in records if record[t("Original row")] == origin]
-                    row_body = "".join("<tr>" + "".join("<td><bdi>" + html.escape(str(record[label]))
-                        + "</bdi></td>" for label in headings) + "</tr>" for record in grouped)
-                    with st.container(border=True):
-                        comparison, action = st.columns([5, 1], vertical_alignment="center")
-                        comparison.markdown('<div class="checker-comparison" dir="ltr" tabindex="0"><table><thead><tr>'
-                            + header + "</tr></thead><tbody>" + row_body + "</tbody></table></div>", unsafe_allow_html=True)
-                        retained = changes.loc[changes["Original row"] == origin, "Column position"].notna().any()
-                        if retained:
-                            action.button(t("Reject fix"), key=f"{key}_reject_{origin}", on_click=on_reject, args=(origin,),
-                                          help=t("Restore original values for this row. Removed duplicates stay removed."))
+                # One shared heading and aligned rows; native buttons retain their
+                # real Streamlit callbacks and keyboard accessibility.
+                st.caption(t("Undo restores the whole row; removed duplicates stay removed."))
+                widths = [0.85, 1.35, 1.9, 1.9, 1.45, 0.7]
+                with st.container(key="checker_action_table"):
+                    with st.container(key="checker_action_header"):
+                        for column, label in zip(st.columns(widths, gap=None), headings + [t("Action")]):
+                            column.markdown('<div class="checker-grid-heading">' + html.escape(label) + "</div>",
+                                            unsafe_allow_html=True)
+                    for index, record in enumerate(records):
+                        origin = record[t("Original row")]
+                        with st.container(key=f"checker_action_row_{index}"):
+                            columns = st.columns(widths, gap=None, vertical_alignment="center")
+                            for column, label in zip(columns, headings):
+                                column.markdown(
+                                    '<div class="checker-grid-cell"><bdi>' + html.escape(str(record[label]))
+                                    + "</bdi></div>", unsafe_allow_html=True,
+                                )
+                            if not record["_removed"]:
+                                columns[-1].button(
+                                    t("Reject fix"), icon=":material/undo:", type="tertiary",
+                                    key=f"{key}_reject_{origin}_{index}", on_click=on_reject, args=(origin,),
+                                    help=t("Restore original values for this row. Removed duplicates stay removed."),
+                                )
+                            else:
+                                columns[-1].markdown('<div class="checker-grid-no-action">—</div>', unsafe_allow_html=True)
             else:
                 st.markdown(
                     '<div class="checker-comparison" dir="ltr" tabindex="0"><table><thead><tr>'

@@ -1939,11 +1939,12 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                 key="settings_navigation", on_change="rerun",
             )
             checks_tab = business_tab
-            if st.session_state.pop("business_rule_reset_selection", False):
-                st.session_state["business_rule_selection"] = 0
             with business_tab:
                 from business_rules import render_editor
-                session_rules = render_editor(st, st.session_state, active_data)
+                editor_protected = set(detected_sensitive or ())
+                if column_signature:
+                    editor_protected.update(st.session_state.get(f"privacy_manual_{column_signature}", []))
+                session_rules = render_editor(st, st.session_state, active_data, editor_protected)
                 from business_rule_review import STANDARD_RULES
                 with st.expander("Included business rules", expanded=True):
                     st.caption("These rules are selected by default. Change the selection for a file in Review & fix.")

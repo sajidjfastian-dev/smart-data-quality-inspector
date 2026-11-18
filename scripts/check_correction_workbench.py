@@ -44,10 +44,8 @@ with sync_playwright() as p:
     page.get_by_role("button", name="Settings", exact=True).first.click()
     settle()
     page.get_by_role("dialog").get_by_role("tab").filter(has_text="Business rules").click()
-    choose("Rule column", 0)
-    choose("Rule type", 1)
-    page.get_by_role("textbox", name="Expected value", exact=True).fill("North,South,East")
-    click("Add rule")
+    page.get_by_role("textbox", name="Business rule", exact=True).fill("region must be one of North,South,East")
+    click("Add business rule")
     page.keyboard.press("Escape")
     page.locator(".st-key-inspection_workspace").click(position={"x": 20, "y": 15})
     settle()
@@ -63,7 +61,7 @@ with sync_playwright() as p:
     settle()
     assert page.locator(".fixed-preview-cell:visible").count() == 2
     titles = page.locator(".fixed-preview-cell:visible").evaluate_all("els=>els.map(e=>e.title)")
-    assert "Normalized to allowed value" in titles
+    assert "Business rule: Allowed values" in titles
     assert not any("Manual correction" in title for title in titles)
     assert "invalid" not in page.locator(".fixed-preview-table:visible").inner_text()
     page.locator(".fixed-preview-table:visible").scroll_into_view_if_needed()
