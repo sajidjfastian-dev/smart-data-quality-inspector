@@ -3057,6 +3057,13 @@ with review_tab, st.container(key="correction_workspace"):
             for suggestion in suggested_checks:
                 st.markdown("- " + translate(suggestion))
     fixed_datasets = st.session_state.setdefault("fixed_datasets", {})
+    from business_rule_review import render_business_rule_review
+    render_business_rule_review(
+        fixed_datasets.get(active_dataset, data),
+        st.session_state.get("business_rules", []),
+        display_sensitive_columns,
+        corrected=active_dataset in fixed_datasets,
+    )
     current_change_record = st.session_state.get("fix_change_indexes", {}).get(active_dataset)
     manual_edits = current_change_record is not None and current_change_record["changes"]["Change reason"].str.startswith("Manual correction").any()
     if manual_edits:
