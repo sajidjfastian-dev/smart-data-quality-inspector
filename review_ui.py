@@ -13,31 +13,40 @@ def render_checker_review(state, dataset, original, corrected, changes, remainin
     key = f"checker_{version}_{choice}"
     with st.container(border=True):
         st.subheader(t("Checker review and final approval") if actions else t("Review changes"))
-        st.caption(t("Demo only: this is not an independent authenticated checker or a production authorization."))
-        st.caption(t("Review version") + ": " + version[:12] + " · " + t(choice))
+        if actions:
+            st.caption(t("Demo only: this is not an independent authenticated checker or a production authorization."))
+            st.caption(t("Review version") + ": " + version[:12] + " · " + t(choice))
         changed_cells = int(changes["Column position"].notna().sum())
         removed = int(changes["Column position"].isna().sum())
-        metrics = st.columns(4)
+        labels = ["Changed cells", "Affected rows", "Rows removed", "Remaining findings"] if actions else ["Changed cells", "Rows removed", "Remaining findings"]
+        values = [changed_cells, changes["Original row"].nunique(), removed, len(remaining)] if actions else [changed_cells, removed, len(remaining)]
+        metrics = st.columns(len(labels))
         for col, label, value in zip(metrics,
-                                    ["Changed cells", "Affected rows", "Rows removed", "Remaining findings"],
-                                    [changed_cells, changes["Original row"].nunique(), removed, len(remaining)]):
+                                    labels, values):
             col.metric(t(label), f"{value:,}")
-        st.caption(t("Original values are on the left; corrected values are on the right. Protected values stay masked."))
+        if actions or not changes.empty:
+            st.caption(t("Original values are on the left; corrected values are on the right. Protected values stay masked."))
         if changes.empty:
-            st.info(t("No changes in this version. Review the original data and remaining findings before approving."))
-            page_count = max(1, math.ceil(len(original) / 50))
-            page = st.number_input(t("Data review page"), 1, page_count, key=key + "_data_page")
-            st.dataframe(mask_dataframe(original.iloc[(page-1)*50:page*50], protected), hide_index=True, width="stretch")
+            if actions:
+                st.info(t("No changes in this version. Review the original data and remaining findings before approving."))
+                page_count = max(1, math.ceil(len(original) / 50))
+                page = st.number_input(t("Data review page"), 1, page_count, key=key + "_data_page")
+                st.dataframe(mask_dataframe(original.iloc[(page-1)*50:page*50], protected), hide_index=True, width="stretch")
+            else:
+                st.info(t("No values changed in this version."))
         else:
             options = list(changes["Change reason"].unique())
-            reasons = st.multiselect(t("Filter changes"), options,
-                                     format_func=lambda value, locale=language(): t(value, locale),
-                                     key=key + "_reasons")
+            reasons = []
+            if actions or (len(options) > 1 and len(changes) > 50):
+                reasons = st.multiselect(t("Filter changes"), options,
+                                         format_func=lambda value, locale=language(): t(value, locale),
+                                         key=key + "_reasons")
             filtered = changes[changes["Change reason"].isin(reasons)] if reasons else changes
             page_count = max(1, math.ceil(len(filtered) / 50))
             page_key = key + "_page_" + str(tuple(reasons))
-            page = st.number_input(t("Changes page"), 1, page_count, key=page_key)
-            st.caption(t("Showing {0} changes; page {1} of {2}.").format(len(filtered), page, page_count))
+            page = st.number_input(t("Changes page"), 1, page_count, key=page_key) if actions or page_count > 1 else 1
+            if actions or page_count > 1:
+                st.caption(t("Showing {0} changes; page {1} of {2}.").format(len(filtered), page, page_count))
             records = []
             for row in filtered.iloc[(page-1)*50:page*50].itertuples(index=False, name=None):
                 original_row, corrected_row, column_pos, reason = row
@@ -73,10 +82,13 @@ def render_checker_review(state, dataset, original, corrected, changes, remainin
                 unsafe_allow_html=True,
             )
             st.caption(t("On small screens, scroll the comparison horizontally to see both values."))
-        st.warning(t("Approval does not mean error-free data. Review all remaining findings before proceeding."))
-        with st.expander(t("Remaining findings")):
-            from issue_workspace import render_findings
-            render_findings(remaining, protected, key + "_remaining", corrected, downloads=False)
+        if actions or not remaining.empty:
+            st.warning(t("Approval does not mean error-free data. Review all remaining findings before proceeding."))
+            with st.expander(t("Remaining findings")):
+                from issue_workspace import render_findings
+                render_findings(remaining, protected, key + "_remaining", corrected, downloads=False)
+        else:
+            st.success(t("No remaining findings."))
         if not actions:
             return
         checked = st.checkbox(t("I reviewed the changes and remaining findings"), key=key + "_ack")

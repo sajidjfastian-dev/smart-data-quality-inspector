@@ -1921,22 +1921,21 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
             on_change="rerun",
         ):
             st.markdown(
-                '<div class="settings-hero">'
-                '<div class="settings-hero-eyebrow">Workspace controls</div>'
-                '<div class="settings-hero-title">Make it work your way.</div>'
-                '<div class="settings-hero-description">Manage your assistant, data connections, and quality checks in one place.</div>'
-                '<div class="settings-session-badge">SETTINGS STAY IN THIS SESSION</div>'
-                '</div>',
+                "<style>" + (Path(__file__).resolve().parent / "assets" / "settings_workspace.css").read_text(encoding="utf-8") + "</style>"
+                '<div class="settings-workspace-marker" aria-hidden="true"></div>',
                 unsafe_allow_html=True,
             )
-            model_tab, api_tab, checks_tab, privacy_tab = st.tabs(
-                ["LLM assistant", "Data APIs", "Inspection checks", "Data privacy"],
+            st.markdown("## Settings")
+            st.caption("Choose inspection checks, review data privacy, and manage optional connections.")
+            st.caption("Settings stay in this session.")
+            checks_tab, privacy_tab, model_tab, api_tab = st.tabs(
+                ["Inspection checks", "Data privacy", "LLM assistant", "Data APIs"],
                 key="settings_navigation", on_change="rerun",
             )
             sensitive_columns = set(detected_sensitive or ())
             privacy_reviewed = False
             with privacy_tab:
-                st.markdown("**Sensitive data protection**")
+                st.markdown("### Sensitive data protection")
                 st.caption(
                     "Identified sensitive columns are masked in previews and outputs. "
                     "Detection can miss sensitive data; review every column before sharing."
@@ -1960,6 +1959,8 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                     ).hexdigest()[:16]
                     if "request_restore_reviewed" in st.session_state:
                         st.session_state[f"privacy_review_{column_signature}_{policy_digest}"] = st.session_state.pop("request_restore_reviewed")
+                    st.divider()
+                    st.markdown("### Confirm your review")
                     privacy_reviewed = st.checkbox(
                         "I reviewed all columns for sensitive data",
                         value=True,
@@ -1976,7 +1977,8 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                         st.session_state["batch_export_cache"] = None
                     st.info("Masking is not a substitute for access controls or a security review. This app does not provide built-in sign-in.")
             with model_tab:
-                st.markdown("**Connect your own LLM**")
+                st.markdown("### Connect your own LLM")
+                st.caption("Optional. The local assistant remains available without a connection.")
                 st.caption(
                     "Use an OpenAI-compatible Chat Completions endpoint. Settings stay "
                     "in this session and are not saved to files. Only public HTTPS endpoints "
@@ -2003,6 +2005,9 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                 if st.session_state.get("assistant_consent_binding") != consent_binding:
                     st.session_state["assistant_consent_binding"] = consent_binding
                     st.session_state["assistant_share_dataset"] = False
+                st.divider()
+                st.markdown("### Dataset sharing")
+                st.caption("Review Data privacy before allowing an external provider to receive data.")
                 st.checkbox(
                     "Allow sending the active dataset to this endpoint",
                     value=False, key="assistant_share_dataset",
@@ -2016,13 +2021,15 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                     "The local assistant remains available when sharing is off. "
                     "Requests over 10 MB are rejected."
                 )
-                st.button(
-                    "Clear model settings", on_click=clear_assistant_settings,
-                    width="stretch", key="clear_assistant_settings",
-                )
+                with st.expander("Reset connection", expanded=False):
+                    st.caption("Clear the configured endpoint, model, and API key.")
+                    st.button(
+                        "Clear model settings", on_click=clear_assistant_settings,
+                        width="stretch", key="clear_assistant_settings",
+                    )
             with checks_tab:
-                st.markdown("**Built-in checks**")
-                st.caption("Choose which checks run. Changes rescan the active file.")
+                st.markdown("### Built-in checks")
+                st.caption("Choose which checks run. Changes rescan the active file. You can set these before loading data.")
                 st.button(translate("Apply all built-in checks"), key="apply_all_quality_checks", on_click=apply_all_checks)
                 checks = {}
                 for key, label in (
@@ -2046,28 +2053,32 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                         render_api_settings()
                     return None
                 email_defaults, date_defaults, numeric_defaults = defaults
-                st.markdown("**Column rules for the active file**")
-                email_columns = st.multiselect(
-                    "Treat columns as Email", options=columns, default=email_defaults,
-                    key=f"rule_email_columns_{column_signature}",
-                    help="Selected columns are checked for valid email addresses.",
-                )
-                date_columns = st.multiselect(
-                    "Treat columns as Date", options=columns, default=date_defaults,
-                    key=f"rule_date_columns_{column_signature}",
-                    help="Selected columns are checked for valid and consistent dates.",
-                )
-                numeric_columns = st.multiselect(
-                    "Treat columns as Numeric", options=columns, default=numeric_defaults,
-                    key=f"rule_numeric_columns_{column_signature}",
-                    help="Selected columns are checked for outliers and used for numeric fixes.",
-                )
-                iqr_multiplier = st.slider(
-                    "IQR outlier multiplier", min_value=1.5, max_value=3.0,
-                    value=1.5, step=0.1, format="%.1f×", key=f"rule_iqr_{column_signature}",
-                    help="Values outside Q1 − multiplier × IQR or Q3 + multiplier × IQR are flagged.",
-                )
-                st.markdown("**Define your data quality rules**")
+                st.divider()
+                st.markdown("### Column rules for the active file")
+                st.caption("Review the selected column types or adjust how numeric outliers are flagged.")
+                with st.expander("Advanced column configuration", expanded=False):
+                    email_columns = st.multiselect(
+                        "Treat columns as Email", options=columns, default=email_defaults,
+                        key=f"rule_email_columns_{column_signature}",
+                        help="Selected columns are checked for valid email addresses.",
+                    )
+                    date_columns = st.multiselect(
+                        "Treat columns as Date", options=columns, default=date_defaults,
+                        key=f"rule_date_columns_{column_signature}",
+                        help="Selected columns are checked for valid and consistent dates.",
+                    )
+                    numeric_columns = st.multiselect(
+                        "Treat columns as Numeric", options=columns, default=numeric_defaults,
+                        key=f"rule_numeric_columns_{column_signature}",
+                        help="Selected columns are checked for outliers and used for numeric fixes.",
+                    )
+                    iqr_multiplier = st.slider(
+                        "IQR outlier multiplier", min_value=1.5, max_value=3.0,
+                        value=1.5, step=0.1, format="%.1f×", key=f"rule_iqr_{column_signature}",
+                        help="Values outside Q1 − multiplier × IQR or Q3 + multiplier × IQR are flagged.",
+                    )
+                st.divider()
+                st.markdown("### Define your data quality rules")
                 st.caption("Add, edit or delete rules below. Every change requires a new checker approval.")
                 notice = st.session_state.pop("rule_notice", None)
                 if notice:
@@ -2967,10 +2978,9 @@ with insights_tab:
         )
 
 with review_tab, st.container(key="correction_workspace"):
-    st.subheader("1 · Apply rule-based corrections")
-    st.caption("Let the system apply available corrections, review the results, then confirm the exact version you submit. Your original stays unchanged.")
+    st.subheader("1 · Apply automatic fixes")
+    st.caption("Apply available rule-based corrections to a copy, then review and submit. Your original stays unchanged.")
     fixed_datasets = st.session_state.setdefault("fixed_datasets", {})
-    show_fixed_key = f"show_fixed_preview_{column_signature}"
     current_change_record = st.session_state.get("fix_change_indexes", {}).get(active_dataset)
     manual_edits = current_change_record is not None and current_change_record["changes"]["Change reason"].str.startswith("Manual correction").any()
     if manual_edits:
@@ -2978,7 +2988,7 @@ with review_tab, st.container(key="correction_workspace"):
     notice = st.session_state.pop("resolve_" + column_signature + "_notice", None)
     if notice:
         st.success(notice)
-    with st.expander("Choose safe fixes to apply", expanded=True):
+    with st.expander("Optional fix settings", expanded=False):
         fix_duplicates = st.checkbox(
             "Remove exact duplicate rows",
             value="duplicates" in enabled_checks,
@@ -3015,8 +3025,9 @@ with review_tab, st.container(key="correction_workspace"):
             "Median fills are estimates—review them before submission. Allowed-value fixes require one unambiguous match. "
             "Invalid emails, ambiguous dates, numeric limits and outliers remain flagged for source verification."
         )
+    with st.container():
         if st.button(
-            "Apply selected fixes",
+            "Apply automatic fixes",
             type="primary",
             width="stretch",
             icon=":material/auto_fix_high:",
@@ -3086,40 +3097,14 @@ with review_tab, st.container(key="correction_workspace"):
                 active_dataset,
                 None,
             )
-            st.session_state[show_fixed_key] = True
             st.success(
                 f"Applied fixes to a copy of {active_dataset}. The original workspace data is unchanged."
             )
             st.rerun()
 
     has_fixed_data = active_dataset in fixed_datasets
-    def scan_correction(candidate):
-        return scan_data(candidate, email_columns=email_columns, date_columns=date_columns,
-                         numeric_columns=numeric_columns, iqr_multiplier=iqr_multiplier,
-                         enabled_checks=enabled_checks, custom_rules=custom_rules)
-
-    render_resolution(
-        st.session_state, active_dataset, data,
-        fixed_datasets.get(active_dataset, data),
-        fixed_findings if has_fixed_data else issues,
-        display_sensitive_columns, scan_correction, "resolve_" + column_signature,
-    )
-    st.subheader("3 · Preview all changes and submit")
-    if has_fixed_data:
-        show_fixed = st.toggle(
-            "Show fixed preview",
-            key=show_fixed_key,
-            help="Switch between the original file and the copy with selected fixes applied.",
-        )
-    else:
-        show_fixed = False
-
-    approval_choices = ["Original data"] + (["Fixed copy"] if has_fixed_data else [])
-    approval_choice = native.selectbox(
-        translate("Version for checker approval"), approval_choices,
-        index=len(approval_choices)-1, format_func=lambda value, locale=language(): translate(value, locale),
-        key=f"checker_choice_{column_signature}_{int(has_fixed_data)}",
-    )
+    st.subheader("2 · Review and submit")
+    approval_choice = "Fixed copy" if has_fixed_data else "Original data"
     approval_data = fixed_datasets[active_dataset] if approval_choice == "Fixed copy" else data
     changes = pd.DataFrame(columns=["Original row", "Corrected row", "Column position", "Change reason"])
     change_record = st.session_state.get("fix_change_indexes", {}).get(active_dataset)
@@ -3128,7 +3113,9 @@ with review_tab, st.container(key="correction_workspace"):
         and change_record["original"] == frame_digest(data)
         and change_record["fixed"] == frame_digest(approval_data)
     )
-    if lineage_valid:
+    if not has_fixed_data and not issues.empty:
+        st.info("Apply automatic fixes above to prepare your review. Findings that cannot be corrected automatically will remain available for review.")
+    elif lineage_valid:
         if approval_choice == "Fixed copy":
             changes = change_record["changes"]
         render_checker_review(st.session_state, active_dataset, data, approval_data,
@@ -3151,11 +3138,6 @@ with review_tab, st.container(key="correction_workspace"):
             from persistent_demo import make_private
             native.button(translate("Continue as a private request"), key="private_sample_copy",
                           on_click=make_private, args=(st.session_state, request_reference, draft_payload))
-        native.caption(translate("Safe fixes are rule-based. Optional AI advice never applies changes automatically."))
-        if approval_choice == "Fixed copy":
-            with st.expander("Preview corrected data with highlighted changes"):
-                render_change_preview(approval_data, changes, display_sensitive_columns,
-                                      "before_submit_" + column_signature)
         submit_ack = native.checkbox(translate("I reviewed all changes and remaining findings; this version is ready for review"),
                                      key=f"submit_ack_{request_reference}_{approval_context['version']}_{approval_choice}")
         if native.button(translate("Submit for review"), key=f"submit_{request_reference}", type="primary",
@@ -3169,196 +3151,6 @@ with review_tab, st.container(key="correction_workspace"):
                 st.error(translate(str(error)))
     else:
         st.warning("Reapply fixes to build a complete change review before approval.")
-
-    review_data = fixed_datasets[active_dataset] if show_fixed else data
-    if not show_fixed:
-        review_issues = issues
-    else:
-        review_scan_cache = st.session_state.setdefault("review_scan_cache", {})
-        cached_review = review_scan_cache.get(active_dataset)
-        if cached_review and cached_review["rules"] == rule_signature:
-            review_issues = cached_review["issues"]
-        else:
-            with st.status("Validating the review preview...", expanded=True) as review_status:
-                review_loader = st.empty()
-                render_inspection_loader(
-                    "Validating the review preview",
-                    "Rechecking remaining issues in the fixed copy.",
-                    review_loader,
-                )
-                review_progress = st.progress(0.0, text="Preparing preview checks...")
-
-                def update_review_progress(fraction, message):
-                    review_progress.progress(fraction, text=f"{fraction:.0%} · {translate_progress(message)}")
-                    review_status.update(
-                        label="Checking findings in the preview...",
-                        state="running",
-                        expanded=True,
-                    )
-
-                try:
-                    review_issues, _ = scan_data(
-                        review_data,
-                        email_columns=email_columns,
-                        date_columns=date_columns,
-                        numeric_columns=numeric_columns,
-                        iqr_multiplier=iqr_multiplier,
-                        progress_callback=update_review_progress,
-                        enabled_checks=enabled_checks,
-                        custom_rules=custom_rules,
-                    )
-                except MemoryError:
-                    review_status.update(label="Could not check the fixed copy", state="error", expanded=True)
-                    st.error("There is not enough memory to check the fixed copy. The original data has not changed.")
-                    st.stop()
-                except Exception:
-                    logging.error("Failed to inspect the fixed copy")
-                    review_status.update(label="Could not check the fixed copy", state="error", expanded=True)
-                    st.error("The fixed copy could not be inspected. Check your settings and try again.")
-                    st.stop()
-                review_progress.empty()
-                review_loader.empty()
-                review_status.update(
-                    label=f"Preview check complete · {len(review_issues):,} finding(s)",
-                    state="complete",
-                    expanded=False,
-                )
-            review_scan_cache[active_dataset] = {
-                "rules": rule_signature,
-                "issues": review_issues,
-            }
-    if show_fixed:
-        st.info(
-            f"Fixed copy: {len(review_data):,} rows · "
-            f"{len(review_issues):,} remaining finding(s)."
-        )
-        result_metrics = st.columns(3)
-        result_metrics[0].metric(
-            "Rows removed",
-            f"{max(len(data) - len(review_data), 0):,}",
-        )
-        result_metrics[1].metric(
-            "Findings resolved",
-            f"{max(issue_count - len(review_issues), 0):,}",
-        )
-        result_metrics[2].metric("Needs source verification", f"{len(review_issues):,}")
-        st.caption(
-            "The original file remains available in the workspace; only the exported copy is fixed."
-        )
-    else:
-        st.info(
-            f"Original data: {len(review_data):,} rows · "
-            f"{len(review_issues):,} finding(s) highlighted."
-        )
-
-    if review_issues.empty:
-        st.success("No issues to highlight in this view.")
-    else:
-        st.markdown(
-            '<span style="display:inline-block;width:12px;height:12px;'
-            'background:#fff0c2;border:1px solid #e6c46a;border-radius:3px;'
-            'vertical-align:middle"></span> ' + translate("Cell has a finding") + ' '
-            '&nbsp;&nbsp; '
-            '<span style="display:inline-block;width:12px;height:12px;'
-            'background:#fff1ed;border:1px solid #e9b5aa;border-radius:3px;'
-            'vertical-align:middle"></span> ' + translate("Duplicate row"),
-            unsafe_allow_html=True,
-        )
-
-    review_search_col, review_filter_col = st.columns([1.5, 1])
-    with review_search_col:
-        review_search = st.text_input(
-            "Search rows",
-            placeholder="Search across values in this file",
-            key=f"review_search_{column_signature}_{int(show_fixed)}",
-        )
-    with review_filter_col:
-        issue_rows_only = st.toggle(
-            "Show rows with findings only",
-            value=False,
-            key=f"issue_rows_only_{column_signature}_{int(show_fixed)}",
-        )
-    matching_rows = np.ones(len(review_data), dtype=bool)
-    if issue_rows_only:
-        matching_rows[:] = False
-        if not review_issues.empty:
-            finding_positions = review_issues["Row Number"].to_numpy(dtype=np.int64) - 1
-            finding_positions = finding_positions[(finding_positions >= 0) & (finding_positions < len(review_data))]
-            matching_rows[finding_positions] = True
-    if review_search.strip():
-        search_mask = np.zeros(len(review_data), dtype=bool)
-        for column in review_data.columns:
-            if column in display_sensitive_columns:
-                continue
-            search_mask |= review_data[column].astype(str).str.contains(
-                review_search.strip(), case=False, regex=False, na=False
-            ).to_numpy(dtype=bool)
-        matching_rows &= search_mask
-    matching_positions = np.flatnonzero(matching_rows)
-    review_page = 1
-    if len(matching_positions) > 1_000:
-        review_pages = (len(matching_positions) + 999) // 1_000
-        review_page_key = f"review_page_{column_signature}_{int(show_fixed)}"
-        if st.session_state.get(review_page_key, 1) > review_pages:
-            st.session_state[review_page_key] = review_pages
-        review_page = st.number_input(
-            "Review page", min_value=1, max_value=review_pages, value=1,
-            step=1, key=review_page_key,
-        )
-        st.caption(f"Page {review_page:,} of {review_pages:,}; the dataset and exports retain all rows.")
-    review_start = (review_page - 1) * 1_000
-    displayed_positions = matching_positions[review_start:review_start + 1_000]
-    review_display = mask_dataframe(review_data.iloc[displayed_positions], display_sensitive_columns)
-    review_display.insert(0, "Row Number", displayed_positions + 1)
-    st.caption(translate("Showing {0} of {1} matching rows").format(f"{len(review_display):,}", f"{len(matching_positions):,}")
-        + (translate(" with findings") if issue_rows_only else ""))
-    if review_display.empty:
-        st.info("No rows match these search and filter choices.")
-    else:
-        st.dataframe(
-            dataframe_styles(
-                review_display,
-                review_issues[review_issues["Row Number"].isin(displayed_positions + 1)],
-            ),
-            width="stretch",
-            height=650,
-            hide_index=True,
-            column_config={"Row Number": translate("Row Number")},
-        )
-
-    if has_fixed_data and show_fixed:
-        fixed_exports = st.session_state.setdefault("fixed_export_cache", {})
-        fixed_export = fixed_exports.get(active_dataset)
-        if fixed_export is None and privacy_reviewed and len(review_data) < 100_000:
-            fixed_export = serialize_data_file(active_dataset, mask_dataframe(review_data, sensitive_columns))
-        elif fixed_export is None and privacy_reviewed:
-            st.caption("Prepare the fixed file before downloading; large exports may take some time.")
-            if st.button("Prepare fixed download", key=f"prepare_fixed_{column_signature}"):
-                with st.status("Preparing the fixed file...", expanded=True) as export_status:
-                    try:
-                        fixed_export = serialize_data_file(active_dataset, mask_dataframe(review_data, sensitive_columns))
-                        fixed_exports[active_dataset] = fixed_export
-                        export_status.update(label="Fixed file ready", state="complete", expanded=False)
-                    except MemoryError:
-                        export_status.update(label="Could not prepare the fixed file", state="error", expanded=True)
-                        st.error("There is not enough memory to prepare this download. Try a smaller file.")
-                    except Exception:
-                        logging.error("Failed to prepare fixed export")
-                        export_status.update(label="Could not prepare the fixed file", state="error", expanded=True)
-                        st.error("The fixed file could not be prepared. Please try again.")
-        output_stem = Path(active_dataset).stem or "data"
-        if fixed_export is not None:
-            fixed_payload, fixed_mime, fixed_extension = fixed_export
-            st.download_button(
-                f"Download fixed file ({fixed_extension[1:].upper()})",
-                data=fixed_payload,
-                file_name=f"{output_stem}_fixed{fixed_extension}",
-                mime=fixed_mime,
-                type="primary",
-                width="stretch",
-                icon=":material/download:",
-                key=f"download_fixed_{column_signature}",
-            )
 
 with preview_tab:
     st.subheader("Your data, ready to explore")

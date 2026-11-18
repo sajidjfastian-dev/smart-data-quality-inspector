@@ -39,6 +39,8 @@ def run():
 
         def submit():
             page.get_by_role("tab", name="2 · Review & fix", exact=True).click()
+            if page.get_by_role("checkbox", name="I reviewed all changes and remaining findings; this version is ready for review", exact=True).count() == 0:
+                click("Apply automatic fixes")
             checked("I reviewed all changes and remaining findings; this version is ready for review")
             click("Submit for review")
             return page.get_by_role("heading", level=2).first.inner_text()
@@ -59,7 +61,11 @@ def run():
         assert page.locator(".st-key-quality_overview .js-plotly-plot").count() == 6
         assert page.get_by_role("tab", name="2 · Issue log", exact=True).count() == 0
         page.get_by_role("tab", name="2 · Review & fix", exact=True).click()
-        click("Apply selected fixes")
+        assert not page.get_by_text("Optional fix settings", exact=True).locator("xpath=ancestor::details").evaluate("e => e.open")
+        click("Apply automatic fixes")
+        assert page.get_by_role("combobox", name="Version for checker approval", exact=True).count() == 0
+        assert page.get_by_text("Show fixed preview", exact=True).count() == 0
+        page.locator(".st-key-correction_workspace").screenshot(path="/tmp/simple-review.png")
         page.get_by_role("tab", name="3 · Preview & export", exact=True).click()
         settle()
         assert page.locator(".fixed-preview-cell:visible").count() == 2

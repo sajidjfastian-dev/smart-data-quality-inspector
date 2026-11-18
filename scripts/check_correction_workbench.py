@@ -53,13 +53,14 @@ with sync_playwright() as p:
     settle()
     page.get_by_role("tab", name="2 · Review & fix", exact=True).click()
     settle()
+    page.get_by_text("Optional fix settings", exact=True).click()
     if not page.get_by_role("checkbox", name="Normalize case and spacing to allowed values", exact=True).is_checked():
         check("Normalize case and spacing to allowed values")
-    click("Apply selected fixes")
-    assert page.get_by_role("heading", name="2 · Review automatic results").is_visible()
+    click("Apply automatic fixes")
+    assert page.get_by_role("heading", name="2 · Review and submit").is_visible()
     assert page.get_by_role("textbox", name="Verified replacement value", exact=True).count() == 0
     assert page.get_by_role("button", name="Save correction and recheck", exact=True).count() == 0
-    page.get_by_role("heading", name="1 · Apply rule-based corrections").scroll_into_view_if_needed()
+    page.get_by_role("heading", name="1 · Apply automatic fixes").scroll_into_view_if_needed()
     page.screenshot(path="/tmp/correction-workbench-desktop.png")
     page.get_by_role("tab", name="3 · Preview & export", exact=True).click()
     settle()

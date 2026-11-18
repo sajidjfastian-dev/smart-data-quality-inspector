@@ -8,6 +8,12 @@ The user wants findings integrated into Review & fix rather than a standalone Is
 
 **How to apply:** Do not offer typed replacement values or manual cell editors. Keep automatic corrections limited to deterministic normalization and explicitly selected strategies. Never invent email addresses, guess ambiguous dates, or clamp business values merely to pass a rule. Disclose unresolved findings for source verification. Optional AI advice does not apply changes. Synthetic demonstration files should contain realistic, automatically correctable defects, without mocking scan results.
 
+Keep Review & fix to minimum steps for user comfort: apply automatic fixes, review the result, confirm and submit. Detailed settings should be optional rather than mandatory.
+
+**Why:** The user explicitly requested minimum steps and a comfortable correction experience.
+
+**How to apply:** Select the corrected version automatically, avoid redundant preview toggles or repeated results, but retain the exact-version acknowledgement, privacy checks and reviewer approval.
+
 Preserve manual corrections when offering later automated actions, and keep correction history relative to the original rows through duplicate removal.
 
 **Why:** Rebuilding a copy from the original can silently erase manual work; losing row lineage makes the approval comparison misleading.

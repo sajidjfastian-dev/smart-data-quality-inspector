@@ -1,0 +1,104 @@
+/* Settings only. Loaded after the original workspace styles.
+   Native labels, tab semantics and localized text remain untouched. */
+[data-testid="stPopoverBody"]:has(.settings-workspace-marker) {
+    --settings-ink: #214f48;
+    --settings-muted: #49675e;
+    --settings-line: #cfddd3;
+    width: min(820px, calc(100vw - 32px)) !important;
+    max-width: calc(100vw - 32px) !important;
+    max-height: min(900px, calc(100dvh - 40px)) !important;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    background: #fafbf5;
+    border: 1px solid var(--settings-line);
+    border-radius: 16px;
+    color: var(--settings-ink);
+    box-shadow: 0 18px 54px rgba(24, 64, 53, .18);
+    font-family: "DM Sans", "Noto Sans Arabic", sans-serif;
+}
+.settings-workspace-marker {display: none;}
+[data-testid="stPopoverBody"]:has(.settings-workspace-marker) [data-testid="stVerticalBlock"] {
+    gap: .85rem;
+}
+[data-testid="stPopoverBody"]:has(.settings-workspace-marker) h2 {
+    font-family: inherit; font-size: 1.65rem; line-height: 1.3;
+    letter-spacing: -.025em; color: #194e47; padding-block: 0 .15rem;
+}
+[data-testid="stPopoverBody"]:has(.settings-workspace-marker) h3 {
+    font-family: inherit; font-size: 1.16rem; line-height: 1.45;
+    color: #194e47; padding-block: .4rem 0;
+}
+[data-testid="stPopoverBody"]:has(.settings-workspace-marker) [data-testid="stCaptionContainer"] p {
+    font-size: .94rem; line-height: 1.6; color: var(--settings-muted);
+}
+[data-testid="stPopoverBody"]:has(.settings-workspace-marker) [role="tablist"] {
+    position: relative; top: auto; display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 5px; height: auto; overflow: visible; padding: 5px;
+    background: #eaf1e9; border: 1px solid var(--settings-line); border-radius: 11px;
+}
+[data-testid="stPopoverBody"]:has(.settings-workspace-marker) [role="tab"] {
+    flex-direction: row; justify-content: center; text-align: center;
+    min-height: 52px; height: auto; padding: 9px 8px; gap: 0;
+    color: #365c52; border-radius: 7px; transition: none;
+}
+/* Remove the old positional symbols: tab order is now task-first. */
+[data-testid="stPopoverBody"]:has(.settings-workspace-marker) [role="tab"]::before {
+    display: none !important; content: none !important;
+}
+[data-testid="stPopoverBody"]:has(.settings-workspace-marker) [role="tab"] p {
+    font-size: .94rem; font-weight: 700; line-height: 1.45;
+    white-space: normal; overflow-wrap: anywhere;
+}
+[data-testid="stPopoverBody"]:has(.settings-workspace-marker) [role="tab"][aria-selected="true"] {
+    background: #1c6054; border-color: #1c6054; color: #f8f8ed; box-shadow: none;
+}
+[data-testid="stPopoverBody"]:has(.settings-workspace-marker) [role="tabpanel"] {
+    padding: 10px 2px 6px;
+}
+[data-testid="stPopoverBody"]:has(.settings-workspace-marker) [data-testid="stWidgetLabel"] p {
+    font-size: 1rem; line-height: 1.5; color: var(--settings-ink); font-weight: 600;
+}
+[data-testid="stPopoverBody"]:has(.settings-workspace-marker) :is(input, [data-baseweb="select"]) {
+    font-size: 1rem;
+}
+[data-testid="stPopoverBody"]:has(.settings-workspace-marker) :is([data-baseweb="input"], [data-baseweb="select"] > div) {
+    background: #fdfef9; border-color: #aec7bb; border-radius: 8px;
+}
+[data-testid="stPopoverBody"]:has(.settings-workspace-marker) :is(button, input, summary, [role="combobox"]):focus-visible {
+    outline: 3px solid #9b761a; outline-offset: 3px;
+}
+[data-testid="stPopoverBody"]:has(.settings-workspace-marker) [data-baseweb="checkbox"]:has(input:focus-visible) {
+    outline: 3px solid #9b761a; outline-offset: 3px; border-radius: 4px;
+}
+[data-testid="stPopoverBody"]:has(.settings-workspace-marker) :is([data-testid="stExpander"], [data-testid="stForm"]) {
+    background: #f1f5ec; border: 1px solid var(--settings-line); border-radius: 10px;
+}
+[data-testid="stPopoverBody"]:has(.settings-workspace-marker) [data-testid="stExpander"] summary {
+    min-height: 48px; color: var(--settings-ink);
+}
+[data-testid="stPopoverBody"]:has(.settings-workspace-marker) [data-testid="stAlert"] p {
+    font-size: .94rem; line-height: 1.6;
+}
+[data-testid="stPopoverBody"]:has(.settings-workspace-marker) button[kind="secondary"] {
+    min-height: 44px; border-color: #aec7bb; color: #214f48; background: #fdfef9;
+}
+[data-testid="stPopoverBody"]:has(.settings-workspace-marker) button[kind="secondary"]:disabled {
+    color: #637269; background: #e9eee5; border-color: #cfddd3;
+}
+[data-testid="stPopoverBody"]:has(.settings-workspace-marker) hr {
+    border-color: #d9dfcd; margin-block: .6rem;
+}
+@media (max-width: 767px) {
+    [data-testid="stPopoverBody"]:has(.settings-workspace-marker) {
+        width: calc(100vw - 24px) !important; max-width: calc(100vw - 24px) !important;
+        max-height: calc(100dvh - 24px) !important; border-radius: 12px;
+    }
+    [data-testid="stPopoverBody"]:has(.settings-workspace-marker) [role="tablist"] {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    [data-testid="stPopoverBody"]:has(.settings-workspace-marker) [role="tab"] {
+        justify-content: flex-start; text-align: start; min-height: 44px; padding: 8px 12px;
+    }
+}
