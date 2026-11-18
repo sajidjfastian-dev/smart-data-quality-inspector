@@ -20,7 +20,7 @@ from data_insights import render_data_insights
 from change_preview import render_change_preview
 from quality_overview import overview_translate, render_quality_overview
 from workspace_presentation import install_presentation_styles, remove_legacy_footer, render_account_panel, render_signed_out_sidebar, render_signed_in_sidebar
-from demo_session import is_signed_in
+from demo_session import is_signed_in, sync_account, watch_account
 from review_approval import sync_context, invalidate, change_index, frame_digest
 from review_ui import render_checker_review
 from issue_workspace import render_issue_workspace
@@ -41,6 +41,9 @@ st.set_page_config(
     page_icon=str(APP_LOGO_PATH),
     layout="wide",
 )
+sync_account()
+if is_signed_in():
+    watch_account()
 
 EMAIL_PATTERN = re.compile(
     r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@"
@@ -2172,6 +2175,8 @@ def show_product_demo():
     if not DEMO_VIDEO_PATH.is_file():
         st.error(f"The demo video file is missing: {DEMO_VIDEO_PATH.name}")
         return
+    from account_resources import allow_public_video
+    allow_public_video(DEMO_VIDEO_PATH)
     st.video(str(DEMO_VIDEO_PATH))
     st.caption(
         "A short, silent walkthrough with player controls: explore the sample workspace → inspect → review → export."
@@ -2491,28 +2496,28 @@ if not datasets or st.session_state.get("workspace_page") == "home":
         start_title = "Get started with your data"
         start_copy = "Use the sidebar to upload a file, or connect an API in settings."
     else:
-        start_title = "Inspect. Improve. Trust your data."
-        start_copy = "Find quality issues, apply safe corrections, and review every change."
+        start_title = "Every correction deserves a review."
+        start_copy = "Apply available rule-based fixes to a copy, then review changes before submitting for approval."
     welcome_placeholder.markdown(
         f"""
         <section class="welcome-panel" aria-label="Data quality introduction">
           <div class="welcome-copy">
             <div class="welcome-eyebrow">Data quality, made clear</div>
-            <h1 class="welcome-title">Turn data into <span class="welcome-accent">decisions.</span></h1>
+            <h1 class="welcome-title">Inspect. Correct. <span class="welcome-accent">Approve.</span></h1>
             <p class="welcome-description">
               Find missing values, duplicates, invalid formats and outliers in your data.
-              Review the results, apply safe fixes, and export with confidence.
+              Move from findings to reviewed decisions, with you in control.
             </p>
             <div class="welcome-start">
-              <span class="welcome-start-icon" aria-hidden="true">↗</span>
+              <span class="welcome-start-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M12 3 4.5 6v5c0 4.5 3 7.5 7.5 10 4.5-2.5 7.5-5.5 7.5-10V6L12 3Z"/><path d="m8.5 11.5 2.5 2.5 4.5-5"/></svg></span>
               <div><strong>{start_title}</strong>
                 <span class="welcome-start-copy">{start_copy}</span>
               </div>
             </div>
-            <div class="welcome-meta" aria-label="Supported capabilities">
-              <span>CSV &amp; Excel</span><span>API connections</span><span>Configurable checks</span><span>Export options</span>
+            <div class="welcome-meta" role="list" aria-label="Supported capabilities">
+              <span role="listitem">CSV &amp; Excel</span><span role="listitem">API connections</span><span role="listitem">Configurable checks</span><span role="listitem">Export options</span>
             </div>
-            <p class="landing-privacy-note">Your original stays unchanged. Review sensitive columns before sharing or exporting.</p>
+            <p class="landing-privacy-note"><strong>Your original stays unchanged.</strong> Review sensitive columns before sharing or exporting.</p>
           </div>
           <div class="welcome-preview" aria-label="Data quality checks included">
             <div class="welcome-preview-top">
@@ -3051,11 +3056,20 @@ with review_tab, st.container(key="correction_workspace"):
     st.caption("Apply available rule-based corrections to a copy, then review and submit. Your original stays unchanged.")
     from insight_summary import quality_suggestions
     suggested_checks = quality_suggestions(data, enabled_checks, email_columns, date_columns, numeric_columns)
-    if suggested_checks:
+    from business_rule_suggestions import suggest_business_rules
+    suggested_rules = suggest_business_rules(data, custom_rules, numeric_columns, display_sensitive_columns)
+    if suggested_checks or suggested_rules:
         with st.expander("Suggested quality controls", expanded=False):
             st.caption("Consider these in Settings → Inspection checks. Enabling a control does not automatically fix its findings.")
             for suggestion in suggested_checks:
                 st.markdown("- " + translate(suggestion))
+            if suggested_rules:
+                st.markdown("**" + translate("Suggested business rules") + "**")
+                st.caption(translate("Based on field names and types, not business policy. Confirm the rule and its values in Settings; nothing is applied automatically."))
+                for suggestion in suggested_rules:
+                    st.text(translate("Field: {0} · Suggested rule: {1}").format(
+                        suggestion["column"], translate(suggestion["kind"])))
+                    st.caption(translate(suggestion["reason"]))
     fixed_datasets = st.session_state.setdefault("fixed_datasets", {})
     from business_rule_review import render_business_rule_review
     render_business_rule_review(
@@ -3338,7 +3352,7 @@ with preview_tab, st.container(key="preview_workspace"):
 
         st.download_button(
             "Download a clean copy",
-            data=build_cleaned_csv_download,
+            data=build_cleaned_csv_download() if privacy_reviewed else b"",
             file_name=f"{Path(active_dataset).stem}_cleaned.csv",
             mime="text/csv",
             type="primary",

@@ -3,37 +3,13 @@
 import html
 from pathlib import Path
 
-from demo_session import sign_in, sign_out, signed_in_user
+from demo_session import sign_out, signed_in_user
 from localization import native, st, translate
 
 
 def install_presentation_styles():
     css = (Path(__file__).parent / "assets" / "workspace_presentation.css").read_text(encoding="utf-8")
     native.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
-
-
-def show_login_notice():
-    """Demo sign-in: no credentials are collected and history stays disabled."""
-    @native.dialog(translate("Login"), width="small")
-    def notice():
-        def text(value):
-            return html.escape(translate(value))
-
-        native.markdown(
-            '<div class="login-notice">'
-            f'<div class="login-kicker">{text("Organisation access")}</div>'
-            f'<h3>{text("Organisation SSO setup pending")}</h3>'
-            f'<p>{text("Organisation sign-in is not connected yet, so no credentials are collected here. Continue to start a demo session as Sajid.")}</p>'
-            '</div>', unsafe_allow_html=True,
-        )
-        native.caption(translate("Inspection history stays disabled in demo sessions until organisation SSO is configured."))
-        if native.button(translate("Continue without signing in"), key="login_continue", type="primary", width="stretch"):
-            sign_in()
-            native.rerun()
-        if native.button(translate("Close"), key="login_close", width="stretch"):
-            native.rerun()
-
-    notice()
 
 
 def render_signed_out_sidebar():
@@ -116,12 +92,12 @@ def render_account_panel():
     with native.container(key="account_panel"):
         user = signed_in_user()
         if user:
-            name = html.escape(translate(user))
+            name = html.escape(user)
             native.markdown(
                 '<div class="account-card">'
                 f'<span class="account-avatar" aria-hidden="true">{name[:1]}</span>'
                 f'<span class="account-text"><strong>{name}</strong>'
-                f'<small>{html.escape(translate("Logged in · demo session"))}</small></span>'
+                f'<small>{html.escape("حساب Replit موثّق" if native.session_state.get("interface_language") == "العربية" else "Verified Replit account")}</small></span>'
                 '</div>', unsafe_allow_html=True,
             )
         with native.container(key="account_actions", horizontal=True, gap="small", vertical_alignment="center"):
@@ -132,16 +108,19 @@ def render_account_panel():
                     width="stretch", on_click=sign_out,
                 )
             else:
-                native.button(translate("Continue with SSO"), key="sidebar_login",
-                              icon=":material/login:", type="primary", width="stretch", on_click=sign_in)
+                with native.container(key="sidebar_login"):
+                    native.link_button(translate("Continue with SSO"), "/auth/login",
+                                       icon=":material/login:", type="primary", width="stretch")
         if not user:
-            native.caption(translate("Demo sign-in · no credentials required"))
+            native.caption("سجّل الدخول بحساب Replit" if native.session_state.get("interface_language") == "العربية" else "Sign in with your Replit account")
     # Toasts render after the panel so they never shift the panel's position between reruns.
     notice = native.session_state.pop("account_notice", None)
     if notice == "signed_in":
         native.toast(translate("Signed in as {0}.").format(translate(signed_in_user())), icon=":material/check_circle:")
     elif notice == "signed_out":
         native.toast(translate("You have logged out. Your session data was cleared."), icon=":material/logout:")
+    elif notice == "sign_out_pending":
+        native.warning(translate("Your workspace was cleared. Server sign-out is pending; refresh when the service is available."))
     return settings_anchor
 
 

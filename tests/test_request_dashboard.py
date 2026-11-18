@@ -3,15 +3,15 @@ from pathlib import Path
 from io import BytesIO
 from unittest.mock import patch
 from streamlit.testing.v1 import AppTest
-from request_workflow import new_request
+from request_workflow import new_request, sample_seed_state
+from demo_login import signed_in, TEST_SUBJECT
 
 APP = str(Path(__file__).resolve().parents[1] / "app.py")
 
 
 class DashboardTests(unittest.TestCase):
     def app(self):
-        app = AppTest.from_file(APP, default_timeout=45)
-        app.session_state["demo_user"] = "Sajid"
+        app = signed_in(AppTest.from_file(APP, default_timeout=45))
         app.session_state["workspace_page"] = "requests"
         app.session_state["_persistent_demo_ready"] = True
         return app.run()
@@ -24,7 +24,7 @@ class DashboardTests(unittest.TestCase):
         self.clean(app)
         self.assertNotIn("nav_requests", [w.key for w in app.button])
         self.assertEqual(len(app.get("file_uploader")), 0)
-        app.session_state["demo_user"] = "Sajid"
+        signed_in(app)
         app.session_state["workspace_page"] = "requests"
         app.run()
         self.assertEqual(len(app.get("file_uploader")), 0)
@@ -89,9 +89,10 @@ class DashboardTests(unittest.TestCase):
 
     def test_counts_filter_dates_pagination_and_language(self):
         app = self.app()
-        state = {"demo_user": "Sajid", "demo_role": "Submitter"}
+        state = sample_seed_state("Sajid")
         refs = [new_request(state) for _ in range(12)]
         for i, ref in enumerate(refs):
+            state["demo_requests"][ref]["owner_id"] = TEST_SUBJECT
             revision = state["demo_requests"][ref]["revisions"][-1]
             if i > 3:
                 revision["status"] = "Submitted" if i < 8 else "Approved"
@@ -121,10 +122,11 @@ class DashboardTests(unittest.TestCase):
 
     def test_clickable_status_cards(self):
         app = self.app()
-        state = {"demo_user": "Sajid", "demo_role": "Submitter"}
+        state = sample_seed_state("Sajid")
         for status in ("Draft", "Submitted", "Approved", "Ticket approved", "CAB approved", "Simulated", "Rejected"):
             ref = new_request(state)
             state["demo_requests"][ref]["revisions"][-1]["status"] = status
+            state["demo_requests"][ref]["owner_id"] = TEST_SUBJECT
         app.session_state["demo_requests"] = state["demo_requests"]
         app.run()
         for slug, expected in (("draft", ["Draft"]), ("submitted", ["Submitted"]),

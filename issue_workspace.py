@@ -241,7 +241,7 @@ def render_findings(issues, protected, key, data, downloads=True, filename="issu
             with actions[0]:
                 st.download_button(
                     t("Download issue report"),
-                    data=lambda frame=filtered: frame.to_csv(index=False).encode("utf-8-sig"),
+                    data=filtered.to_csv(index=False).encode("utf-8-sig"),
                     file_name=filename, mime="text/csv", key=key + "_download", disabled=filtered.empty,
                 )
         with actions[1 if downloads else 0]:

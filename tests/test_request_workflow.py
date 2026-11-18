@@ -18,7 +18,7 @@ def payload():
 
 class RequestWorkflowTests(unittest.TestCase):
     def setUp(self):
-        self.state = {"demo_user": "Sajid", "demo_role": "Submitter"}
+        self.state = flow.sample_seed_state("Sajid")
         self.ref = flow.new_request(self.state)
         self.data = payload()
         flow.save_draft(self.state, self.ref, self.data)

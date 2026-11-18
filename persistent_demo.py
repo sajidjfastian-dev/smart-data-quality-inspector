@@ -10,6 +10,7 @@ import demo_store
 from public_sample import SOURCE_ID, LABEL
 from review_approval import frame_digest
 from demo_codec import encode
+from account_identity import owns, public_example, auth_state
 
 REASONS = ("Validate remaining findings", "Check source quality", "Review proposed corrections")
 
@@ -24,7 +25,7 @@ def initialize(state):
     local = state.setdefault("demo_requests", {})
     # Never overwrite a cached draft silently: CAS checks detect conflicting edits.
     for reference, record in shared.items():
-        if reference not in local:
+        if (owns(state, record) or public_example(record)) and reference not in local:
             local[reference] = record
     state["_persistent_demo_ready"] = True
 
@@ -32,7 +33,7 @@ def initialize(state):
 def refresh(state):
     shared = demo_store.list_requests()
     local = state.setdefault("demo_requests", {})
-    local.update(shared)
+    local.update({ref: record for ref, record in shared.items() if owns(state, record) or public_example(record)})
 
 
 def register_source(state, frame):
@@ -94,7 +95,9 @@ def save_working(state, reference, payload):
             # A new local draft has only generated metadata; never persist its filename.
             candidate.update(file=LABEL, source_id=SOURCE_ID, synthetic=True,
                              session_id=state["demo_session_id"])
-            candidate["submitted_by"] = "Sajid"
+            candidate["submitted_by"] = state["demo_user"]
+            if state.get("auth_subject"):
+                candidate["owner_id"] = state["auth_subject"]
             demo_store.insert_request(candidate)
         state["demo_requests"][reference] = candidate
         return True
@@ -105,6 +108,8 @@ def save_working(state, reference, payload):
 def transaction(state, reference, operation):
     from request_workflow import WorkflowError
     record = state["demo_requests"][reference]
+    if not owns(state, record):
+        raise WorkflowError("Request not found in this session.")
     # Revalidate a draft before freezing it, even if another widget has mutated
     # a restored in-session object. Raw text can never reach the write below.
     candidate_record = deepcopy(record)
@@ -115,6 +120,7 @@ def transaction(state, reference, operation):
             revision["variant"] = variant
     local = {"demo_user": state["demo_user"], "demo_role": state.get("demo_role","Submitter"),
              "demo_requests": {reference: candidate_record}, "_db_transaction": True}
+    local.update(auth_state(state))
     try:
         result = operation(local)
         candidate = local["demo_requests"][reference]

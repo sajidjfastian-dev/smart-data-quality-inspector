@@ -15,6 +15,7 @@ from review_approval import is_approved
 from review_ui import render_checker_review
 from issue_workspace import render_findings
 from security_guardrails import mask_text_with_dataset
+from account_identity import owns, public_example
 
 
 def t(value, locale=None):
@@ -94,7 +95,7 @@ def _render_approval_steps(state, record, rev, latest, reference, number, snap, 
     can_act = bool(
         latest and snapshot_verified and state.get("demo_user")
         and state.get("demo_role", "Submitter") == "Submitter"
-        and record["submitted_by"] == state.get("demo_user")
+        and owns(state, record)
     )
     ticket = rev.get("ticket")
     ticket_ready = bool(
@@ -278,10 +279,12 @@ def render_request_details(state, reference):
         st.warning(t("Request not found in this session."))
         return
     role = state.get("demo_role", "Submitter")
-    if role == "Submitter" and record["submitted_by"] != state.get("demo_user"):
+    if not owns(state, record) and not public_example(record):
         st.warning(t("Request not found in this session."))
         return
     st.header(reference)
+    if public_example(record):
+        st.info(t("Public sample example · read-only · not your request"))
     from public_sample import SOURCE_ID, ATTRIBUTION, NOTICE
     if record.get("source_id") == SOURCE_ID:
         st.caption(ATTRIBUTION + " " + NOTICE)
@@ -303,7 +306,7 @@ def render_request_details(state, reference):
         st.text(t("Rejection reason") + ": " + rev["rejection_reason"])
     if not latest:
         st.info(t("Historical revision. Decisions are available only for the latest revision."))
-    if role == "Submitter" and latest:
+    if role == "Submitter" and latest and owns(state, record):
         if rev["status"] == "Draft":
             st.button(t("Continue draft"), key="continue_"+reference, type="primary",
                       on_click=open_draft, args=(state, reference))
@@ -364,7 +367,7 @@ def render_request_details(state, reference):
                 st.text(t(reason) + ": " + str(count))
             st.caption(t("Validate in staging and take a verified backup before any real production change. This demo does neither."))
     _render_approval_steps(state, record, rev, latest, reference, number, snap, snapshot_verified)
-    if snapshot_verified:
+    if snapshot_verified and owns(state, record):
         from approval_evidence import render_evidence
         render_evidence(state, reference, number, t, st)
     st.subheader(t("Request timeline"))

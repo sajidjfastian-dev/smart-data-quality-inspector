@@ -16,7 +16,7 @@ from test_request_workflow import payload
 class RowRejectionTests(unittest.TestCase):
     def setUp(self):
         self.p = payload()
-        self.state = {"demo_user": "Sajid", "demo_role": "Submitter"}
+        self.state = flow.sample_seed_state("Sajid")
         self.ref = flow.new_request(self.state)
         flow.save_draft(self.state, self.ref, self.p)
         save_copy(self.state, "data.csv", self.p["original"], self.p["selected"], self.p["changes"])
@@ -77,7 +77,7 @@ class RowRejectionTests(unittest.TestCase):
 
 class EvidenceTests(unittest.TestCase):
     def setUp(self):
-        self.state = {"demo_user": "Sajid", "demo_role": "Submitter"}
+        self.state = flow.sample_seed_state("Sajid")
         self.ref = flow.new_request(self.state)
         flow.save_draft(self.state, self.ref, payload())
         flow.submit(self.state, self.ref)

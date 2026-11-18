@@ -5,7 +5,8 @@
 - [Sensitive data protection](sensitive-data-protection.md) — mask sensitive data in screens and outputs, with user-selectable additional columns.
 - [Browser navigation checks](browser-navigation-checks.md) — verify sidebar navigation in the browser; server-side state alone can conceal UI failures.
 - [Native Streamlit localization](native-streamlit-localization.md) — native control translations must not alter uploaded values or filenames.
-- [Demo login](demo-login.md) — pretend "Sajid" session gates uploads; no credentials, no history; login/logout at sidebar bottom.
+- [Account login scope](demo-login.md) — verified Replit login replaces pretend identity; production approvals remain simulated and private uploads stay session-only.
+- [Streamlit authentication boundary](streamlit-auth-boundary.md) — reconnects must be authenticated before retained widget callbacks execute.
 - [Streamlit markdown margin](streamlit-markdown-margin.md) — non-paragraph HTML in st.markdown collapses via -1rem margin; markup must be literal/f-string to translate.
 - [Synthetic persistence boundary](synthetic-persistence-boundary.md) — trust server-issued source provenance, not matching filenames or data; canonicalize shared writes.
 - [Presentation readability](presentation-readability.md) — the user will demonstrate this application on big screens and projectors.

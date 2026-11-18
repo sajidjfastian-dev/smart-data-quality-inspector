@@ -25,4 +25,4 @@ Use organisation SSO for private history; the user chose to set up its connectio
 
 **Why:** The user chose organisation sign-in and explicitly deferred the SSO connection.
 
-**How to apply:** Do not substitute Replit accounts, shared history, anonymous browser identifiers, or self-asserted identities.
+**How to apply:** The user subsequently approved verified Replit login on 2026-11-18. That changes application sign-in, not permission to persist private files or enable the previously deferred organisation-history feature. Keep private uploads session-only and never use self-asserted identities.

@@ -7,7 +7,7 @@ import request_workflow as flow
 
 class ImplementationTests(unittest.TestCase):
     def ready(self):
-        state = {"demo_user": "Sajid", "demo_role": "Submitter"}
+        state = flow.sample_seed_state("Sajid")
         ref = flow.new_request(state)
         flow.save_draft(state, ref, payload())
         flow.submit(state, ref)

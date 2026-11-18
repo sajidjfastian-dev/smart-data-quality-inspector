@@ -3,6 +3,7 @@ address = "0.0.0.0"
 port = 5000
 headless = true
 maxUploadSize = 500
+trustedUserHeaders = {"X-DQ-Account-Session" = "sub"}
 
 [browser]
 gatherUsageStats = false

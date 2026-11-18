@@ -43,10 +43,8 @@ def run():
             tab("2 · Review & fix")
             page.get_by_role("button", name="Apply automatic fixes").click()
             settle()
-            assert page.get_by_text("Review unresolved issues", exact=True).count() == 1
+            assert page.get_by_text("Review unresolved issues", exact=True).count() == 0
             assert page.get_by_text("Remaining findings", exact=True).count() >= 1
-            page.get_by_text("Review unresolved issues", exact=True).click()
-            settle()
             assert "bad-email" not in page.get_by_test_id("stMain").inner_text()
             tab("3 · Preview & export")
             assert page.get_by_role("button", name="Download a clean copy").is_enabled()

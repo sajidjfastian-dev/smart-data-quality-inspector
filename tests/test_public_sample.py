@@ -51,7 +51,7 @@ class PublicSampleTests(unittest.TestCase):
         assert_frame_equal(fixed["selected"].reset_index(drop=True), original())
         self.assertNotIn("Duplicate Row", fixed["remaining"]["Issue Type"].tolist())
         self.assertNotIn("Inconsistent Date Format", fixed["remaining"]["Issue Type"].tolist())
-        state = {"demo_user":"Sajid", "demo_role":"Submitter"}
+        state = flow.sample_seed_state("Sajid")
         ref = flow.new_request(state)
         flow.save_draft(state, ref, deepcopy(fixed))
         flow.submit(state, ref)
