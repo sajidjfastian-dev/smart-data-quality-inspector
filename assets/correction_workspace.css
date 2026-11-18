@@ -1,0 +1,346 @@
+/* Correction desk — structured workflow rail / warm editorial utility.
+   Load after the application's base styles and workspace_presentation.css.
+   Native labels, tab order, forms, expanders and validation stay intact. */
+.st-key-dashboard_tabs,
+.st-key-correction_workspace {
+    --cw-ink: #194e45;
+    --cw-muted: #49675f;
+    --cw-teal: #146b5c;
+    --cw-teal-hover: #105749;
+    --cw-cream: #fcfaf2;
+    --cw-surface: #fcfdf9;
+    --cw-tint: #eef6f0;
+    --cw-line: #ccdcd2;
+    --cw-gold: #96721d;
+    --cw-gold-line: #d8c58b;
+    --cw-focus: #9a7217;
+}
+
+/* A single ordered rail; no index-dependent selectors or invented labels.
+   Scope to the outer tablist so nested analytical tabs keep their own style. */
+.st-key-dashboard_tabs > div > [role="tablist"] {
+    display: flex;
+    align-items: stretch;
+    gap: 5px;
+    padding: 7px;
+    border: 1px solid var(--cw-line);
+    border-radius: 12px;
+    background: #f2f6ef;
+    box-shadow: none;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #8fae9f #f2f6ef;
+    scroll-padding-inline: 10px;
+}
+
+.st-key-dashboard_tabs > div > [role="tablist"] > [role="tab"] {
+    flex: 1 0 auto;
+    justify-content: center;
+    min-height: 48px;
+    height: auto;
+    padding: 10px 16px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    color: #3f6056;
+    background: transparent;
+    box-shadow: none;
+    transition: none;
+}
+
+.st-key-dashboard_tabs > div > [role="tablist"] > [role="tab"] p {
+    margin: 0;
+    color: inherit;
+    font-size: clamp(15px, .95vw, 19px);
+    line-height: 1.5;
+    font-weight: 650;
+    white-space: nowrap;
+}
+
+.st-key-dashboard_tabs > div > [role="tablist"] > [role="tab"]:hover:not([aria-selected="true"]) {
+    color: var(--cw-ink);
+    background: #e3eee4;
+    border-color: #bfd3c5;
+}
+
+.st-key-dashboard_tabs > div > [role="tablist"] > [role="tab"][aria-selected="true"] {
+    color: #f9fbef;
+    background: var(--cw-teal);
+    border-color: var(--cw-teal);
+    box-shadow: inset 0 -3px #dbc27a;
+}
+
+.st-key-dashboard_tabs > div > [role="tablist"] > [role="tab"][aria-selected="true"] p {
+    color: inherit;
+    font-weight: 700;
+}
+
+.st-key-dashboard_tabs > div > [role="tablist"] > [role="tab"]:focus-visible {
+    outline: 3px solid var(--cw-focus);
+    outline-offset: 1px;
+}
+
+.st-key-dashboard_tabs > [role="tabpanel"],
+.st-key-dashboard_tabs > div > [role="tabpanel"] {
+    padding-block-start: 20px;
+}
+
+/* Open workspace, not another heavy card around every control. */
+.st-key-correction_workspace {
+    min-width: 0;
+    gap: 18px;
+    padding: clamp(16px, 1.6vw, 28px);
+    border: 1px solid var(--cw-line);
+    border-block-start: 3px solid var(--cw-teal);
+    border-radius: 14px;
+    background: var(--cw-surface);
+    color: var(--cw-ink);
+}
+
+.st-key-correction_workspace :is(h2, h3, h4) {
+    color: var(--cw-ink);
+    font-family: inherit;
+    line-height: 1.4;
+    letter-spacing: -.015em;
+    overflow-wrap: anywhere;
+}
+
+.st-key-correction_workspace h2 {
+    font-size: clamp(24px, 1.65vw, 33px);
+    font-weight: 700;
+    padding-block: 0 8px;
+}
+
+.st-key-correction_workspace h3 {
+    font-size: clamp(20px, 1.3vw, 26px);
+    font-weight: 700;
+    padding-block: 6px 9px;
+    border-block-end: 1px solid #dfe8dd;
+}
+
+.st-key-correction_workspace h4 {
+    font-size: clamp(17px, 1.05vw, 21px);
+    font-weight: 650;
+    padding-block: 4px;
+}
+
+.st-key-correction_workspace [data-testid="stCaptionContainer"],
+.st-key-correction_workspace [data-testid="stCaptionContainer"] p {
+    color: var(--cw-muted);
+    font-size: clamp(14px, .9vw, 18px);
+    line-height: 1.65;
+    overflow-wrap: anywhere;
+}
+
+.st-key-correction_workspace [data-testid="stWidgetLabel"] p {
+    color: #2f584b;
+    font-size: clamp(15px, .95vw, 19px);
+    font-weight: 600;
+    line-height: 1.55;
+}
+
+/* Native details/summary expose expansion state to assistive technology.
+   Keep their native disclosure markers and a generous keyboard/click target. */
+.st-key-correction_workspace [data-testid="stExpander"] {
+    border: 1px solid var(--cw-line);
+    border-radius: 11px;
+    background: var(--cw-surface);
+    box-shadow: none;
+}
+
+.st-key-correction_workspace [data-testid="stExpander"] details {
+    border-radius: inherit;
+}
+
+.st-key-correction_workspace [data-testid="stExpander"] summary {
+    min-height: 50px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    background: #f1f6ee;
+    color: var(--cw-ink);
+}
+
+.st-key-correction_workspace [data-testid="stExpander"] summary p {
+    color: inherit;
+    font-size: clamp(16px, 1vw, 20px);
+    font-weight: 650;
+    line-height: 1.5;
+}
+
+.st-key-correction_workspace [data-testid="stExpander"] summary:hover {
+    background: #e7f0e4;
+}
+
+.st-key-correction_workspace [data-testid="stExpander"] details[open] > summary {
+    border-end-start-radius: 0;
+    border-end-end-radius: 0;
+    border-block-end: 1px solid var(--cw-line);
+    background: #edf4e9;
+}
+
+.st-key-correction_workspace [data-testid="stExpanderDetails"] {
+    padding: 16px;
+}
+
+.st-key-correction_workspace [data-testid="stForm"] {
+    min-width: 0;
+    padding: clamp(15px, 1.3vw, 22px);
+    border: 1px solid var(--cw-gold-line);
+    border-inline-start: 3px solid #b29548;
+    border-radius: 10px;
+    background: var(--cw-cream);
+}
+
+/* Style action buttons, not the internal buttons in selectors or tables. */
+.st-key-correction_workspace :is(.stButton, .stDownloadButton, .stFormSubmitButton) > button {
+    min-height: 44px;
+    height: auto;
+    padding: 10px 16px;
+    border: 1px solid #b9d0c1;
+    border-radius: 8px;
+    background: #f4f8ef;
+    color: var(--cw-ink);
+    box-shadow: none;
+    transform: none;
+    transition: none;
+}
+
+.st-key-correction_workspace :is(.stButton, .stDownloadButton, .stFormSubmitButton) > button p {
+    color: inherit;
+    font-size: clamp(15px, .95vw, 19px);
+    font-weight: 650;
+    line-height: 1.5;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.st-key-correction_workspace :is(.stButton, .stDownloadButton, .stFormSubmitButton) > button:hover:not(:disabled) {
+    border-color: var(--cw-teal);
+    background: #e4efe1;
+    color: var(--cw-teal-hover);
+    transform: none;
+}
+
+/* Base stylesheet uses !important for primary actions; match only here. */
+.st-key-correction_workspace :is(.stButton, .stDownloadButton, .stFormSubmitButton) > button[kind="primary"] {
+    background: var(--cw-teal) !important;
+    border-color: var(--cw-teal) !important;
+    color: #f9fbef !important;
+    -webkit-text-fill-color: #f9fbef !important;
+}
+
+.st-key-correction_workspace :is(.stButton, .stDownloadButton, .stFormSubmitButton) > button[kind="primary"]:hover:not(:disabled) {
+    background: var(--cw-teal-hover) !important;
+    border-color: var(--cw-teal-hover) !important;
+}
+
+.st-key-correction_workspace :is(.stButton, .stDownloadButton, .stFormSubmitButton) > button:disabled {
+    opacity: .62;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.st-key-correction_workspace :is(button, input, textarea, select, summary, [role="combobox"], [role="checkbox"], [role="switch"]):focus-visible {
+    outline: 3px solid var(--cw-focus);
+    outline-offset: 3px;
+}
+
+.st-key-correction_workspace :is([data-testid="stTextInput"], [data-testid="stTextArea"], [data-testid="stNumberInput"], [data-testid="stSelectbox"], [data-testid="stMultiSelect"]):focus-within {
+    border-radius: 8px;
+    outline: 2px solid var(--cw-focus);
+    outline-offset: 2px;
+}
+
+.st-key-correction_workspace [data-testid="stMetric"] {
+    min-width: 0;
+    padding: 13px 16px;
+    border: 1px solid var(--cw-line);
+    border-radius: 10px;
+    background: var(--cw-tint);
+    box-shadow: none;
+}
+
+.st-key-correction_workspace [data-testid="stMetricLabel"],
+.st-key-correction_workspace [data-testid="stMetricLabel"] p {
+    color: var(--cw-muted);
+    font-size: clamp(14px, .9vw, 18px);
+    line-height: 1.5;
+}
+
+.st-key-correction_workspace [data-testid="stMetricValue"] {
+    color: var(--cw-ink);
+    font-size: clamp(27px, 1.9vw, 39px);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.3;
+}
+
+.st-key-correction_workspace [data-testid="stDataFrame"] {
+    border: 1px solid var(--cw-line);
+    border-radius: 10px;
+}
+
+.st-key-correction_workspace [data-testid="stAlert"] {
+    border-radius: 9px;
+}
+
+.st-key-correction_workspace [data-testid="stAlert"] p {
+    font-size: clamp(15px, .95vw, 19px);
+    line-height: 1.6;
+}
+
+.st-key-correction_workspace [data-testid="stColumn"] {
+    min-width: 0;
+}
+
+@media (max-width: 767px) {
+    .st-key-dashboard_tabs > div > [role="tablist"] {
+        padding: 6px;
+        gap: 4px;
+        flex-wrap: nowrap;
+    }
+    .st-key-dashboard_tabs > div > [role="tablist"] > [role="tab"] {
+        flex: 0 0 auto;
+        padding: 10px 13px;
+        scroll-margin-inline: 10px;
+    }
+    .st-key-correction_workspace {
+        padding: 14px;
+        gap: 15px;
+    }
+    .st-key-correction_workspace [data-testid="stHorizontalBlock"] {
+        flex-wrap: wrap;
+    }
+    .st-key-correction_workspace [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+        flex: 1 1 100% !important;
+        width: 100% !important;
+    }
+    .st-key-correction_workspace [data-testid="stExpanderDetails"] {
+        padding: 13px;
+    }
+    .st-key-correction_workspace [data-testid="stExpander"] summary {
+        padding-inline: 13px;
+    }
+}
+
+/* Projector-friendly stillness, including inherited button hover motion. */
+@media (prefers-reduced-motion: reduce) {
+    .st-key-correction_workspace *,
+    .st-key-correction_workspace *::before,
+    .st-key-correction_workspace *::after,
+    .st-key-dashboard_tabs > div > [role="tablist"] * {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+@media (forced-colors: active) {
+    .st-key-dashboard_tabs > div > [role="tablist"] > [role="tab"][aria-selected="true"] {
+        border: 2px solid Highlight;
+        border-block-end-width: 4px;
+    }
+    .st-key-correction_workspace :is(button, input, textarea, select, summary):focus-visible,
+    .st-key-dashboard_tabs > div > [role="tablist"] > [role="tab"]:focus-visible {
+        outline-color: Highlight;
+    }
+}

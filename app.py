@@ -2782,7 +2782,7 @@ with native.container(key="inspection_workflow"):
     + html.escape(translate("Export")) + '</b><small>'
     + html.escape(overview_translate("Preview before sharing" if privacy_reviewed else "Privacy review required"))
     + '</small></span></div></div><p class="inspection-workflow-note">'
-    + html.escape(overview_translate("Findings are review candidates, not confirmed errors. Open Issue log for details, then Review & fix to choose corrections."))
+    + html.escape("Findings are review candidates, not confirmed errors. Open Review & fix to resolve findings and review corrections.")
     + '</p></section>',
     unsafe_allow_html=True,
     )
@@ -2910,14 +2910,17 @@ if selected_metric:
                 if duplicate_count > 1_000:
                     st.caption("Showing the first 1,000 duplicate rows.")
 
-overview_tab, issues_tab, review_tab, preview_tab, assistant_tab, insights_tab = st.tabs(
+from correction_workbench import (
+    canonical_allowed_values, build_changes, render_resolution,
+)
+st.markdown("<style>" + Path("assets/correction_workspace.css").read_text() + "</style>", unsafe_allow_html=True)
+overview_tab, review_tab, preview_tab, assistant_tab, insights_tab = st.tabs(
     [
         "1 · Overview",
-        "2 · Issue log",
-        "3 · Review & fix",
-        "4 · Preview & export",
-        "5 · Assistant",
-        "6 · Data insights",
+        "2 · Review & fix",
+        "3 · Preview & export",
+        "4 · AI assistant",
+        "5 · Data insights",
     ],
     key="dashboard_tabs",
     on_change="rerun",
@@ -2936,25 +2939,24 @@ with insights_tab:
             active_dataset, column_signature, parse_numeric_series, display_sensitive_columns,
         )
 
-with issues_tab:
-    render_issue_workspace(datasets, active_dataset, data, issues, fixed_for_review,
-                           fixed_findings, display_sensitive_columns, privacy_reviewed,
-                           approval_context["version"], enabled_checks=enabled_checks,
-                           custom_rules=custom_rules)
-
-with review_tab:
-    st.subheader("🛠️ Review and fix the active file")
-    st.caption(
-        f"Review rows in **{active_dataset}** below. Highlighted cells match "
-        "the current quality findings; exact duplicate rows are highlighted across the row."
-    )
+with review_tab, st.container(key="correction_workspace"):
+    st.subheader("1 · Apply rule-based corrections")
+    st.caption("Correct a working copy, resolve remaining findings, then review the exact version you submit. Your original stays unchanged.")
     fixed_datasets = st.session_state.setdefault("fixed_datasets", {})
     show_fixed_key = f"show_fixed_preview_{column_signature}"
+    current_change_record = st.session_state.get("fix_change_indexes", {}).get(active_dataset)
+    manual_edits = current_change_record is not None and current_change_record["changes"]["Change reason"].str.startswith("Manual correction").any()
+    if manual_edits:
+        st.info("Manual corrections are preserved. Automatic fixes cannot be restarted over them.")
+    notice = st.session_state.pop("resolve_" + column_signature + "_notice", None)
+    if notice:
+        st.success(notice)
     with st.expander("Choose safe fixes to apply", expanded=True):
         fix_duplicates = st.checkbox(
             "Remove exact duplicate rows",
-            value=True,
+            value="duplicates" in enabled_checks,
             key=f"fix_duplicates_{column_signature}",
+            disabled="duplicates" not in enabled_checks,
         )
         fix_whitespace = st.checkbox(
             "Trim leading and trailing whitespace",
@@ -2963,19 +2965,28 @@ with review_tab:
         )
         fix_missing_numeric = st.checkbox(
             "Fill missing values in selected Numeric columns with the median",
-            value=True,
+            value="missing" in enabled_checks,
             key=f"fix_missing_numeric_{column_signature}",
-            disabled=not numeric_columns,
+            disabled=not numeric_columns or "missing" not in enabled_checks,
         )
         fix_date_formats = st.checkbox(
             "Standardize valid dates to YYYY-MM-DD",
-            value=True,
+            value="date" in enabled_checks,
             key=f"fix_date_formats_{column_signature}",
-            disabled=not date_columns,
+            disabled=not date_columns or "date" not in enabled_checks,
         )
+        fix_allowed = st.checkbox(
+            "Normalize case and spacing to allowed values",
+            value=bool(custom_rules), key=f"fix_allowed_{column_signature}",
+            disabled=not any(rule["kind"] == "Allowed values" for rule in custom_rules),
+        )
+        fix_duplicates = fix_duplicates and "duplicates" in enabled_checks
+        fix_missing_numeric = fix_missing_numeric and "missing" in enabled_checks
+        fix_date_formats = fix_date_formats and "date" in enabled_checks
         st.caption(
-            "Invalid emails, invalid dates, and statistical outliers need human review "
-            "and are not changed automatically. Ambiguous dates are also left unchanged."
+            "Only enabled controls drive duplicate, missing-value and date corrections. Whitespace cleanup is optional. "
+            "Median fills are estimates—review them before submission. Allowed-value fixes require one unambiguous match. "
+            "Invalid emails, ambiguous dates, numeric limits and outliers need a verified value, not a guess."
         )
         if st.button(
             "Apply selected fixes",
@@ -2983,12 +2994,13 @@ with review_tab:
             width="stretch",
             icon=":material/auto_fix_high:",
             key=f"apply_fixes_{column_signature}",
-            disabled=not any(
+            disabled=manual_edits or not any(
                 [
                     fix_duplicates,
                     fix_whitespace,
                     fix_missing_numeric and numeric_columns,
                     fix_date_formats and date_columns,
+                    fix_allowed,
                 ]
             ),
         ):
@@ -3026,6 +3038,10 @@ with review_tab:
                     st.error("The fixes could not be applied. Check your settings and try again; the original data has not changed.")
                     st.stop()
                 changes = change_index(data, fixed_copy, fix_duplicates)
+                if fix_allowed:
+                    fixed_copy, allowed_reasons = canonical_allowed_values(fixed_copy, custom_rules)
+                    retained = list(np.flatnonzero(~data.duplicated().to_numpy())) if fix_duplicates else list(range(len(data)))
+                    changes = build_changes(data, fixed_copy, retained, changes, allowed_reasons)
                 fixed_datasets[active_dataset] = fixed_copy
                 st.session_state.setdefault("fix_change_indexes", {})[active_dataset] = {
                     "original": frame_digest(data), "fixed": frame_digest(fixed_copy), "changes": changes,
@@ -3050,6 +3066,18 @@ with review_tab:
             st.rerun()
 
     has_fixed_data = active_dataset in fixed_datasets
+    def scan_correction(candidate):
+        return scan_data(candidate, email_columns=email_columns, date_columns=date_columns,
+                         numeric_columns=numeric_columns, iqr_multiplier=iqr_multiplier,
+                         enabled_checks=enabled_checks, custom_rules=custom_rules)
+
+    render_resolution(
+        st.session_state, active_dataset, data,
+        fixed_datasets.get(active_dataset, data),
+        fixed_findings if has_fixed_data else issues,
+        display_sensitive_columns, scan_correction, "resolve_" + column_signature,
+    )
+    st.subheader("3 · Preview all changes and submit")
     if has_fixed_data:
         show_fixed = st.toggle(
             "Show fixed preview",
@@ -3097,7 +3125,11 @@ with review_tab:
             native.button(translate("Continue as a private request"), key="private_sample_copy",
                           on_click=make_private, args=(st.session_state, request_reference, draft_payload))
         native.caption(translate("Safe fixes are rule-based. Optional AI advice never applies changes automatically."))
-        submit_ack = native.checkbox(translate("Ready to submit this version to the demo approver"),
+        if approval_choice == "Fixed copy":
+            with st.expander("Preview corrected data with highlighted changes"):
+                render_change_preview(approval_data, changes, display_sensitive_columns,
+                                      "before_submit_" + column_signature)
+        submit_ack = native.checkbox(translate("I reviewed all changes and remaining findings; this version is ready for review"),
                                      key=f"submit_ack_{request_reference}_{approval_context['version']}_{approval_choice}")
         if native.button(translate("Submit for review"), key=f"submit_{request_reference}", type="primary",
                          disabled=not submit_ack or not privacy_reviewed or not draft_saved):
@@ -3330,18 +3362,14 @@ with preview_tab:
         st.caption(translate("The download uses this fixed copy without applying additional fixes."))
     else:
         st.caption(
-            "Click once to remove exact duplicates, trim whitespace, and fill missing "
-            "selected numeric values with the median. A cleaned copy is created only "
-            "when you request the download; the original stays unchanged."
+            "No corrections have been applied. This download contains the original version, with protected values masked. "
+            "Apply corrections in Review & fix before downloading a corrected copy."
         )
 
     download_col, batch_col = st.columns([1, 1])
     with download_col:
         def build_cleaned_csv_download():
-            cleaned = preview_fixed if preview_fixed_valid else clean_data(
-                data,
-                numeric_columns=numeric_columns,
-            )
+            cleaned = preview_fixed if preview_fixed_valid else data
             return mask_dataframe(cleaned, sensitive_columns).to_csv(index=False).encode("utf-8-sig")
 
         st.download_button(
@@ -3440,6 +3468,11 @@ with preview_tab:
     )
 
 with assistant_tab:
+    assistant_data = fixed_datasets.get(active_dataset, data)
+    assistant_issues = fixed_findings if active_dataset in fixed_datasets else issues
+    assistant_duplicates = int((assistant_issues["Issue Type"] == "Duplicate Row").sum())
+    assistant_profile = build_column_profile(assistant_data, email_columns, date_columns, numeric_columns) if assistant_tab.open else column_profile
+    assistant_score = max(0, round(100 * (1 - len(assistant_issues) / max(assistant_data.size, 1))))
     assistant_endpoint = st.session_state.get("assistant_api_url", "").strip()
     assistant_model = st.session_state.get("assistant_model_id", "").strip()
     assistant_api_key = st.session_state.get("assistant_api_key", "").strip()
@@ -3454,8 +3487,8 @@ with assistant_tab:
 
     st.subheader("🤖 Data Quality Copilot")
     st.caption(
-        f"Ask questions about **{active_dataset}**. I use its live scan, column profile, "
-        "and current inspection settings to answer."
+        f"Ask questions about **{active_dataset}**. Answers use the current corrected copy and remaining findings when available. "
+        "Use verified advice in Review & fix; the assistant never applies changes on its own."
     )
     if len(enabled_checks) < 5:
         st.caption("Some checks are turned off; answers based on findings only cover enabled checks.")
@@ -3479,7 +3512,7 @@ with assistant_tab:
             "to use your own LLM."
         )
 
-    assistant_history_key = f"quality_assistant_history_{column_signature}"
+    assistant_history_key = f"quality_assistant_history_{column_signature}_{approval_context['version']}"
     if assistant_history_key not in st.session_state:
         st.session_state[assistant_history_key] = [
             {
@@ -3515,8 +3548,8 @@ with assistant_tab:
     context_column, clear_column = st.columns([3, 1])
     with context_column:
         st.caption(translate("Current context · {0} rows · {1} columns · {2} findings · {3}").format(
-            f"{len(data):,}", f"{len(data.columns):,}", f"{len(issues):,}",
-            translate("{0} duplicate row" if duplicate_count == 1 else "{0} duplicate rows").format(f"{duplicate_count:,}")
+            f"{len(assistant_data):,}", f"{len(assistant_data.columns):,}", f"{len(assistant_issues):,}",
+            translate("{0} duplicate row" if assistant_duplicates == 1 else "{0} duplicate rows").format(f"{assistant_duplicates:,}")
             if "duplicates" in enabled_checks else translate("duplicate check off"),
         ))
     with clear_column:
@@ -3538,7 +3571,7 @@ with assistant_tab:
     if user_question:
         history = st.session_state[assistant_history_key]
         try:
-            safe_question = mask_text_with_dataset(user_question, data, display_sensitive_columns)
+            safe_question = mask_text_with_dataset(user_question, assistant_data, display_sensitive_columns)
         except Exception:
             safe_question = MASK
         history.append({"role": "user", "content": safe_question})
@@ -3568,9 +3601,9 @@ with assistant_tab:
                         assistant_api_key,
                         assistant_model,
                         safe_question,
-                        mask_dataframe(data, sensitive_columns),
-                        issues,
-                        column_profile,
+                        mask_dataframe(assistant_data, sensitive_columns),
+                        mask_findings(assistant_issues, sensitive_columns),
+                        assistant_profile,
                         "Active dataset",
                         [{"role": item["role"], "content": mask_text(item["content"].replace(active_dataset, "active dataset"))} for item in history[:-1]],
                         response_language=language(),
@@ -3599,13 +3632,13 @@ with assistant_tab:
                 )
                 if language() == "العربية":
                     answer = answer_arabic_quality_question(
-                        user_question, data, issues, duplicate_count, health_score,
-                        column_profile, active_dataset, enabled_checks,
+                        user_question, assistant_data, assistant_issues, assistant_duplicates, assistant_score,
+                        assistant_profile, active_dataset, enabled_checks,
                     )
                 else:
                     answer = answer_data_quality_question(
-                        user_question, data, issues, duplicate_count, health_score,
-                        column_profile, active_dataset, enabled_checks=enabled_checks,
+                        user_question, assistant_data, assistant_issues, assistant_duplicates, assistant_score,
+                        assistant_profile, active_dataset, enabled_checks=enabled_checks,
                     )
                 assistant_loader.empty()
                 assistant_status.update(
@@ -3614,7 +3647,7 @@ with assistant_tab:
                     expanded=False,
                 )
         try:
-            safe_answer = mask_text_with_dataset(answer, data, display_sensitive_columns)
+            safe_answer = mask_text_with_dataset(answer, assistant_data, display_sensitive_columns)
         except Exception:
             safe_answer = MASK
         history.append({"role": "assistant", "content": safe_answer})
@@ -3636,7 +3669,7 @@ with assistant_tab:
             else:
                 content = message["content"]
             try:
-                content = mask_text_with_dataset(content, data, display_sensitive_columns)
+                content = mask_text_with_dataset(content, assistant_data, display_sensitive_columns)
             except Exception:
                 content = MASK
             st.markdown(mask_text(content))

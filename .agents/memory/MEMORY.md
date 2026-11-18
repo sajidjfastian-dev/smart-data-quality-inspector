@@ -11,3 +11,4 @@
 - [Presentation readability](presentation-readability.md) — the user will demonstrate this application on big screens and projectors.
 - [Charts-only quality overview](quality-overview-scope.md) — uploaded-file Overview should visualize actual findings under configured controls, not tables or recommendations.
 - [Deferred download sessions](deferred-download-session.md) — authorize session-bound downloads on the script thread; deferred workers cannot read the session proxy.
+- [Correction safety](correction-safety.md) — maximize verified corrections, not guesses; preserve manual edits and review the exact submitted version.

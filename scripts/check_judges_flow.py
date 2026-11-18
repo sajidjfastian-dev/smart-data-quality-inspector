@@ -38,8 +38,8 @@ def run():
             settle()
 
         def submit():
-            page.get_by_role("tab", name="3 · Review & fix", exact=True).click()
-            checked("Ready to submit this version to the demo approver")
+            page.get_by_role("tab", name="2 · Review & fix", exact=True).click()
+            checked("I reviewed all changes and remaining findings; this version is ready for review")
             click("Submit for review")
             return page.get_by_role("heading", level=2).first.inner_text()
 
@@ -57,15 +57,13 @@ def run():
         upload("judges-readiness.csv")
         page.locator(".st-key-quality_overview .js-plotly-plot").nth(5).wait_for()
         assert page.locator(".st-key-quality_overview .js-plotly-plot").count() == 6
-        page.get_by_role("tab", name="2 · Issue log", exact=True).click()
-        settle()
-        assert page.get_by_test_id("stException").count() == 0
-        page.get_by_role("tab", name="3 · Review & fix", exact=True).click()
+        assert page.get_by_role("tab", name="2 · Issue log", exact=True).count() == 0
+        page.get_by_role("tab", name="2 · Review & fix", exact=True).click()
         click("Apply selected fixes")
-        page.get_by_role("tab", name="4 · Preview & export", exact=True).click()
+        page.get_by_role("tab", name="3 · Preview & export", exact=True).click()
         settle()
-        assert page.locator(".fixed-preview-cell").count() == 2
-        assert "a@example.test" not in page.locator(".fixed-preview-table").inner_text()
+        assert page.locator(".fixed-preview-cell:visible").count() == 2
+        assert "a@example.test" not in page.locator(".fixed-preview-table:visible").inner_text()
         reference = submit()
         download_disabled()
         assert page.get_by_role("button", name="Approve request", exact=True).is_disabled()
