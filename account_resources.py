@@ -47,6 +47,19 @@ def media_id(path):
     return path.rsplit("/", 1)[-1].rsplit(".", 1)[0]
 
 
+def can_resume(session_id, token):
+    if not token:
+        return False
+    with _lock:
+        entry = _bindings.get(session_id)
+        return bool(entry and entry[0] == token_key(token) and entry[1] > time.time())
+
+
+def has_account_binding(session_id):
+    with _lock:
+        return session_id in _bindings
+
+
 def is_public(path):
     with _lock:
         return path.startswith("/media/") and media_id(path) in _public

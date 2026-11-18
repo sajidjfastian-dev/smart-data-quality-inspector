@@ -210,6 +210,44 @@ class AccountResourceGuard:
         self.app = app
 
     async def __call__(self, scope, receive, send):
+        # Never trust a caller-supplied runtime identity, on HTTP or WebSocket.
+        if scope["type"] in ("http", "websocket"):
+            scope = dict(scope)
+            scope["headers"] = [(k, v) for k, v in scope.get("headers", [])
+                                if k.lower() != b"x-dq-account-session"]
+        if scope["type"] == "websocket":
+            from starlette.websockets import WebSocket
+            from account_resources import can_resume, token_key, has_account_binding
+            websocket = WebSocket(scope, receive, send)
+            cookie = websocket.cookies.get(COOKIE)
+            identity = await asyncio.to_thread(session_identity, cookie) if cookie else None
+            protocols = websocket.headers.get("sec-websocket-protocol", "").split(",")
+            resume = protocols[2].strip() if len(protocols) >= 3 else ""
+            if resume and not identity and not has_account_binding(resume):
+                # A guest may reconnect after a server restart or logout.
+                # Discard the old ID, never resume an unowned workspace.
+                scope["headers"] = [(k, v) for k, v in scope["headers"]
+                                    if k.lower() != b"sec-websocket-protocol"]
+                scope["headers"].append((b"sec-websocket-protocol", ",".join(protocols[:2]).encode()))
+                scope["subprotocols"] = [value.strip() for value in protocols[:2]]
+                resume = ""
+            if resume and (not identity or not can_resume(resume, cookie)):
+                await send({"type": "websocket.close", "code": 4403})
+                return
+            if identity:
+                # Streamlit's own session matcher now also sees a connection-
+                # verified identity; retained script state cannot establish it.
+                scope["headers"].append((b"x-dq-account-session", token_key(cookie).encode()))
+            async def authenticated_receive():
+                message = await receive()
+                if identity and message["type"] in ("websocket.connect", "websocket.receive"):
+                    live = await asyncio.to_thread(session_identity, cookie)
+                    if not live or live["subject"] != identity["subject"]:
+                        await send({"type": "websocket.close", "code": 4401})
+                        return {"type": "websocket.disconnect", "code": 4401}
+                return message
+            await self.app(scope, authenticated_receive, send)
+            return
         if scope["type"] == "http" and scope.get("path", "").startswith(("/media/", "/_stcore/upload_file/")):
             from starlette.requests import Request
             from starlette.responses import Response

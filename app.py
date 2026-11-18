@@ -2483,28 +2483,28 @@ if not datasets or st.session_state.get("workspace_page") == "home":
         start_title = "Get started with your data"
         start_copy = "Use the sidebar to upload a file, or connect an API in settings."
     else:
-        start_title = "Inspect. Improve. Trust your data."
-        start_copy = "Find quality issues, apply safe corrections, and review every change."
+        start_title = "Every correction deserves a review."
+        start_copy = "Apply available rule-based fixes to a copy, then review changes before submitting for approval."
     welcome_placeholder.markdown(
         f"""
         <section class="welcome-panel" aria-label="Data quality introduction">
           <div class="welcome-copy">
             <div class="welcome-eyebrow">Data quality, made clear</div>
-            <h1 class="welcome-title">Turn data into <span class="welcome-accent">decisions.</span></h1>
+            <h1 class="welcome-title">Inspect. Correct. <span class="welcome-accent">Approve.</span></h1>
             <p class="welcome-description">
               Find missing values, duplicates, invalid formats and outliers in your data.
-              Review the results, apply safe fixes, and export with confidence.
+              Move from findings to reviewed decisions, with you in control.
             </p>
             <div class="welcome-start">
-              <span class="welcome-start-icon" aria-hidden="true">↗</span>
+              <span class="welcome-start-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M12 3 4.5 6v5c0 4.5 3 7.5 7.5 10 4.5-2.5 7.5-5.5 7.5-10V6L12 3Z"/><path d="m8.5 11.5 2.5 2.5 4.5-5"/></svg></span>
               <div><strong>{start_title}</strong>
                 <span class="welcome-start-copy">{start_copy}</span>
               </div>
             </div>
-            <div class="welcome-meta" aria-label="Supported capabilities">
-              <span>CSV &amp; Excel</span><span>API connections</span><span>Configurable checks</span><span>Export options</span>
+            <div class="welcome-meta" role="list" aria-label="Supported capabilities">
+              <span role="listitem">CSV &amp; Excel</span><span role="listitem">API connections</span><span role="listitem">Configurable checks</span><span role="listitem">Export options</span>
             </div>
-            <p class="landing-privacy-note">Your original stays unchanged. Review sensitive columns before sharing or exporting.</p>
+            <p class="landing-privacy-note"><strong>Your original stays unchanged.</strong> Review sensitive columns before sharing or exporting.</p>
           </div>
           <div class="welcome-preview" aria-label="Data quality checks included">
             <div class="welcome-preview-top">

@@ -49,6 +49,12 @@ simulations. There is no real production write.
 - A 30-second heartbeat clears expired/revoked workspaces; protected workflow
   actions and download preparation recheck the session. The Streamlit media and
   upload endpoints reject absent, expired and revoked account sessions.
+- WebSocket reconnects must match the account session that owns the Streamlit
+  workspace before any widget callback can run. Every incoming authenticated
+  message rechecks revocation/expiry. A middleware-generated runtime identity
+  also protects Streamlit's native session matching; caller-supplied identity
+  headers are stripped. Keep the configured `trustedUserHeaders` mapping and
+  authentication middleware together.
 - Private uploads, corrections, evidence, rules and assistant state stay in
   Streamlit memory and are cleared on account change/logout/expiry. They are not
   resurrected from database history. Approved files already downloaded cannot
@@ -64,6 +70,10 @@ simulations. There is no real production write.
 Focused checks exercise signed OIDC responses, replay/state/nonce/issuer/audience/
 expiry rejection, matching-name isolation, profile fallback, account changes,
 revocation, approval order and masking/snapshot safeguards.
+The real-runtime WebSocket regression also attempts cross-account and anonymous
+session resumption with a pending callback, and revokes an active connection.
+Run it in a fresh process with
+`PYTHONPATH=.:tests python -m unittest tests.test_account_websocket_runtime`.
 
 The preview authorization route was checked against the live Replit discovery
 and authorization endpoints. No real person's interactive login was completed
