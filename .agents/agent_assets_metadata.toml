@@ -28,3 +28,31 @@ mtime_ms = 1794967559858
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:c6580a21-09fe-4762-bb04-2899d2de9424/68fe038e-38a6-402f-be96-8ffe664f93d1/39ee566b-1991-40cc-a6f7-c4bcadee4eb5"
 storage_version_token = "1794967560766655"
 content_type = "text/html"
+
+[[outputs]]
+id = "3o4c_nJo5FXcb3ERrF6fH"
+uri = "file://generated-artifacts/judges-presentation.pdf"
+type = "pdf"
+title = "Judges Presentation — 2 Slides"
+description = "Projector-ready widescreen presentation in teal and gold: product value, visible corrections and the live approval-to-download workflow."
+logical_id = "00b71379-1c92-4f3c-b3a8-601dc1fd760e"
+content_hash = "sha256:d9df453f23448a95c3ee6fb57305c9fb68dd2422a86a7cae2a836b35ff18accc"
+size = 110193
+mtime_ms = 1794967791289
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:c6580a21-09fe-4762-bb04-2899d2de9424/00b71379-1c92-4f3c-b3a8-601dc1fd760e/e39948ad-be10-42b8-8392-38f0793d65a3"
+storage_version_token = "1794967801767991"
+content_type = "application/pdf"
+
+[[outputs]]
+id = "VZsC2QoLkxYWicfLF0qvu"
+uri = "file://generated-artifacts/judges-presentation.html"
+type = "html"
+title = "Presentation — HTML Version"
+description = "Self-contained source version of the two-slide presentation for viewing or editing."
+logical_id = "abea97b0-4470-4e10-a90f-8818c125d6e7"
+content_hash = "sha256:4eae8721a1fece7a7ad49c23127017f0fa8de84b9feda9d505dabfd8460e6fae"
+size = 8590
+mtime_ms = 1794967781978
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:c6580a21-09fe-4762-bb04-2899d2de9424/abea97b0-4470-4e10-a90f-8818c125d6e7/71c3af23-1583-4ae6-a34d-37d7f60a51db"
+storage_version_token = "1794967802372034"
+content_type = "text/html"
