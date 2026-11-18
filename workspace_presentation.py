@@ -124,11 +124,6 @@ def render_account_panel():
                 f'<small>{html.escape(translate("Logged in · demo session"))}</small></span>'
                 '</div>', unsafe_allow_html=True,
             )
-        else:
-            native.markdown(
-                f'<div class="account-hint">{html.escape(translate("Log in to upload and inspect data."))}</div>',
-                unsafe_allow_html=True,
-            )
         with native.container(key="account_actions", horizontal=True, gap="small", vertical_alignment="center"):
             settings_anchor = native.container(key="settings_anchor", width="content")
             if user:
