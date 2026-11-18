@@ -56,40 +56,30 @@ with sync_playwright() as p:
     if not page.get_by_role("checkbox", name="Normalize case and spacing to allowed values", exact=True).is_checked():
         check("Normalize case and spacing to allowed values")
     click("Apply selected fixes")
-    assert page.get_by_role("heading", name="2 · Resolve remaining findings").is_visible()
-    page.get_by_text("All matching rows", exact=True).click()
-    settle()
-    page.get_by_role("textbox", name="Verified replacement value", exact=True).fill("still-invalid")
-    check("I verified this value and the selected rows")
-    click("Save correction and recheck")
-    assert page.get_by_text("This value still fails an active rule", exact=False).is_visible()
-    page.get_by_role("textbox", name="Verified replacement value", exact=True).fill("verified@example.test")
-    click("Save correction and recheck")
-    if not page.get_by_text("No findings remain under the enabled quality controls.", exact=True).is_visible():
-        print(page.locator(".st-key-correction_workspace").inner_text()[:8000])
-    assert page.get_by_text("No findings remain under the enabled quality controls.", exact=True).is_visible()
-    assert page.get_by_role("button", name="Apply selected fixes", exact=True).is_disabled()
+    assert page.get_by_role("heading", name="2 · Review automatic results").is_visible()
+    assert page.get_by_role("textbox", name="Verified replacement value", exact=True).count() == 0
+    assert page.get_by_role("button", name="Save correction and recheck", exact=True).count() == 0
     page.get_by_role("heading", name="1 · Apply rule-based corrections").scroll_into_view_if_needed()
     page.screenshot(path="/tmp/correction-workbench-desktop.png")
     page.get_by_role("tab", name="3 · Preview & export", exact=True).click()
     settle()
-    assert page.locator(".fixed-preview-cell:visible").count() == 4
+    assert page.locator(".fixed-preview-cell:visible").count() == 2
     titles = page.locator(".fixed-preview-cell:visible").evaluate_all("els=>els.map(e=>e.title)")
     assert "Normalized to allowed value" in titles
-    assert any("Manual correction" in title for title in titles)
-    assert "verified@example.test" not in page.locator(".fixed-preview-table:visible").inner_text()
+    assert not any("Manual correction" in title for title in titles)
+    assert "invalid" not in page.locator(".fixed-preview-table:visible").inner_text()
     page.locator(".fixed-preview-table:visible").scroll_into_view_if_needed()
     page.screenshot(path="/tmp/correction-preview-desktop.png")
     page.get_by_role("tab", name="4 · AI assistant", exact=True).click()
     settle()
     page.get_by_role("button").filter(has_text="What should I fix first?").click()
     settle()
-    assert "0 findings" in page.locator('[role="tabpanel"]:visible').inner_text()
+    assert "2 findings" in page.locator('[role="tabpanel"]:visible').inner_text()
     page.get_by_role("tab", name="2 · Review & fix", exact=True).click()
     settle()
     for width, height in [(1280, 900), (390, 844)]:
         page.set_viewport_size({"width": width, "height": height})
         settle()
         assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
-    print("PASS custom-rule normalization, duplicate removal, median fill, rejected invalid edit, bulk manual correction, masked fix tooltips, current-copy assistant, responsive layout.")
+    print("PASS automatic normalization, duplicate removal, median fill, no manual editor, unresolved emails preserved, masked fix tooltips, current-copy assistant and responsive layout.")
     browser.close()

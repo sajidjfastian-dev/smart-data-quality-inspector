@@ -2,11 +2,11 @@
 name: Correction safety
 description: Boundaries for automatic fixes, manual corrections and pre-submission review.
 ---
-The user wants findings integrated into Review & fix rather than a standalone Issue log, with maximum useful fixes, manual or assisted resolution, and a complete change preview before submission.
+The user wants findings integrated into Review & fix rather than a standalone Issue log, with maximum useful automatic fixes and a complete change preview before submission. The user subsequently specified: “dont give option to type any things manually for correction ssytem should do all auto whereever applicable.”
 
 **Why:** The user wants a clear path from quality rules to corrected data and confidence before reviewer handoff.
 
-**How to apply:** Keep automatic corrections limited to deterministic normalization and explicitly selected strategies. Never invent email addresses, guess ambiguous dates, or clamp business values merely to pass a rule. Leave those decisions to verified source values and disclose remaining findings. Optional AI advice does not apply changes.
+**How to apply:** Do not offer typed replacement values or manual cell editors. Keep automatic corrections limited to deterministic normalization and explicitly selected strategies. Never invent email addresses, guess ambiguous dates, or clamp business values merely to pass a rule. Disclose unresolved findings for source verification. Optional AI advice does not apply changes. Synthetic demonstration files should contain realistic, automatically correctable defects, without mocking scan results.
 
 Preserve manual corrections when offering later automated actions, and keep correction history relative to the original rows through duplicate removal.
 

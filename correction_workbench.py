@@ -1,8 +1,6 @@
 """Correction lineage and a masked, rule-aware resolution workspace."""
 import numpy as np
 import pandas as pd
-import hashlib
-from decimal import Decimal, InvalidOperation
 from review_approval import frame_digest, invalidate
 from localization import native as st
 
@@ -70,10 +68,10 @@ def save_copy(state, dataset, original, corrected, changes):
 
 
 def render_resolution(state, dataset, original, current, findings, protected, scan, key):
-    """Edit one or many finding cells, without ever displaying protected values."""
+    """Explain unresolved findings without accepting manually entered corrections."""
     from issue_workspace import render_findings
-    st.subheader("2 · Resolve remaining findings")
-    st.caption("Use a verified source value, not a guess. Every saved correction is rechecked against your active rules.")
+    st.subheader("2 · Review automatic results")
+    st.caption("Applicable corrections are applied by the system. Remaining findings require source verification; no values are guessed.")
     counts = st.columns(3)
     counts[0].metric("Original rows", f"{len(original):,}")
     counts[1].metric("Current rows", f"{len(current):,}")
@@ -89,76 +87,6 @@ def render_resolution(state, dataset, original, current, findings, protected, sc
     if record and (record["original"] != frame_digest(original) or record["fixed"] != frame_digest(current)):
         st.error("The correction history no longer matches this file. Restore the original before continuing.")
         return
-    cells = findings[findings["Column Name"].isin(current.columns)]
-    with st.expander("Correct a value or a group of findings", expanded=True):
-        mode = st.radio("Choose correction", ["Resolve findings", "Edit any cell"],
-                        index=1 if cells.empty else 0, horizontal=True, key=key+"_mode")
-        if mode == "Resolve findings" and cells.empty:
-            st.info("No cell findings remain. Choose Edit any cell to adjust a previously corrected value.")
-        else:
-            options = list(current.columns) if mode == "Edit any cell" else list(cells["Column Name"].unique())
-            column = st.selectbox("Column to correct", options, key=key+"_col_"+mode)
-            if mode == "Edit any cell":
-                kind = "Verified source value"
-                chosen = [int(st.number_input("Row to correct", min_value=1, max_value=len(current),
-                                              step=1, key=key+"_single_row"))]
-            else:
-                kinds = list(cells.loc[cells["Column Name"] == column, "Issue Type"].unique())
-                kind = st.selectbox("Finding to resolve", kinds, key=key+"_kind")
-                selected = cells[(cells["Column Name"] == column) & (cells["Issue Type"] == kind)]
-                positions = sorted(set(selected["Row Number"].astype(int)))
-                st.caption(f"{len(positions):,} affected rows. The replacement is applied only to the rows you select.")
-                scope = st.radio("Correction scope", ["Choose rows", "All matching rows"], horizontal=True, key=key+"_scope")
-                chosen = positions if scope == "All matching rows" else st.multiselect(
-                    "Rows to correct", positions, key=key+"_rows_"+str(column)+"_"+str(kind))
-            form_version = hashlib.sha256(
-                repr((frame_digest(current), column, kind, chosen)).encode()
-            ).hexdigest()[:16]
-            with st.form(key+"_manual_form_"+form_version):
-                replacement = st.text_input("Verified replacement value",
-                                            type="password" if column in protected else "default")
-                confirmed = st.checkbox("I verified this value and the selected rows")
-                apply = st.form_submit_button("Save correction and recheck", disabled=not chosen)
-            if apply:
-                if not confirmed or not replacement.strip():
-                    st.error("Enter a verified, non-empty value and confirm the selected rows.")
-                else:
-                    candidate = current.copy()
-                    col = current.columns.get_loc(column)
-                    try:
-                        value = replacement
-                        if pd.api.types.is_numeric_dtype(current[column]) and not pd.api.types.is_bool_dtype(current[column]):
-                            number = Decimal(replacement)
-                            if not number.is_finite():
-                                raise ValueError
-                            value = int(number) if number == number.to_integral_value() else float(number)
-                            if not np.isfinite(float(value)):
-                                raise ValueError
-                            candidate[column] = candidate[column].astype(object)
-                        elif pd.api.types.is_bool_dtype(current[column]):
-                            if replacement.casefold() not in ("true", "false"):
-                                raise ValueError
-                            value = replacement.casefold() == "true"
-                        else:
-                            candidate[column] = candidate[column].astype(object)
-                        candidate.iloc[[p-1 for p in chosen], col] = value
-                        remaining, _ = scan(candidate)
-                        invalid = remaining[
-                            remaining["Row Number"].isin(chosen)
-                            & (remaining["Column Name"] == column)
-                            & (remaining["Issue Type"] != "Numeric Outlier")
-                        ]
-                        if not invalid.empty:
-                            st.error("This value still fails an active rule for these cells. Check the expected format or allowed values.")
-                        else:
-                            reasons = {(p-1, col): "Manual correction · " + kind for p in chosen}
-                            changes = build_changes(original, candidate, retained_rows(original, record),
-                                                    record["changes"] if record else None, reasons)
-                            save_copy(state, dataset, original, candidate, changes)
-                            state[key+"_notice"] = f"Saved {len(chosen):,} cell correction(s); {len(remaining):,} findings remain."
-                            st.rerun()
-                    except (ValueError, TypeError, OverflowError, InvalidOperation):
-                        st.error("Enter a valid value for this column's data type.")
     if (findings["Issue Type"] == "Duplicate Row").any():
         if st.button("Remove remaining exact duplicate rows", key=key+"_dedup"):
             keep = ~current.duplicated().to_numpy()
@@ -169,10 +97,9 @@ def render_resolution(state, dataset, original, current, findings, protected, sc
             st.rerun()
     with st.expander("Assistance for unresolved findings"):
         st.markdown(
-            "**Missing values:** use the source system or an agreed business default; numeric medians are estimates.\n\n"
-            "**Emails and dates:** obtain the correct source value; do not invent an address or guess ambiguous dates.\n\n"
-            "**Allowed values:** choose the exact approved category. Case-only differences can be normalized automatically.\n\n"
-            "**Numeric limits and outliers:** verify the amount against its source. A valid outlier may remain for reviewer assessment.\n\n"
-            "**Must contain:** verify the full value rather than appending text just to pass a check.\n\n"
-            "Use the **AI assistant** tab for questions about the remaining findings. Advice never changes your data automatically."
+            "**Automatically correctable:** exact duplicates, surrounding whitespace, selected numeric gaps using the median, "
+            "unambiguous valid dates, and unique case/spacing matches to allowed values.\n\n"
+            "**Source verification needed:** invalid emails, ambiguous dates, missing text, numeric limits and outliers. "
+            "Correct these in the source system and upload a new file, or disclose them to the reviewer.\n\n"
+            "The **AI assistant** can explain remaining findings. It cannot invent missing facts or bypass review."
         )

@@ -2968,7 +2968,7 @@ with insights_tab:
 
 with review_tab, st.container(key="correction_workspace"):
     st.subheader("1 · Apply rule-based corrections")
-    st.caption("Correct a working copy, resolve remaining findings, then review the exact version you submit. Your original stays unchanged.")
+    st.caption("Let the system apply available corrections, review the results, then confirm the exact version you submit. Your original stays unchanged.")
     fixed_datasets = st.session_state.setdefault("fixed_datasets", {})
     show_fixed_key = f"show_fixed_preview_{column_signature}"
     current_change_record = st.session_state.get("fix_change_indexes", {}).get(active_dataset)
@@ -3013,7 +3013,7 @@ with review_tab, st.container(key="correction_workspace"):
         st.caption(
             "Only enabled controls drive duplicate, missing-value and date corrections. Whitespace cleanup is optional. "
             "Median fills are estimates—review them before submission. Allowed-value fixes require one unambiguous match. "
-            "Invalid emails, ambiguous dates, numeric limits and outliers need a verified value, not a guess."
+            "Invalid emails, ambiguous dates, numeric limits and outliers remain flagged for source verification."
         )
         if st.button(
             "Apply selected fixes",
@@ -3241,7 +3241,7 @@ with review_tab, st.container(key="correction_workspace"):
             "Findings resolved",
             f"{max(issue_count - len(review_issues), 0):,}",
         )
-        result_metrics[2].metric("Needs manual review", f"{len(review_issues):,}")
+        result_metrics[2].metric("Needs source verification", f"{len(review_issues):,}")
         st.caption(
             "The original file remains available in the workspace; only the exported copy is fixed."
         )
@@ -3515,7 +3515,7 @@ with assistant_tab:
     st.subheader("🤖 Data Quality Copilot")
     st.caption(
         f"Ask questions about **{active_dataset}**. Answers use the current corrected copy and remaining findings when available. "
-        "Use verified advice in Review & fix; the assistant never applies changes on its own."
+        "The system applies available rule-based fixes in Review & fix. The assistant explains findings without inventing corrections."
     )
     if len(enabled_checks) < 5:
         st.caption("Some checks are turned off; answers based on findings only cover enabled checks.")
