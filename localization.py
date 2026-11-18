@@ -31,6 +31,7 @@ _ROOT = Path(__file__).resolve().parent
 _ARABIC = json.loads((_ROOT / "assets" / "translations" / "ar.json").read_text(encoding="utf-8"))
 _ARABIC.update({
     "Business rules": "قواعد العمل",
+    "Business rules are saved to your account. Other settings stay in this session.": "تُحفظ قواعد العمل في حسابك. تبقى الإعدادات الأخرى لهذه الجلسة فقط.",
     "Undo restores the whole row; removed duplicates stay removed.": "يعيد التراجع الصف كاملاً؛ وتبقى الصفوف المكررة المحذوفة محذوفة.",
     "Business rule": "قاعدة عمل",
     "Your business rules": "قواعد العمل الخاصة بك",
@@ -46,9 +47,15 @@ _ARABIC.update({
     "Duplicate-row removal is already included. Select it in Review & fix.": "إزالة الصفوف المكررة مضمنة بالفعل. حددها في المراجعة والتصحيح.",
     "Rule not understood. Try “age must be at least 18”, “status must be one of Open, Closed”, or “trim whitespace in name”.": "تعذر فهم القاعدة. جرّب “age must be at least 18” أو “status must be one of Open, Closed” أو “trim whitespace in name”.",
     "Included business rules": "قواعد العمل المضمنة",
+    "Rules are private to your account and kept until you delete them. Rule values are saved; uploaded files remain session-only.": "قواعد العمل خاصة بحسابك وتبقى حتى تحذفها. تُحفظ قيم القواعد؛ وتبقى الملفات المرفوعة لهذه الجلسة فقط.",
     "These rules are selected by default. Change the selection for a file in Review & fix.": "هذه القواعد محددة افتراضياً. يمكنك تغيير التحديد لكل ملف في المراجعة والتصحيح.",
     "Removes extra spaces from text values.": "يزيل المسافات الزائدة من القيم النصية.",
     "Public sample": "عينة عامة",
+    "Your saved rules changed in another session. Reload them before editing.": "تغيرت قواعدك المحفوظة في جلسة أخرى. أعد تحميلها قبل التعديل.",
+    "Reload saved rules": "إعادة تحميل القواعد المحفوظة",
+    "Saved rules could not be loaded. Please retry.": "تعذر تحميل القواعد المحفوظة. يرجى المحاولة مجدداً.",
+    "Rules could not be saved. Your previous saved rules are unchanged; please retry.": "تعذر حفظ القواعد. لم تتغير قواعدك المحفوظة السابقة؛ يرجى المحاولة مجدداً.",
+    "Retry loading rules": "إعادة محاولة تحميل القواعد",
     "All rules are selected by default. Uncheck a rule for this file, then apply fixes again.": "جميع القواعد محددة افتراضياً. ألغِ تحديد أي قاعدة لهذا الملف، ثم أعد تطبيق التصحيحات.",
     "The ZIP contains each file's current corrected copy, or its original if no fixes were applied.": "يحتوي الملف المضغوط على النسخة المصححة الحالية لكل ملف، أو النسخة الأصلية إذا لم تُطبّق تصحيحات.",
     "Prepare workspace batch ZIP": "إعداد ملف مضغوط لبيانات مساحة العمل",

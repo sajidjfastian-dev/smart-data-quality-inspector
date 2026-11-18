@@ -20,7 +20,7 @@ from data_insights import render_data_insights
 from change_preview import render_change_preview
 from quality_overview import overview_translate, render_quality_overview
 from workspace_presentation import install_presentation_styles, remove_legacy_footer, render_account_panel, render_signed_out_sidebar, render_signed_in_sidebar
-from demo_session import is_signed_in, sync_account, watch_account
+from demo_session import is_signed_in, sync_account, watch_account, sign_out
 from review_approval import sync_context, invalidate, change_index, frame_digest
 from review_ui import render_checker_review
 from issue_workspace import render_issue_workspace
@@ -44,6 +44,19 @@ st.set_page_config(
 sync_account()
 if is_signed_in():
     watch_account()
+    if "_business_rules_version" not in st.session_state:
+        from business_rule_store import load_into_state
+        from demo_store import DemoStoreError
+        try:
+            load_into_state(st.session_state)
+        except (DemoStoreError, ValueError):
+            st.error("Saved rules could not be loaded. Please retry.")
+            if st.button("Retry loading rules"):
+                st.rerun()
+            if st.button("Sign out"):
+                sign_out()
+                st.rerun()
+            st.stop()
 
 EMAIL_PATTERN = re.compile(
     r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@"
@@ -1933,7 +1946,7 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
             )
             st.markdown("## Settings")
             st.caption("Configure business rules, review data privacy, and manage optional connections.")
-            st.caption("Settings stay in this session.")
+            st.caption("Business rules are saved to your account. Other settings stay in this session.")
             business_tab, privacy_tab, model_tab, api_tab = st.tabs(
                 ["Business rules", "Data privacy", "LLM assistant", "Data APIs"],
                 key="settings_navigation", on_change="rerun",

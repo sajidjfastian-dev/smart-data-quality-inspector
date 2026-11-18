@@ -2,11 +2,11 @@
 name: Business-rule correction boundaries
 description: Why session-wide business rules use exact columns and conservative correction proposals.
 ---
-Pre-upload business rules are session-scoped and match exact column names, not inferred or similar names.
+Pre-upload business rules match exact column names, not inferred or similar names.
 
 **Why:** The user wants rules immediately after login, before there is a schema to inspect. Fuzzy matches could apply business policy to the wrong field in another file.
 
-**How to apply:** Show missing-column/type conflicts instead of silently guessing a target; discard session rules on logout.
+**How to apply:** Show missing-column/type conflicts instead of silently guessing a target. Clear in-memory rules on logout without deleting the account's saved definitions.
 
 Keep check-only constraints separate from automatic corrections. An explicit mapping or normalization must not violate another constraint on the same column; conflicting proposals remain unchanged.
 

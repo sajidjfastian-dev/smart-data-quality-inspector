@@ -1,4 +1,4 @@
-"""Session-wide business rules, using the existing custom-rule contract."""
+"""Account-owned business rules, using the existing custom-rule contract."""
 import json
 import math
 from html import escape
@@ -179,10 +179,21 @@ def apply_rules(data, rules):
     return corrected, reasons
 
 
+def invalidate_rule_results(state):
+    from review_approval import invalidate
+    for dataset in list(state.get("review_contexts", {})):
+        invalidate(state, dataset)
+    for key in ("quality_scan_cache", "review_scan_cache", "fixed_export_cache"):
+        state[key] = {}
+    state["batch_export_cache"] = None
+    state["fixed_datasets"] = {}
+
+
 def render_editor(st, state, data=None, protected_columns=()):
     from localization import translate
     from business_rule_text import parse_rule_text, rule_as_text
-
+    from business_rule_store import load_into_state, save as save_rules
+    from demo_store import DemoStoreError, DemoConflict
     rules = state.setdefault("business_rules", [])
     reset_input = state.pop("business_rule_reset_input", None)
     if reset_input:
@@ -195,36 +206,17 @@ def render_editor(st, state, data=None, protected_columns=()):
     input_key = f"business_rule_text_{editing_id or 'new'}"
     protected = {str(c) for c in protected_columns}
     hide_values = bool(selected and str(selected["column"]) in protected and selected.get("expected"))
-
     st.markdown("### Business rules")
+    st.caption("Rules are private to your account and kept until you delete them. Rule values are saved; uploaded files remain session-only.")
     st.caption("Use the examples and the exact column name. Rules apply to matching files.")
     if state.pop("business_rules_notice", False):
         st.success("Rules updated. Apply automatic fixes again to prepare a fresh correction preview.")
     if hide_values:
         st.info("Protected values are hidden. Re-enter the full rule to update it.")
-    with st.form(f"business_rule_editor_{editing_id or 'new'}"):
-        text = st.text_input(
-            "Business rule",
-            value=rule_as_text(selected) if selected and not hide_values else "",
-            placeholder=translate("Example: age must be at least 18"),
-            key=input_key,
-        )
-        st.caption('Examples: “age must be at least 18”, “status must be one of Open, Closed”, “replace pending with approved in status”, or “trim whitespace in name”.')
-        save = st.form_submit_button("Save business rule" if selected else "Add business rule")
     if selected and st.button("Cancel editing", key="cancel_business_rule_edit"):
         state["business_rule_reset_input"] = input_key
         state.pop("business_rule_edit_id", None)
         st.rerun()
-
-    def invalidate_changes():
-        from review_approval import invalidate
-        for dataset in list(state.get("review_contexts", {})):
-            invalidate(state, dataset)
-        for key in ("quality_scan_cache", "review_scan_cache", "fixed_export_cache"):
-            state[key] = {}
-        state["batch_export_cache"] = None
-        state["fixed_datasets"] = {}
-        state["business_rules_notice"] = True
 
     def has_manual_corrections():
         for dataset, record in state.get("fix_change_indexes", {}).items():
@@ -233,19 +225,62 @@ def render_editor(st, state, data=None, protected_columns=()):
                 return True
         return False
 
+    if state.get("_business_rules_conflict"):
+        st.warning("Your saved rules changed in another session. Reload them before editing.")
+        if st.button("Reload saved rules"):
+            try:
+                if has_manual_corrections():
+                    raise ValueError("Existing manual corrections are preserved. Resolve them before changing business rules.")
+                load_into_state(state)
+                invalidate_rule_results(state)
+                state.pop("_business_rules_conflict", None)
+                state.pop("business_rule_edit_id", None)
+                state["business_rule_reset_input"] = input_key
+                state["business_rules_notice"] = True
+                st.rerun()
+            except DemoStoreError:
+                st.error("Saved rules could not be loaded. Please retry.")
+            except ValueError as error:
+                st.error(str(error))
+
+    with st.form(f"business_rule_editor_{editing_id or 'new'}"):
+        text = st.text_input(
+            "Business rule",
+            value=rule_as_text(selected) if selected and not hide_values else "",
+            placeholder=translate("Example: age must be at least 18"),
+            key=input_key,
+        )
+        st.caption('Examples: “age must be at least 18”, “status must be one of Open, Closed”, “replace pending with approved in status”, or “trim whitespace in name”.')
+        save = st.form_submit_button("Save business rule" if selected else "Add business rule",
+                                     disabled=bool(state.get("_business_rules_conflict")))
+
+    def persist(updated):
+        saved, version = save_rules(state.get("_auth_session"), state.get("auth_subject"),
+                                    updated, state["_business_rules_version"])
+        state["business_rules"] = saved
+        state["_business_rules_version"] = version
+        invalidate_rule_results(state)
+        state["business_rules_notice"] = True
+
     if save:
         try:
             if has_manual_corrections():
                 raise ValueError("Existing manual corrections are preserved. Resolve them before changing business rules.")
             rule = parse_rule_text(text, selected["id"] if selected else None)
+            updated = [dict(existing) for existing in rules]
             if selected:
-                rules[rules.index(selected)] = rule
+                updated[rules.index(selected)] = rule
             else:
-                rules.append(rule)
-            invalidate_changes()
+                updated.append(rule)
+            persist(updated)
             state["business_rule_reset_input"] = input_key
             state.pop("business_rule_edit_id", None)
             st.rerun()
+        except DemoConflict:
+            state["_business_rules_conflict"] = True
+            st.rerun()
+        except DemoStoreError:
+            st.error("Rules could not be saved. Your previous saved rules are unchanged; please retry.")
         except ValueError as error:
             st.error(str(error))
 
@@ -258,19 +293,28 @@ def render_editor(st, state, data=None, protected_columns=()):
                 st.markdown("<span>" + escape(text) + "</span>", unsafe_allow_html=True)
                 st.caption(translate("Automatic correction" if rule["mode"] == "Correct automatically" else "Check only"))
             with edit:
-                if st.button("Edit", key=f"business_rule_edit_{rule['id']}"):
+                if st.button("Edit", key=f"business_rule_edit_{rule['id']}",
+                             disabled=bool(state.get("_business_rules_conflict"))):
                     state["business_rule_edit_id"] = rule["id"]
                     state["business_rule_reset_input"] = f"business_rule_text_{rule['id']}"
                     st.rerun()
             with delete:
-                if st.button("Delete", key=f"business_rule_delete_{rule['id']}"):
+                if st.button("Delete", key=f"business_rule_delete_{rule['id']}",
+                             disabled=bool(state.get("_business_rules_conflict"))):
                     if has_manual_corrections():
                         st.error("Existing manual corrections are preserved. Resolve them before changing business rules.")
                     else:
-                        rules.remove(rule)
-                        invalidate_changes()
-                        if editing_id == rule["id"]:
-                            state.pop("business_rule_edit_id", None)
-                            state["business_rule_reset_input"] = input_key
-                        st.rerun()
-    return [{**r, "enabled": True} for r in rules]
+                        try:
+                            persist([dict(existing) for existing in rules if existing["id"] != rule["id"]])
+                            if editing_id == rule["id"]:
+                                state.pop("business_rule_edit_id", None)
+                                state["business_rule_reset_input"] = input_key
+                            st.rerun()
+                        except DemoConflict:
+                            state["_business_rules_conflict"] = True
+                            st.rerun()
+                        except DemoStoreError:
+                            st.error("Rules could not be saved. Your previous saved rules are unchanged; please retry.")
+                        except ValueError as error:
+                            st.error(str(error))
+    return [{**r, "enabled": True} for r in state["business_rules"]]

@@ -6,6 +6,12 @@ CREATE TABLE IF NOT EXISTS dq_auth_records (
     expires_at timestamptz NOT NULL
 );
 CREATE INDEX IF NOT EXISTS dq_auth_records_expiry ON dq_auth_records(expires_at);
+CREATE TABLE IF NOT EXISTS dq_account_business_rules (
+    owner_id text PRIMARY KEY,
+    rules jsonb NOT NULL CHECK (jsonb_typeof(rules) = 'array'),
+    version bigint NOT NULL CHECK (version > 0),
+    updated_at timestamptz NOT NULL DEFAULT now()
+);
 CREATE TABLE IF NOT EXISTS dq_demo_sessions (
     id text PRIMARY KEY,
     created_at timestamptz NOT NULL DEFAULT now(),
