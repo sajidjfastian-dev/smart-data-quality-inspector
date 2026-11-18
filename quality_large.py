@@ -140,7 +140,13 @@ def scan_large_data(data, email_columns, date_columns, numeric_columns,
                          "Review this value; confirm it or replace with a validated value.")
                 report(f"Checking numeric outliers · {column} · rows {end:,} of {rows:,}")
 
+    from business_rules import findings as business_findings
+    business_rows = business_findings(data, [r for r in custom_rules if r.get("business")])
+    if business_rows:
+        frames.append(pd.DataFrame(business_rows, columns=issue_columns))
     for rule in custom_rules:
+        if rule.get("business"):
+            continue
         column, kind, expected = rule["column"], rule["kind"], rule["expected"]
         if column not in data.columns:
             continue

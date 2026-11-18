@@ -67,7 +67,8 @@ def answer_extended(question, frame, findings, original, original_findings, chan
                   "numeric": "Invalid numeric values"}
         active = ", ".join(v for k, v in labels.items() if k in enabled) or "None"
         inactive = ", ".join(v for k, v in labels.items() if k not in enabled) or "None"
-        custom = "\n".join(f"- {_label(r['column'])}: {r['kind']} — {_label(r['expected'])}" for r in rules) or "- None"
+        from business_rules import visible_rules
+        custom = "\n".join(f"- {_label(r['column'])}: {r['kind']} — {_label(r['expected'])}" for r in visible_rules(rules, protected)) or "- None"
         return f"**Active built-in checks:** {active}.\n\n**Disabled checks:** {inactive}.\n\n**Custom rules**\n{custom}\n\nSettings → Inspection checks controls these results. Disabled checks are not evidence that a file is error-free."
     if any(term in q for term in ("ready", "submit", "approval", "approve", "download", "export", "production")):
         if not enabled and not rules:

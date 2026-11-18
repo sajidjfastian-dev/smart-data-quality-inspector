@@ -15,3 +15,4 @@
 - [Public demo data](public-demo-data.md) — genuine public observations with labelled, reversible demo defects; preserve attribution and old history.
 - [Private approval evidence](approval-evidence.md) — optional revision-bound attachments stay session-only, never in public sample history.
 - [Reusable business rules](business-rule-scope.md) — define rules in Settings before upload; reuse across data sources with explicit applicability.
+- [Business rule safety](business-rule-safety.md) — exact-column session rules; check-only constraints never authorize invented facts or conflicting corrections.

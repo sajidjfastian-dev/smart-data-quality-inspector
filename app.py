@@ -872,7 +872,11 @@ def scan_data(
                 for position in range(row_count):
                     report_progress(position, "Checking numeric outliers", column)
 
+    from business_rules import findings as business_findings
+    issues.extend(business_findings(data, [r for r in custom_rules if r.get("business")]))
     for rule in custom_rules:
+        if rule.get("business"):
+            continue
         column, kind, expected = rule["column"], rule["kind"], rule["expected"]
         if column not in data.columns:
             continue
@@ -1110,7 +1114,7 @@ def column_rule_signature(email_columns, date_columns, numeric_columns, iqr_mult
         tuple(sorted(repr(column) for column in numeric_columns)),
         float(iqr_multiplier),
         tuple(sorted(enabled_checks)) if enabled_checks is not None else None,
-        tuple((repr(rule["column"]), rule["kind"], rule["expected"])
+        tuple((repr(rule["column"]), rule["kind"], rule["expected"], rule.get("mode"), rule.get("enabled", True))
               for rule in (custom_rules or [])),
     )
 
@@ -1920,10 +1924,15 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
             st.markdown("## Settings")
             st.caption("Choose inspection checks, review data privacy, and manage optional connections.")
             st.caption("Settings stay in this session.")
-            checks_tab, privacy_tab, model_tab, api_tab = st.tabs(
-                ["Inspection checks", "Data privacy", "LLM assistant", "Data APIs"],
+            checks_tab, business_tab, privacy_tab, model_tab, api_tab = st.tabs(
+                ["Inspection checks", "Business rules", "Data privacy", "LLM assistant", "Data APIs"],
                 key="settings_navigation", on_change="rerun",
             )
+            if st.session_state.pop("business_rule_reset_selection", False):
+                st.session_state["business_rule_selection"] = 0
+            with business_tab:
+                from business_rules import render_editor
+                session_rules = render_editor(st, st.session_state, active_data)
             sensitive_columns = set(detected_sensitive or ())
             privacy_reviewed = False
             with privacy_tab:
@@ -2044,7 +2053,7 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                         invalidate(st.session_state, name)
                 st.session_state["approval_global_checks"] = global_checks
                 if columns is None:
-                    st.info("Upload a file or load a sample to configure columns and custom rules.")
+                    st.info("Define business rules now in Business rules, or load a file to configure detected column types.")
                     with api_tab:
                         render_api_settings()
                     return None
@@ -2085,6 +2094,9 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                 )
                 rules_key = f"custom_rules_{column_signature}"
                 rules = st.session_state.setdefault(rules_key, [])
+                # Session-wide rules are merged below, never edited through the
+                # legacy per-file form (including when restoring a draft).
+                rules[:] = [rule for rule in rules if not rule.get("business")]
                 rule_choices = ["New rule"] + [
                     f"{index + 1}. {rule['column']} · {rule['kind']}"
                     for index, rule in enumerate(rules)
@@ -2143,6 +2155,7 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                         width="stretch", on_click=delete_custom_rule,
                         args=(rules_key, f"edit_rule_{column_signature}", selected_rule - 1),
                     )
+                rules = list(rules) + [rule for rule in session_rules if rule["column"] in columns]
                 settings_rules = column_rule_signature(email_columns, date_columns, numeric_columns,
                                                        iqr_multiplier, enabled_checks, rules)
                 sync_context(st.session_state, active_dataset, active_data, fixed_data,
@@ -3078,12 +3091,12 @@ with review_tab, st.container(key="correction_workspace"):
         fix_allowed = st.checkbox(
             "Normalize case and spacing to allowed values",
             value=True, key=f"fix_allowed_{column_signature}",
-            disabled=not any(rule["kind"] == "Allowed values" for rule in custom_rules),
+            disabled=not any(rule["kind"] == "Allowed values" and not rule.get("business") for rule in custom_rules),
         )
         fix_duplicates = fix_duplicates and "duplicates" in enabled_checks
         fix_missing_numeric = fix_missing_numeric and "missing" in enabled_checks
         fix_date_formats = fix_date_formats and "date" in enabled_checks
-        fix_allowed = fix_allowed and any(rule["kind"] == "Allowed values" for rule in custom_rules)
+        fix_allowed = fix_allowed and any(rule["kind"] == "Allowed values" and not rule.get("business") for rule in custom_rules)
         st.caption(
             "Only enabled controls drive duplicate, missing-value and date corrections. Whitespace cleanup is optional. "
             "Median fills are estimates—review them before submission. Allowed-value fixes require one unambiguous match. "
@@ -3104,6 +3117,8 @@ with review_tab, st.container(key="correction_workspace"):
                     fix_missing_numeric and numeric_columns,
                     fix_date_formats and date_columns,
                     fix_allowed,
+                    any(rule.get("business") and rule.get("mode") == "Correct automatically"
+                        and rule["column"] in data.columns for rule in custom_rules),
                 ]
             ),
         ):
@@ -3145,6 +3160,10 @@ with review_tab, st.container(key="correction_workspace"):
                     fixed_copy, allowed_reasons = canonical_allowed_values(fixed_copy, custom_rules)
                     retained = list(np.flatnonzero(~data.duplicated().to_numpy())) if fix_duplicates else list(range(len(data)))
                     changes = build_changes(data, fixed_copy, retained, changes, allowed_reasons)
+                from business_rules import apply_rules
+                fixed_copy, business_reasons = apply_rules(fixed_copy, custom_rules)
+                retained = list(np.flatnonzero(~data.duplicated().to_numpy())) if fix_duplicates else list(range(len(data)))
+                changes = build_changes(data, fixed_copy, retained, changes, business_reasons)
                 if fix_duplicates:
                     retained = list(np.flatnonzero(~data.duplicated().to_numpy()))
                     estimated = np.zeros(len(fixed_copy), dtype=bool)
@@ -3420,6 +3439,7 @@ with assistant_tab:
 
     from assistant_ui import render_assistant_header
     from assistant_answers import answer_extended
+    from business_rules import visible_rules
     selected_prompt = render_assistant_header(
         active_dataset in fixed_datasets, len(assistant_data), len(assistant_issues), assistant_remote_enabled,
     )
@@ -3525,7 +3545,7 @@ with assistant_tab:
                             "original_rows": len(data), "current_rows": len(assistant_data),
                             "original_findings": len(issues), "remaining_findings": len(assistant_issues),
                             "applied_changes": assistant_changes["Change reason"].value_counts().to_dict(),
-                            "enabled_checks": sorted(enabled_checks), "custom_rules": custom_rules,
+                            "enabled_checks": sorted(enabled_checks), "custom_rules": visible_rules(custom_rules, display_sensitive_columns),
                             "privacy_reviewed": privacy_reviewed,
                             "workflow": "Automatic fixes → preview → submit for simulated review → simulated ticket and CAB approval → approved download. No production writes.",
                         }, ensure_ascii=False), assistant_data, display_sensitive_columns),

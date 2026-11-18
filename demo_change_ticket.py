@@ -8,6 +8,9 @@ FIX_REASONS = (
     "Trimmed whitespace", "Filled missing value", "Standardized date",
     "Removed duplicate row", "Removed duplicate after normalization",
     "Normalized to allowed value",
+    "Business rule: Allowed values", "Business rule: Value mapping",
+    "Business rule: Trim whitespace", "Business rule: Lowercase",
+    "Business rule: Uppercase", "Applied compatible business rules",
 )
 
 

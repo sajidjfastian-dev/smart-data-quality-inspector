@@ -45,7 +45,7 @@ def canonical_allowed_values(frame, rules):
     result = frame.copy()
     reasons = {}
     for column in frame.columns:
-        relevant = [r for r in rules if r["column"] == column and r["kind"] == "Allowed values"]
+        relevant = [r for r in rules if r["column"] == column and r["kind"] == "Allowed values" and not r.get("business")]
         if not relevant:
             continue
         allowed_sets = [{v.strip() for v in r["expected"].split(",") if v.strip()} for r in relevant]
@@ -56,6 +56,10 @@ def canonical_allowed_values(frame, rules):
                 continue
             matches = [v for v in allowed if v.casefold() == value.strip().casefold()]
             if len(matches) == 1:
+                from business_rules import valid
+                constraints = [r for r in rules if r["column"] == column and r.get("business") and r.get("enabled", True)]
+                if not all(valid(matches[0], r) for r in constraints):
+                    continue
                 result.iloc[pos, col] = matches[0]
                 reasons[(pos, col)] = "Normalized to allowed value"
     return result, reasons
