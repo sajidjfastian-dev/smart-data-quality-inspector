@@ -28,10 +28,10 @@ class SummaryLogicTests(unittest.TestCase):
     def test_suggest_only_applicable_disabled_controls(self):
         data = pd.DataFrame({"email": ["a"], "amount": [1], "date": ["2024-01-01"]})
         suggestions = quality_suggestions(data, {"missing", "duplicates"}, ["email"], ["date"], ["amount"])
-        self.assertEqual(len(suggestions), 3)
+        self.assertEqual(len(suggestions), 4)
         self.assertTrue(any("source verification" in text for text in suggestions))
         self.assertTrue(any("not automatic" in text for text in suggestions))
-        self.assertEqual(quality_suggestions(data, {"missing", "duplicates", "email", "date", "outliers"},
+        self.assertEqual(quality_suggestions(data, {"missing", "duplicates", "email", "date", "outliers", "numeric"},
                                              ["email"], ["date"], ["amount"]), [])
 
 

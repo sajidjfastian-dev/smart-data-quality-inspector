@@ -43,6 +43,11 @@ GUIDANCE = {
         "An outlier is a review candidate, not a confirmed error.",
         "Check units, context and source evidence before changing the value.",
     ),
+    "Invalid Number": (
+        "A value in a selected numeric column is malformed or non-finite.",
+        "Numeric calculations and outlier checks exclude this value.",
+        "Verify the intended number in the source; it is not automatically replaced.",
+    ),
     "Custom": (
         "A value does not meet a configured column rule.",
         "Custom rules represent the expectations selected for this file.",

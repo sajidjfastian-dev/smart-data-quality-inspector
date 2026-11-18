@@ -63,7 +63,8 @@ def answer_extended(question, frame, findings, original, original_findings, chan
         )
     if any(term in q for term in ("rules", "controls", "checks are", "checks enabled", "checks active")):
         labels = {"missing": "Missing values", "duplicates": "Exact duplicates", "email": "Email formats",
-                  "date": "Dates and date formats", "outliers": "Numeric outliers"}
+                  "date": "Dates and date formats", "outliers": "Numeric outliers",
+                  "numeric": "Invalid numeric values"}
         active = ", ".join(v for k, v in labels.items() if k in enabled) or "None"
         inactive = ", ".join(v for k, v in labels.items() if k not in enabled) or "None"
         custom = "\n".join(f"- {_label(r['column'])}: {r['kind']} — {_label(r['expected'])}" for r in rules) or "- None"

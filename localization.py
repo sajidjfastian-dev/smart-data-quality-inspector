@@ -30,6 +30,19 @@ from request_approval_translations import REQUEST_APPROVAL_ARABIC
 _ROOT = Path(__file__).resolve().parent
 _ARABIC = json.loads((_ROOT / "assets" / "translations" / "ar.json").read_text(encoding="utf-8"))
 _ARABIC.update({
+    "Invalid numeric values": "القيم الرقمية غير الصالحة",
+    "Invalid Number": "رقم غير صالح",
+    "Validating numeric values": "التحقق من القيم الرقمية",
+    "Accepts finite numbers, optional currency prefixes, comma groups of three, parentheses for negatives, and scientific notation. Other formats require source verification.": "يقبل الأرقام المنتهية ورموز العملة الاختيارية والفواصل كل ثلاث خانات والأقواس للأرقام السالبة والصيغة العلمية. تتطلب التنسيقات الأخرى التحقق من المصدر.",
+    "Verify the numeric value in the source; malformed or non-finite values are not corrected automatically.": "تحقق من القيمة الرقمية في المصدر؛ لا تُصحح القيم المشوهة أو غير المنتهية تلقائياً.",
+    "Selected columns are checked for invalid numeric values and outliers, and used for numeric fixes.": "تُفحص الأعمدة المحددة بحثاً عن القيم الرقمية غير الصالحة والمتطرفة وتُستخدم للإصلاحات الرقمية.",
+    "Enable Invalid numeric values to find malformed numbers in selected numeric columns.": "فعّل فحص القيم الرقمية غير الصالحة للعثور على الأرقام المشوهة في الأعمدة الرقمية المحددة.",
+    "Removed duplicate after normalization": "إزالة صف مكرر بعد توحيد القيم",
+    "Normalized to allowed value": "توحيد القيمة إلى قيمة مسموح بها",
+    "A value in a selected numeric column is malformed or non-finite.": "قيمة في عمود رقمي محدد مشوهة أو غير منتهية.",
+    "Numeric calculations and outlier checks exclude this value.": "تستبعد الحسابات الرقمية وفحوص القيم المتطرفة هذه القيمة.",
+    "Verify the intended number in the source; it is not automatically replaced.": "تحقق من الرقم المقصود في المصدر؛ لا يُستبدل تلقائياً.",
+    "Only enabled controls drive duplicate, missing-value and date corrections. Whitespace cleanup is optional. Median fills are estimates—review them before submission. Allowed-value fixes require one unambiguous match. Exact duplicates are also removed if cleanup makes rows identical, except rows with estimated fills. Invalid numbers and emails, ambiguous dates, numeric limits and outliers remain flagged for source verification.": "تتحكم الفحوص المفعلة فقط في إصلاح التكرار والقيم المفقودة والتواريخ. إزالة المسافات اختيارية. التعبئة بالوسيط تقديرية؛ راجعها قبل التقديم. يتطلب توحيد القيم المسموح بها تطابقاً واحداً واضحاً. تُحذف الصفوف المكررة بعد التنظيف باستثناء الصفوف ذات القيم التقديرية. تبقى الأرقام والبريد غير الصالحين والتواريخ الملتبسة والحدود والقيم المتطرفة للمراجعة في المصدر.",
     "2 · Review & fix": "2 · مراجعة وإصلاح",
     "3 · Preview & export": "3 · المعاينة والتصدير",
     "4 · AI assistant": "4 · المساعد الذكي",

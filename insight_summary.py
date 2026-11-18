@@ -34,6 +34,8 @@ def quality_suggestions(data, enabled, email_columns, date_columns, numeric_colu
         suggestions.append("Enable Invalid and inconsistent dates; unambiguous valid dates can be standardized.")
     if numeric_columns and "outliers" not in enabled:
         suggestions.append("Enable Numeric outliers to flag unusual values for review, not automatic changes.")
+    if numeric_columns and "numeric" not in enabled:
+        suggestions.append("Enable Invalid numeric values to find malformed numbers in selected numeric columns.")
     if not email_columns and any("email" in str(c).lower() or "e_mail" in str(c).lower() for c in data.columns):
         suggestions.append("Select the email column in Inspection checks to assess email formats.")
     if not date_columns and any("date" in str(c).lower() for c in data.columns):

@@ -6,7 +6,8 @@ from review_approval import ApprovalRequired, frame_digest, is_approved
 
 FIX_REASONS = (
     "Trimmed whitespace", "Filled missing value", "Standardized date",
-    "Removed duplicate row",
+    "Removed duplicate row", "Removed duplicate after normalization",
+    "Normalized to allowed value",
 )
 
 

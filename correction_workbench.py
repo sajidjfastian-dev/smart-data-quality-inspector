@@ -13,14 +13,17 @@ def retained_rows(original, record):
     return [position for position in range(len(original)) if position not in removed]
 
 
-def build_changes(original, corrected, row_map, previous=None, reasons=None):
+def build_changes(original, corrected, row_map, previous=None, reasons=None, removed_reasons=None):
     """Describe net changes using original row positions, including repeated edits."""
     reasons = reasons or {}
     prior = {}
+    prior_removed = {}
     if previous is not None:
         for old_row, _, col, reason in previous.itertuples(index=False, name=None):
             if pd.notna(col):
                 prior[(int(old_row)-1, int(col))] = reason
+            else:
+                prior_removed[int(old_row)-1] = reason
     rows = []
     for col in range(len(original.columns)):
         before = original.iloc[row_map, col].reset_index(drop=True)
@@ -31,7 +34,8 @@ def build_changes(original, corrected, row_map, previous=None, reasons=None):
             reason = reasons.get((pos, col), prior.get((origin, col), "Manual correction"))
             rows.append((origin+1, pos+1, col, reason))
     kept = set(row_map)
-    rows.extend((pos+1, None, None, "Removed duplicate row")
+    removed_reasons = removed_reasons or {}
+    rows.extend((pos+1, None, None, removed_reasons.get(pos, prior_removed.get(pos, "Removed duplicate row")))
                 for pos in range(len(original)) if pos not in kept)
     return pd.DataFrame(rows, columns=["Original row", "Corrected row", "Column position", "Change reason"])
 
@@ -99,7 +103,7 @@ def render_resolution(state, dataset, original, current, findings, protected, sc
         st.markdown(
             "**Automatically correctable:** exact duplicates, surrounding whitespace, selected numeric gaps using the median, "
             "unambiguous valid dates, and unique case/spacing matches to allowed values.\n\n"
-            "**Source verification needed:** invalid emails, ambiguous dates, missing text, numeric limits and outliers. "
+            "**Source verification needed:** invalid numbers and emails, ambiguous dates, missing text, numeric limits and outliers. "
             "Correct these in the source system and upload a new file, or disclose them to the reviewer.\n\n"
             "The **AI assistant** can explain remaining findings. It cannot invent missing facts or bypass review."
         )

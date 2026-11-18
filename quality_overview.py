@@ -20,6 +20,7 @@ BUILTINS = {
     "email": ("Email formats", ("Invalid Email",)),
     "date": ("Date formats", ("Invalid Date", "Inconsistent Date Format")),
     "outliers": ("Numeric outliers", ("Numeric Outlier",)),
+    "numeric": ("Invalid numeric values", ("Invalid Number",)),
 }
 TEAL = "#17796b"
 GOLD = "#b38b2d"
@@ -71,6 +72,7 @@ def aggregate_quality(data, issues, enabled_checks, custom_rules=(),
         "email": len(set(email_columns) & set(columns)),
         "date": len(set(date_columns) & set(columns)),
         "outliers": len(set(numeric_columns) & set(columns)),
+        "numeric": len(set(numeric_columns) & set(columns)),
     }
     types = issues["Issue Type"].astype(str) if not issues.empty else pd.Series(dtype=str)
     type_counts = Counter(types)

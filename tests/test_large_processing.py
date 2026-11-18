@@ -100,6 +100,32 @@ class LargeProcessingTests(unittest.TestCase):
         self.assertEqual(expected[1], actual[1])
         assert_frame_equal(expected[0], actual[0], check_dtype=False)
 
+    def test_numeric_validation_and_numeric_rules_match_both_paths(self):
+        data = pd.DataFrame({"amount": [
+            "1,200", "$20", "(2.5)", "1e3", "1,23", "12 USD",
+            "inf", True, None, " ", "-4", ".5",
+        ]})
+        checks = {"numeric", "outliers", "missing"}
+        rules = [{"column": "amount", "kind": "Minimum number", "expected": "0"}]
+        args = (data, set(), set(), {"amount"})
+        expected = HELPERS["scan_data"](*args, enabled_checks=checks, custom_rules=rules)
+        actual = self.fast_scan(*args, checks, rules)
+        assert_frame_equal(expected[0], actual[0], check_dtype=False)
+        invalid = expected[0].query("`Issue Type` == 'Invalid Number'")
+        self.assertEqual(invalid["Row Number"].tolist(), [5, 6, 7, 8])
+        self.assertEqual(set(expected[0].query("`Issue Type` == 'Custom: Minimum number'")["Row Number"]),
+                         {3, 5, 6, 7, 8, 11})
+        off = HELPERS["scan_data"](*args, enabled_checks=set(), custom_rules=[])
+        self.assertTrue(off[0].empty)
+
+    def test_numeric_validation_across_chunk_boundary(self):
+        data = pd.DataFrame({"amount": ["1,000"] * 100_005})
+        data.iloc[99_999, 0] = "1,00"
+        data.iloc[100_000, 0] = "inf"
+        data.iloc[100_004, 0] = "-42"
+        issues, _ = self.fast_scan(data, set(), set(), {"amount"}, {"numeric"})
+        self.assertEqual(issues["Row Number"].tolist(), [100_000, 100_001])
+
     def test_upload_reports_real_csv_read_progress(self):
         uploaded = BytesIO(b"value\n" + b"1234567890\n" * 500_000)
         uploaded.name = "large.csv"

@@ -72,6 +72,6 @@ def render_change_preview(frame, changes, protected, key):
     st.caption(t("Highlighted cells were corrected. Hover over a cell to see the applied fix."))
     st.markdown(preview_html(safe, changes, start, t), unsafe_allow_html=True)
     st.caption(t("Rows {0}–{1} of {2}. Downloads include all rows.").format(start + 1, start + len(safe), len(frame)))
-    removed = int((changes["Change reason"] == "Removed duplicate row").sum())
+    removed = int(changes["Column position"].isna().sum())
     if removed:
         st.caption(t("Removed duplicate rows: {0}. Removed rows are not present in the corrected preview.").format(removed))

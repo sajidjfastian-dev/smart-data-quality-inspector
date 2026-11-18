@@ -40,6 +40,15 @@ class TicketTests(unittest.TestCase):
         self.assertNotIn("Secret", json.dumps(ticket))
         self.assertNotIn("private", json.dumps(ticket))
 
+    def test_automatic_normalizations_are_supported_without_values(self):
+        self.changes.loc[self.changes["Column position"].notna(), "Change reason"] = "Normalized to allowed value"
+        self.changes.loc[self.changes["Column position"].isna(), "Change reason"] = "Removed duplicate after normalization"
+        self.accept()
+        ticket = self.generate()
+        self.assertEqual(ticket["fixes"]["Normalized to allowed value"], 1)
+        self.assertEqual(ticket["fixes"]["Removed duplicate after normalization"], 1)
+        self.assertNotIn("Secret", json.dumps(ticket))
+
     def test_each_invalidation_marks_ticket_and_blocks_generation(self):
         mutations = [
             lambda: self.sync(rules=("new rule",)),

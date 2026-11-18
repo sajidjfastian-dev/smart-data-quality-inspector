@@ -66,7 +66,8 @@ class DownloadInteractionTests(unittest.TestCase):
     def settle(self):
         self.page.wait_for_timeout(500)
         self.page.get_by_role("button", name="Stop", exact=True).wait_for(state="hidden")
-        self.assertEqual(self.page.get_by_test_id("stException").count(), 0)
+        exceptions = self.page.get_by_test_id("stException")
+        self.assertEqual(exceptions.count(), 0, exceptions.all_inner_texts())
 
     def click(self, name):
         self.page.get_by_role("button", name=name, exact=True).click()
@@ -176,6 +177,64 @@ class DownloadInteractionTests(unittest.TestCase):
         self.assertEqual(frame.amount.tolist(), [20., 20., 20.])
         self.assertTrue(frame["name"].eq("••••").all())
         self.assertEqual(frame.signup_date.tolist(), ["2024-03-18", "2024-04-19", "2024-03-18"])
+
+    def test_csv_numeric_findings_and_approved_version(self):
+        data = pd.DataFrame({
+            "region": [" north ", "north", "south", "east", "west", "central", "other"],
+            "amount": ["10", "10", "20", "30", "40", "50", "1,23"],
+            "email": ["a@example.com", "a@example.com", "b@example.com", "c@example.com",
+                      "d@example.com", "e@example.com", "invalid"],
+        })
+        self.upload([{"name": "inspection.csv", "mimeType": "text/csv",
+                      "buffer": data.to_csv(index=False).encode()}])
+        self.tab("2 · Review & fix")
+        self.click("Apply automatic fixes")
+        panel = self.page.locator('[role="tabpanel"]:visible')
+        panel.get_by_role("heading", name="Review changes", exact=True).wait_for()
+        self.assertIn("Removed duplicate after normalization", panel.inner_text())
+        self.assertIn("2", panel.get_by_test_id("stMetric").filter(has_text="Remaining findings").inner_text())
+        panel.get_by_text("Review unresolved issues", exact=True).click()
+        self.assertIn("Showing 2 issues", panel.inner_text())
+        self.assertNotIn("a@example.com", panel.inner_text())
+        self.page.get_by_text("I reviewed all changes and remaining findings; this version is ready for review", exact=True).click()
+        self.settle()
+        self.click("Submit for review")
+        self.page.get_by_text("I reviewed the changes and remaining findings", exact=True).click()
+        self.settle()
+        self.click("Approve request")
+        self.click("Confirm")
+        self.click("Approve ticket")
+        self.click("Confirm")
+        self.assertTrue(self.page.get_by_role("button", name="Download approved file", exact=True).is_disabled())
+        self.click("Approve CAB step")
+        self.click("Confirm")
+        _, payload = self.download("Download approved file")
+        frame = pd.read_csv(BytesIO(payload))
+        self.assertEqual(len(frame), 6)
+        self.assertIn("1,23", frame["amount"].tolist())
+        self.assertTrue(frame["email"].eq("••••").all())
+        self.assertNotIn(b"a@example.com", payload)
+
+    def test_excel_numeric_findings_survive_correction(self):
+        data = pd.DataFrame({"region": [" A ", "A", "B", "C", "D", "E", "F"],
+                             "amount": ["10", "10", "20", "30", "40", "50", "1,23"]})
+        buffer = BytesIO()
+        data.to_excel(buffer, index=False)
+        self.upload([{"name": "inspection.xlsx", "mimeType": "application/octet-stream",
+                      "buffer": buffer.getvalue()}])
+        self.tab("2 · Review & fix")
+        self.click("Apply automatic fixes")
+        panel = self.page.locator('[role="tabpanel"]:visible')
+        panel.get_by_role("heading", name="Review changes", exact=True).wait_for()
+        self.assertIn("Removed duplicate after normalization", panel.inner_text())
+        self.assertIn("1", panel.get_by_test_id("stMetric").filter(has_text="Remaining findings").inner_text())
+        panel.get_by_text("Review unresolved issues", exact=True).click()
+        self.assertIn("Showing 1 issues", panel.inner_text())
+        self.tab("3 · Preview & export")
+        _, payload = self.download("Download a clean copy")
+        frame = pd.read_csv(BytesIO(payload))
+        self.assertEqual(len(frame), 6)
+        self.assertIn("1,23", frame["amount"].tolist())
 
     def test_privacy_blocks_exports_until_reviewed(self):
         self.upload()

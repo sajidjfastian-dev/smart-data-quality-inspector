@@ -22,6 +22,7 @@ def scan_large_data(data, email_columns, date_columns, numeric_columns,
         + (len(email_columns) if "email" in enabled_checks else 0)
         + (2 * len(date_columns) if "date" in enabled_checks else 0)
         + (len(numeric_columns) if "outliers" in enabled_checks else 0)
+        + (len(numeric_columns) if "numeric" in enabled_checks else 0)
         + len(custom_rules)
     )
     total_steps = max(1, passes * chunks + 1)
@@ -112,6 +113,15 @@ def scan_large_data(data, email_columns, date_columns, numeric_columns,
                     }))
                 report(f"Validating date formats · {column} · rows {end:,} of {rows:,}")
 
+        if "numeric" in enabled_checks and column in numeric_columns:
+            for start, end in slices():
+                part = series.iloc[start:end]
+                numeric = parse_numeric_series(part)
+                add_mask(start, part, ~missing_mask(part) & numeric.isna().to_numpy(),
+                         column, "Invalid Number",
+                         "Verify the numeric value in the source; malformed or non-finite values are not corrected automatically.")
+                report(f"Validating numeric values · {column} · rows {end:,} of {rows:,}")
+
         if "outliers" in enabled_checks and column in numeric_columns:
             numeric = parse_numeric_series(series)
             finite = np.isfinite(numeric.to_numpy(dtype=float, na_value=np.nan))
@@ -145,7 +155,7 @@ def scan_large_data(data, email_columns, date_columns, numeric_columns,
                 valid = text.isin(allowed)
                 suggestion = f"Use one of: {expected}"
             else:
-                numeric = pd.to_numeric(text, errors="coerce")
+                numeric = parse_numeric_series(part)
                 valid = numeric.notna() & np.isfinite(numeric.astype(float))
                 valid = valid & (numeric >= float(expected) if kind == "Minimum number" else numeric <= float(expected))
                 suggestion = f"Use a number {'at least' if kind == 'Minimum number' else 'at most'} {expected}."

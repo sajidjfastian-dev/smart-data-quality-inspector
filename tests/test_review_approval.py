@@ -6,6 +6,7 @@ from review_approval import (
     ApprovalRequired, approve, change_index, guarded_push, invalidate,
     is_approved, return_for_revision, sync_context,
 )
+from correction_workbench import build_changes
 
 
 class ApprovalTests(unittest.TestCase):
@@ -27,6 +28,13 @@ class ApprovalTests(unittest.TestCase):
         self.assertEqual(result["Change reason"].tolist(),
                          ["Trimmed whitespace", "Filled missing value", "Removed duplicate row"])
         self.assertEqual(result["Corrected row"].dropna().tolist(), [1, 2])
+
+    def test_followup_changes_preserve_normalized_duplicate_reason(self):
+        previous = change_index(self.original, self.fixed, True)
+        previous.loc[previous["Column position"].isna(), "Change reason"] = "Removed duplicate after normalization"
+        rebuilt = build_changes(self.original, self.fixed, [0, 1], previous)
+        self.assertEqual(rebuilt.loc[rebuilt["Column position"].isna(), "Change reason"].item(),
+                         "Removed duplicate after normalization")
 
     def test_no_duplicate_removal_retains_positions(self):
         result = change_index(self.original, self.original.copy(), False)

@@ -29,6 +29,7 @@ from request_dashboard import render_request_dashboard
 from request_details import render_request_details
 from history_ui import render_history
 from quality_large import scan_large_data
+from numeric_quality import parse_numbers
 from security_guardrails import MASK, detect_sensitive_columns, mask_dataframe, mask_findings, mask_text, mask_text_with_dataset
 
 
@@ -225,23 +226,7 @@ def date_shape(value):
 
 
 def parse_numeric_series(series):
-    if pd.api.types.is_numeric_dtype(series):
-        return pd.to_numeric(series, errors="coerce")
-    if len(series) >= 100_000 and pd.api.types.is_string_dtype(series.dtype):
-        cleaned = series.astype("string").str.replace(r"[$£€¥,\s]", "", regex=True)
-        cleaned = cleaned.str.replace(r"^\((.*)\)$", r"-\1", regex=True)
-        return pd.to_numeric(cleaned, errors="coerce")
-    cleaned = series.map(
-        lambda value: re.sub(r"[$£€¥,\s]", "", value).strip()
-        if isinstance(value, str)
-        else value
-    )
-    cleaned = cleaned.map(
-        lambda value: f"-{value[1:-1]}"
-        if isinstance(value, str) and value.startswith("(") and value.endswith(")")
-        else value
-    )
-    return pd.to_numeric(cleaned, errors="coerce")
+    return parse_numbers(series)
 
 
 def infer_column_rules(data):
@@ -462,7 +447,7 @@ def answer_data_quality_question(
     enabled_checks=None,
 ):
     enabled_checks = set(enabled_checks) if enabled_checks is not None else {
-        "missing", "duplicates", "email", "date", "outliers"
+        "missing", "duplicates", "email", "date", "outliers", "numeric"
     }
     normalized = re.sub(r"\s+", " ", question.strip().lower())
     if not normalized:
@@ -741,7 +726,7 @@ def scan_data(
     custom_rules=None,
 ):
     enabled_checks = set(enabled_checks) if enabled_checks is not None else {
-        "missing", "duplicates", "email", "date", "outliers"
+        "missing", "duplicates", "email", "date", "outliers", "numeric"
     }
     custom_rules = custom_rules or []
     email_columns = (
@@ -782,6 +767,7 @@ def scan_data(
         + (len(email_columns) if "email" in enabled_checks else 0)
         + (2 * len(date_columns) if "date" in enabled_checks else 0)
         + (len(numeric_columns) if "outliers" in enabled_checks else 0)
+        + (len(numeric_columns) if "numeric" in enabled_checks else 0)
         + len(custom_rules)
     )
     total_work = max(row_count * total_passes, 1)
@@ -871,6 +857,14 @@ def scan_data(
                         )
                 report_progress(position, "Validating date formats", column)
 
+        if "numeric" in enabled_checks and column in numeric_columns:
+            numeric_series = parse_numeric_series(series)
+            for position, value in enumerate(series):
+                if not is_missing(value) and pd.isna(numeric_series.iloc[position]):
+                    add_issue(position + 1, column, "Invalid Number", value,
+                              "Verify the numeric value in the source; malformed or non-finite values are not corrected automatically.")
+                report_progress(position, "Validating numeric values", column)
+
         if "outliers" in enabled_checks and column in numeric_columns:
             numeric_series = parse_numeric_series(series)
             finite_mask = np.isfinite(numeric_series.to_numpy(dtype=float, na_value=np.nan))
@@ -900,6 +894,7 @@ def scan_data(
         if column not in data.columns:
             continue
         allowed = {value.strip() for value in expected.split(",") if value.strip()}
+        numeric_rule_values = parse_numeric_series(data[column]) if kind in ("Minimum number", "Maximum number") else None
         for position, value in enumerate(data[column]):
             if not is_missing(value):
                 text = str(value).strip()
@@ -910,7 +905,7 @@ def scan_data(
                     valid = text in allowed
                     suggestion = f"Use one of: {expected}"
                 else:
-                    numeric = pd.to_numeric(text, errors="coerce")
+                    numeric = numeric_rule_values.iloc[position]
                     valid_number = pd.notna(numeric) and np.isfinite(numeric)
                     valid = valid_number and (
                         numeric >= float(expected) if kind == "Minimum number"
@@ -1899,7 +1894,7 @@ def delete_custom_rule(rules_key, selector_key, index):
 
 
 def apply_all_checks():
-    for name in ("missing", "duplicates", "email", "date", "outliers"):
+    for name in ("missing", "duplicates", "email", "date", "outliers", "numeric"):
         st.session_state[f"check_{name}"] = True
 
 
@@ -2044,8 +2039,12 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                     ("email", "Invalid email formats"),
                     ("date", "Invalid and inconsistent dates"),
                     ("outliers", "Numeric outliers"),
+                    ("numeric", "Invalid numeric values"),
                 ):
-                    checks[key] = st.checkbox(translate(label), value=True, key=f"check_{key}")
+                    checks[key] = st.checkbox(
+                        translate(label), value=True, key=f"check_{key}",
+                        help=translate("Accepts finite numbers, optional currency prefixes, comma groups of three, parentheses for negatives, and scientific notation. Other formats require source verification.") if key == "numeric" else None,
+                    )
                 enabled_checks = {key for key, enabled in checks.items() if enabled}
                 global_checks = tuple(sorted(enabled_checks))
                 previous_checks = st.session_state.get("approval_global_checks")
@@ -2076,7 +2075,7 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                     numeric_columns = st.multiselect(
                         "Treat columns as Numeric", options=columns, default=numeric_defaults,
                         key=f"rule_numeric_columns_{column_signature}",
-                        help="Selected columns are checked for outliers and used for numeric fixes.",
+                        help="Selected columns are checked for invalid numeric values and outliers, and used for numeric fixes.",
                     )
                     iqr_multiplier = st.slider(
                         "IQR outlier multiplier", min_value=1.5, max_value=3.0,
@@ -2608,7 +2607,7 @@ if restored_rules:
     for kind in ("email", "date", "numeric"):
         st.session_state[f"rule_{kind}_columns_{column_signature}"] = list(restored_rules[kind])
     st.session_state[f"custom_rules_{column_signature}"] = restored_rules["custom"]
-    for check in ("missing", "duplicates", "email", "date", "outliers"):
+    for check in ("missing", "duplicates", "email", "date", "outliers", "numeric"):
         st.session_state[f"check_{check}"] = check in restored_rules["enabled"]
 restored_protected = st.session_state.pop("request_restore_protected", None)
 if restored_protected is not None:
@@ -2787,6 +2786,7 @@ has_applicable_controls = bool(
     or ("email" in enabled_checks and email_columns)
     or ("date" in enabled_checks and date_columns)
     or ("outliers" in enabled_checks and numeric_columns)
+    or ("numeric" in enabled_checks and numeric_columns)
     or any(rule.get("column") in columns for rule in custom_rules)
 )
 findings_step = (
@@ -3084,16 +3084,18 @@ with review_tab, st.container(key="correction_workspace"):
         )
         fix_allowed = st.checkbox(
             "Normalize case and spacing to allowed values",
-            value=bool(custom_rules), key=f"fix_allowed_{column_signature}",
+            value=True, key=f"fix_allowed_{column_signature}",
             disabled=not any(rule["kind"] == "Allowed values" for rule in custom_rules),
         )
         fix_duplicates = fix_duplicates and "duplicates" in enabled_checks
         fix_missing_numeric = fix_missing_numeric and "missing" in enabled_checks
         fix_date_formats = fix_date_formats and "date" in enabled_checks
+        fix_allowed = fix_allowed and any(rule["kind"] == "Allowed values" for rule in custom_rules)
         st.caption(
             "Only enabled controls drive duplicate, missing-value and date corrections. Whitespace cleanup is optional. "
             "Median fills are estimates—review them before submission. Allowed-value fixes require one unambiguous match. "
-            "Invalid emails, ambiguous dates, numeric limits and outliers remain flagged for source verification."
+            "Exact duplicates are also removed if cleanup makes rows identical, except rows with estimated fills. Invalid numbers and emails, ambiguous dates, "
+            "numeric limits and outliers remain flagged for source verification."
         )
     with st.container():
         if st.button(
@@ -3150,6 +3152,25 @@ with review_tab, st.container(key="correction_workspace"):
                     fixed_copy, allowed_reasons = canonical_allowed_values(fixed_copy, custom_rules)
                     retained = list(np.flatnonzero(~data.duplicated().to_numpy())) if fix_duplicates else list(range(len(data)))
                     changes = build_changes(data, fixed_copy, retained, changes, allowed_reasons)
+                if fix_duplicates:
+                    retained = list(np.flatnonzero(~data.duplicated().to_numpy()))
+                    estimated = np.zeros(len(fixed_copy), dtype=bool)
+                    if fix_missing_numeric:
+                        for column in numeric_columns:
+                            if column in data.columns:
+                                before = data.iloc[retained][column].map(is_missing).to_numpy()
+                                after = fixed_copy[column].map(is_missing).to_numpy()
+                                estimated |= before & ~after
+                    keep = np.ones(len(fixed_copy), dtype=bool)
+                    eligible = np.flatnonzero(~estimated)
+                    keep[eligible] = ~fixed_copy.iloc[eligible].duplicated().to_numpy()
+                    if not keep.all():
+                        normalized_removals = {row: "Removed duplicate after normalization"
+                                               for row, keep_row in zip(retained, keep) if not keep_row}
+                        retained = [row for row, keep_row in zip(retained, keep) if keep_row]
+                        fixed_copy = fixed_copy.iloc[np.flatnonzero(keep)].reset_index(drop=True)
+                        changes = build_changes(data, fixed_copy, retained, changes,
+                                                removed_reasons=normalized_removals)
                 fixed_datasets[active_dataset] = fixed_copy
                 st.session_state.setdefault("fix_change_indexes", {})[active_dataset] = {
                     "original": frame_digest(data), "fixed": frame_digest(fixed_copy), "changes": changes,
