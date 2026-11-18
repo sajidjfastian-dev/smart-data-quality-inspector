@@ -33,9 +33,9 @@ def create_session():
     return identifier
 
 
-def load_catalog():
+def load_catalog(source_id="quality-v1"):
     with connection() as conn:
-        row = conn.execute("SELECT payload FROM dq_demo_catalog WHERE id = %s", ("quality-v1",)).fetchone()
+        row = conn.execute("SELECT payload FROM dq_demo_catalog WHERE id = %s", (source_id,)).fetchone()
     if not row:
         raise DemoStoreError("Synthetic demo data has not been seeded. Run the development setup.")
     return decode(row["payload"])

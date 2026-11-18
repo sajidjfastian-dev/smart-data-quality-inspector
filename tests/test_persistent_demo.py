@@ -22,7 +22,8 @@ from pandas.testing import assert_frame_equal
 class PersistentDemoTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.catalog = store.load_catalog()
+        from public_sample import SOURCE_ID
+        cls.catalog = store.load_catalog(SOURCE_ID)
 
     def setUp(self):
         self.session = store.create_session()
@@ -43,7 +44,7 @@ class PersistentDemoTests(unittest.TestCase):
         flow.save_draft(self.state, ref, payload)
         return ref, payload
 
-    def test_520_row_endpoint_and_read_only_methods(self):
+    def test_public_endpoint_and_read_only_methods(self):
         app = Starlette(routes=[Route("/api/demo/sample", sample_rows, methods=["GET"])])
         async def request(method):
             messages = []
@@ -56,8 +57,8 @@ class PersistentDemoTests(unittest.TestCase):
             return messages[0]["status"], b"".join(m.get("body", b"") for m in messages[1:])
         status, body = asyncio.run(request("GET"))
         self.assertEqual(status, 200)
-        self.assertEqual(json.loads(body)["count"], 520)
-        self.assertEqual(len(json.loads(body)["rows"]), 520)
+        self.assertEqual(json.loads(body)["count"], 620)
+        self.assertEqual(len(json.loads(body)["rows"]), 620)
         for method in ("POST","PUT","PATCH","DELETE"):
             self.assertEqual(asyncio.run(request(method))[0], 405)
 
@@ -84,7 +85,7 @@ class PersistentDemoTests(unittest.TestCase):
                                        date_columns=rules["date"], numeric_columns=rules["numeric"])
             assert_frame_equal(actual, payload["remaining"])
         fixed = self.catalog["variants"]["fix-1111"]
-        self.assertEqual(len(fixed["selected"]), 500)
+        self.assertEqual(len(fixed["selected"]), 600)
         self.assertLess(len(fixed["remaining"]), len(fixed["issues"]))
         self.assertGreater(len(fixed["changes"]), 0)
 

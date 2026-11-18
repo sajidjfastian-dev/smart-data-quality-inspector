@@ -100,17 +100,19 @@ class ApiUiTests(unittest.TestCase):
         return next(widget for widget in getattr(self.app, kind) if widget.label == label)
 
     def test_sample_load_with_live_push_disabled(self):
-        frame = pd.DataFrame({"id": range(520), "name": ["Synthetic"]*520})
+        from public_sample import LABEL, demo_frame
+        frame = demo_frame()
         with patch("sample_client.fetch_sample", return_value=frame) as fetch, \
              patch("persistent_demo.register_source"), \
              patch.object(api_settings, "push_api_data", return_value=202) as push:
             self.find("button", "Try sample API").click().run()
             self.assertFalse(self.app.exception)
             self.assertEqual(fetch.call_count, 1)
-            self.assertEqual(len(self.app.session_state["inspector_datasets"]["Synthetic quality sample"]), 520)
+            self.assertEqual(len(self.app.session_state["inspector_datasets"][LABEL]), 620)
             self.assertTrue(self.find("button", "Push data to API").disabled)
             self.find("checkbox", "I reviewed all columns for sensitive data").check().run()
             self.assertTrue(self.find("button", "Push data to API").disabled)
+            self.find("button", "Apply automatic fixes").click().run()
             self.find("checkbox", "I reviewed all changes and remaining findings; this version is ready for review").check().run()
             self.find("button", "Submit for review").click().run()
             self.assertFalse(self.app.exception)

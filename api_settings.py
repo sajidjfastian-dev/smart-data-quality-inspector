@@ -55,7 +55,7 @@ def render_api_settings(active_dataset=None, data=None, fixed_data=None,
 def _render_api_reader():
     if st.button(
         "Try sample API", key="sample_external_api", icon=":material/science:",
-        help="Load 520 synthetic database records with deliberate data-quality issues.",
+        help="Load 620 ECB exchange-rate observations with labelled demonstration errors.",
         width="stretch",
         disabled=not st.session_state.get("_persistent_demo_ready"),
     ):
@@ -64,11 +64,13 @@ def _render_api_reader():
         try:
             data = fetch_sample()
             register_source(st.session_state, data)
-            st.session_state["pending_api_dataset"] = ("Synthetic quality sample", data)
+            from public_sample import LABEL
+            st.session_state["pending_api_dataset"] = (LABEL, data)
             st.rerun()
         except ApiConnectionError as error:
             st.error(translate(str(error)))
-    st.caption(translate("Synthetic sample API: 520 stored records. Shared sample requests persist; private imports do not."))
+    from public_sample import ATTRIBUTION, NOTICE
+    st.caption(ATTRIBUTION + " " + NOTICE)
 
     source_url = st.text_input(
         "Source API URL", placeholder="https://api.example.com/records", key="source_api_url",

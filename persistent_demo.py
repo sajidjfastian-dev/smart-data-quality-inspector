@@ -7,6 +7,7 @@ never serialized into shared storage.
 from copy import deepcopy
 
 import demo_store
+from public_sample import SOURCE_ID, LABEL
 from review_approval import frame_digest
 from demo_codec import encode
 
@@ -18,7 +19,7 @@ def initialize(state):
         return
     if not state.get("demo_session_id"):
         state["demo_session_id"] = demo_store.create_session()
-    state["demo_catalog"] = demo_store.load_catalog()
+    state["demo_catalog"] = demo_store.load_catalog(SOURCE_ID)
     shared = demo_store.list_requests()
     local = state.setdefault("demo_requests", {})
     # Never overwrite a cached draft silently: CAS checks detect conflicting edits.
@@ -47,9 +48,10 @@ def eligible(state, record, payload):
     )
 
 
-def canonical_payload(state, payload):
+def canonical_payload(state, payload, source_id=None):
     from request_workflow import WorkflowError
-    variants = state["demo_catalog"]["variants"]
+    catalog = state["demo_catalog"] if source_id is None or source_id == SOURCE_ID else demo_store.load_catalog(source_id)
+    variants = catalog["variants"]
     base = variants["original"]
     rules = payload["rules"]
     expected = base["rules"]
@@ -79,7 +81,7 @@ def save_working(state, reference, payload):
     if not state.get("_persistent_demo_ready") or not eligible(state, record, payload):
         return False
     try:
-        variant, trusted = canonical_payload(state, payload)
+        variant, trusted = canonical_payload(state, payload, record.get("source_id"))
         revision = record["revisions"][-1]
         if record.get("_db_version") and revision.get("variant") == variant and encode(revision.get("working")) == encode(trusted):
             return True
@@ -90,7 +92,7 @@ def save_working(state, reference, payload):
             demo_store.update_request(candidate, record["_db_version"])
         else:
             # A new local draft has only generated metadata; never persist its filename.
-            candidate.update(file="Synthetic quality sample", source_id="quality-v1", synthetic=True,
+            candidate.update(file=LABEL, source_id=SOURCE_ID, synthetic=True,
                              session_id=state["demo_session_id"])
             candidate["submitted_by"] = "Sajid"
             demo_store.insert_request(candidate)
@@ -108,7 +110,7 @@ def transaction(state, reference, operation):
     candidate_record = deepcopy(record)
     for revision in candidate_record["revisions"]:
         if revision.get("working"):
-            variant, trusted = canonical_payload(state, revision["working"])
+            variant, trusted = canonical_payload(state, revision["working"], record.get("source_id"))
             revision["working"] = trusted
             revision["variant"] = variant
     local = {"demo_user": state["demo_user"], "demo_role": state.get("demo_role","Submitter"),

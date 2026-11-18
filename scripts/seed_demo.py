@@ -21,6 +21,7 @@ import numpy as np
 import pandas as pd
 from psycopg.types.json import Jsonb
 from quality_large import scan_large_data
+from numeric_quality import parse_numbers
 from demo_store import connection
 from demo_codec import encode, stable_roundtrip
 from review_approval import change_index
@@ -35,7 +36,8 @@ def quality_functions():
     nodes = [n for n in tree.body if
              (isinstance(n, ast.FunctionDef) and n.name in names) or
              (isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id in constants for t in n.targets))]
-    namespace = dict(np=np, pd=pd, re=re, datetime=datetime, date=date, scan_large_data=scan_large_data)
+    namespace = dict(np=np, pd=pd, re=re, datetime=datetime, date=date,
+                     scan_large_data=scan_large_data, parse_numbers=parse_numbers)
     exec(compile(ast.Module(body=nodes, type_ignores=[]), "app.py", "exec"), namespace)
     return namespace
 
@@ -65,13 +67,18 @@ def synthetic_rows():
     return rows + deepcopy(rows[100:120])
 
 
-def build_catalog(rows):
+def build_catalog(rows, public_source=None):
     f = quality_functions()
     original = pd.DataFrame(rows)
+    if public_source:
+        original.attrs["public_sample_source"] = public_source
     email, dates, numeric = f["infer_column_rules"](original)
     rules = dict(email=sorted(email), date=sorted(dates), numeric=sorted(numeric),
                  iqr=1.5, enabled=["date", "duplicates", "email", "missing", "outliers"], custom=[])
-    issues, _ = f["scan_data"](original, email_columns=email, date_columns=dates, numeric_columns=numeric)
+    if public_source:
+        rules["enabled"].append("numeric")
+    issues, _ = f["scan_data"](original, email_columns=email, date_columns=dates,
+                              numeric_columns=numeric, enabled_checks=rules["enabled"])
     payload = dict(file="Synthetic quality sample", original=original, selected=original,
                    choice="Original data", changes=change_index(original, original, False),
                    issues=issues, remaining=issues, protected={"customer_id","name","email"},
@@ -81,7 +88,8 @@ def build_catalog(rows):
         selected = f["clean_data"](original, numeric_columns=sorted(numeric), date_columns=sorted(dates),
                                    drop_duplicates=flags[0], trim_whitespace=flags[1],
                                    fill_numeric_missing=flags[2], standardize_dates=flags[3])
-        remaining, _ = f["scan_data"](selected, email_columns=email, date_columns=dates, numeric_columns=numeric)
+        remaining, _ = f["scan_data"](selected, email_columns=email, date_columns=dates,
+                                     numeric_columns=numeric, enabled_checks=rules["enabled"])
         variant = dict(payload, selected=selected, choice="Fixed copy",
                        changes=change_index(original, selected, flags[0]), remaining=remaining)
         variants["fix-"+"".join(str(int(x)) for x in flags)] = stable_roundtrip(variant)
@@ -147,4 +155,10 @@ if __name__ == "__main__":
     parser.add_argument("--development-schema", action="store_true",
                         help="Apply the schema in development only. Publish owns production schema.")
     args = parser.parse_args()
-    seed(apply_development_schema=args.development_schema)
+    # Current setup creates only public examples. The legacy seed function
+    # remains available for compatibility tests, never new runtime histories.
+    if args.development_schema:
+        with connection() as conn:
+            conn.execute((ROOT / "scripts/demo_schema.sql").read_text())
+    from scripts.seed_public_sample import seed_public
+    seed_public()

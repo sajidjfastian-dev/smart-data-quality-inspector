@@ -245,8 +245,12 @@ def render_request_details(state, reference):
         st.warning(t("Request not found in this session."))
         return
     st.header(reference)
-    st.caption(t("Shared synthetic example stored in the database.") if record.get("synthetic")
-               else t("Private request: cleared on logout."))
+    from public_sample import SOURCE_ID, ATTRIBUTION, NOTICE
+    if record.get("source_id") == SOURCE_ID:
+        st.caption(ATTRIBUTION + " " + NOTICE)
+    else:
+        st.caption(t("Shared synthetic example stored in the database.") if record.get("synthetic")
+                   else t("Private request: cleared on logout."))
     st.caption(t("No real service-desk request or production change is performed."))
     st.text(t("Session") + ": " + record.get("session_id", t("Current private session")))
     number = st.selectbox(t("Revision"), list(range(1, len(record["revisions"])+1)),

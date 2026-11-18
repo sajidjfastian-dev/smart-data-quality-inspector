@@ -205,14 +205,13 @@ class QuickSampleTests(unittest.TestCase):
         self.assertEqual(
             {name: len(frame) for name, frame in datasets.items()},
             {
-                "customers.csv": 620,
-                "orders.xlsx": 620,
-                "products.csv": 620,
-                "support_tickets.xlsx": 620,
-                "web_events.csv": 620,
+                "ecb_fx_demo_errors.csv": 620,
+                "ecb_fx_demo_errors.xlsx": 620,
+                "ecb_fx_original.csv": 600,
+                "ecb_fx_original.xlsx": 600,
             },
         )
-        self.assertEqual(self.widget("selectbox", "Active file").value, "customers.csv")
+        self.assertEqual(self.widget("selectbox", "Active file").value, "ecb_fx_demo_errors.csv")
 
     def test_model_settings_are_session_only_and_sharing_is_opt_in(self):
         self.assertFalse(self.widget("checkbox", "Allow sending the active dataset to this endpoint").value)

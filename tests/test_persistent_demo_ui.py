@@ -41,13 +41,14 @@ class PersistentDemoUITests(unittest.TestCase):
             app.button(key="nav_new_request").click().run()
             # UI tests need a database, not a live HTTP server. Endpoint behavior
             # is tested independently, and the browser smoke check uses real HTTP.
-            frame = deepcopy(demo_store.load_catalog()["variants"]["original"]["original"])
+            from public_sample import SOURCE_ID, LABEL
+            frame = deepcopy(demo_store.load_catalog(SOURCE_ID)["variants"]["original"]["original"])
             with patch("sample_client.fetch_sample", return_value=frame):
                 app.button(key="sample_external_api").click().run()
             self.clean(app)
             ref = app.session_state["active_request_ref"]
             self.assertIn(ref, demo_store.list_requests())
-            self.assertEqual(len(app.session_state["inspector_datasets"]["Synthetic quality sample"]), 520)
+            self.assertEqual(len(app.session_state["inspector_datasets"][LABEL]), 620)
             apply_button = next(b for b in app.button if b.label == "Apply automatic fixes")
             apply_button.click().run()
             self.clean(app)

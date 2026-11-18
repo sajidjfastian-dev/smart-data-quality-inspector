@@ -80,21 +80,11 @@ DEMO_VIDEO_PATH = (
     / "demo_media"
     / "smart_data_quality_demo.mp4"
 )
-CONNECTED_SAMPLE_FILES = (
-    "customers.csv",
-    "orders.xlsx",
-    "products.csv",
-    "support_tickets.xlsx",
-    "web_events.csv",
-)
+from public_sample import FILES as CONNECTED_SAMPLE_FILES
 SAMPLE_RELATIONSHIPS = pd.DataFrame(
     [
-        ("customers.csv", "customer_id", "orders.xlsx", "customer_id"),
-        ("products.csv", "product_id", "orders.xlsx", "product_id"),
-        ("customers.csv", "customer_id", "support_tickets.xlsx", "customer_id"),
-        ("orders.xlsx", "order_id", "support_tickets.xlsx", "order_id"),
-        ("customers.csv", "customer_id", "web_events.csv", "customer_id"),
-        ("products.csv", "product_id", "web_events.csv", "product_id"),
+        ("ecb_fx_original.csv", "observation_date", "ecb_fx_demo_errors.csv", "observation_date"),
+        ("ecb_fx_original.xlsx", "observation_date", "ecb_fx_demo_errors.xlsx", "observation_date"),
     ],
     columns=["Source file", "Source key", "Related file", "Related key"],
 )
@@ -1148,6 +1138,8 @@ def load_connected_sample_data():
         with file_path.open("rb") as file_handle:
             content = file_handle.read()
         datasets[filename] = read_data_file(filename, content)
+        from public_sample import SOURCE_ID
+        datasets[filename].attrs["public_sample_source"] = SOURCE_ID
     progress.progress(1.0, text="Connected sample workspace ready.")
     progress.empty()
     st.session_state["inspector_datasets"] = datasets
@@ -1162,6 +1154,7 @@ def connected_sample_archive():
     with ZipFile(archive, mode="w") as zip_file:
         for filename in CONNECTED_SAMPLE_FILES:
             zip_file.write(SAMPLE_DATA_DIR / filename, arcname=filename)
+        zip_file.write(SAMPLE_DATA_DIR / "ecb_fx_manifest.json", arcname="ecb_fx_manifest.json")
     return archive.getvalue()
 
 
@@ -2258,7 +2251,7 @@ if show_request_upload:
         st.markdown(
             '<div class="source-heading"><span class="source-kicker">New request · Data source</span>'
             '<h2>Start with your data</h2>'
-            '<p>Upload files for a quality assessment, or explore the workflow with synthetic sample data.</p></div>',
+            '<p>Upload your data or explore published ECB exchange rates.</p></div>',
             unsafe_allow_html=True,
         )
         if is_signed_in() and st.session_state.get("demo_role", "Submitter") == "Submitter":
@@ -2298,10 +2291,10 @@ if show_request_upload:
                         type="secondary",
                         icon=":material/table_view:",
                         key="sidebar_sample",
-                        help="Load five related CSV and Excel files containing synthetic data.",
+                        help="Load the same ECB snapshot as the sample API: original and labelled demo-error copies in CSV and Excel.",
                     )
                     st.markdown(
-                        '<div class="source-helper">Five related CSV and Excel files · Synthetic data</div>',
+                        '<div class="source-helper">ECB reference exchange rates · Original and labelled demo-error copies · CSV and Excel</div>',
                         unsafe_allow_html=True,
                     )
             st.markdown(
@@ -2839,8 +2832,8 @@ if len(enabled_checks) < 5:
 if set(CONNECTED_SAMPLE_FILES).issubset(datasets):
     with st.expander("How the sample files connect"):
         st.caption(
-            "The synthetic tables share customer, product, and order IDs, so you can "
-            "test related datasets together or inspect each file independently."
+            "These files share the same ECB snapshot. Original copies preserve published values; "
+            "demo-error copies add formatting defects and duplicate rows."
         )
         st.dataframe(SAMPLE_RELATIONSHIPS.rename(columns=translate), width="stretch", hide_index=True)
 
@@ -2955,6 +2948,11 @@ if selected_metric:
 from correction_workbench import (
     canonical_allowed_values, build_changes, render_resolution,
 )
+from public_sample import SOURCE_ID, ATTRIBUTION, NOTICE
+if data.attrs.get("public_sample_source") == SOURCE_ID:
+    st.caption(ATTRIBUTION)
+    st.caption(NOTICE if "demo" in active_dataset.lower() else "Original published observations; no demonstration errors added.")
+    st.caption("Snapshot: 2023-01-02 to 2025-05-09. Statistical outliers can be genuine market movements, not data errors.")
 st.markdown("<style>" + Path("assets/correction_workspace.css").read_text() + "</style>", unsafe_allow_html=True)
 overview_tab, review_tab, preview_tab, assistant_tab, insights_tab = st.tabs(
     [

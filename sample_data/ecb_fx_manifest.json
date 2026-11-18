@@ -1,0 +1,21 @@
+{
+  "source_id": "ecb-fx-2023-600-v3",
+  "source_url": "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.zip",
+  "attribution": "Source: European Central Bank. Reference rates: currency units per EUR; informational, not transaction rates.",
+  "modification_notice": "Modified for demonstration: alternate date formatting, surrounding whitespace and 20 duplicate rows. Published rate values are unchanged.",
+  "original_count": 600,
+  "demo_count": 620,
+  "start_date": "2023-01-02",
+  "end_date": "2025-05-09",
+  "currencies": [
+    "USD",
+    "GBP",
+    "JPY",
+    "CHF"
+  ],
+  "base_currency": "EUR",
+  "sha256": "a45b43313a5d4900f0b09ce46500aae98f8dcbe1f47fff02377e04b6de88c5cd",
+  "copyright_url": "https://www.ecb.europa.eu/services/using-our-site/disclaimer/html/index.en.html",
+  "retrieved_on": "2026-11-18",
+  "selection": "First 600 published dates from 2023-01-01, chronological; four currency columns, no interpolation."
+}

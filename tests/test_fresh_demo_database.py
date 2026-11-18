@@ -16,6 +16,7 @@ import persistent_demo
 import request_workflow as flow
 import sample_endpoint
 from scripts.seed_demo import seed
+from scripts.seed_public_sample import seed_public
 
 
 class FreshDemoDatabaseTests(unittest.TestCase):
@@ -37,6 +38,7 @@ class FreshDemoDatabaseTests(unittest.TestCase):
                 conn.execute((Path(__file__).resolve().parents[1]/"scripts/demo_schema.sql").read_text())
             with patch("demo_store.connection", isolated), \
                  patch("scripts.seed_demo.connection", isolated), \
+                 patch("scripts.seed_public_sample.connection", isolated), \
                  patch("sample_endpoint.connection", isolated):
                 # The data-only initializer must not read the schema migration.
                 # Quality compilation may read app.py, but never a SQL migration.
@@ -46,11 +48,12 @@ class FreshDemoDatabaseTests(unittest.TestCase):
                         raise AssertionError("Startup attempted to read a schema migration")
                     return real_read(path, *args, **kwargs)
                 with patch.object(Path, "read_text", no_schema_read):
-                    seed()
-                self.assertEqual(len(demo_store.list_requests()), 20)
+                    seed_public()
+                self.assertEqual(len(demo_store.list_requests()), 4)
+                self.assertTrue(all(r["source_id"].startswith("ecb-fx-") for r in demo_store.list_requests().values()))
                 result = sample_endpoint.sample_rows(None)
                 self.assertEqual(result.status_code, 200)
-                self.assertEqual(json.loads(result.body)["count"], 520)
+                self.assertEqual(json.loads(result.body)["count"], 620)
                 state = {"demo_user":"Sajid", "demo_role":"Submitter"}
                 persistent_demo.initialize(state)
                 payload = state["demo_catalog"]["variants"]["fix-1111"]
@@ -61,11 +64,11 @@ class FreshDemoDatabaseTests(unittest.TestCase):
                 for action in ("approve","ticket","cab","simulate"):
                     flow.demo_review_action(state, reference, 1, action)
                 before = demo_store.list_requests()[reference]
-                seed()
+                seed_public()
                 after = demo_store.list_requests()[reference]
                 self.assertEqual(after["_db_version"], before["_db_version"])
                 self.assertEqual(after["revisions"][-1]["status"], "Simulated")
-                self.assertEqual(len(demo_store.list_requests()), 21)
+                self.assertEqual(len(demo_store.list_requests()), 5)
                 flow.valid_snapshot(after["revisions"][-1])
         finally:
             with original_connection() as conn:

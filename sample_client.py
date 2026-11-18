@@ -1,8 +1,9 @@
-"""Only this fixed server-owned URL can grant a synthetic-source capability."""
+"""Only this fixed, verified server-owned sample grants shared-source provenance."""
 import http.client
 import json
 import pandas as pd
 from api_connections import ApiConnectionError, MAX_API_BYTES
+from public_sample import SOURCE_ID, demo_frame
 
 
 def fetch_sample():
@@ -14,12 +15,15 @@ def fetch_sample():
         if response.status != 200 or len(body)>MAX_API_BYTES:
             raise ValueError
         payload = json.loads(body)
-        if payload["source"] != "quality-v1" or payload["synthetic"] is not True or len(payload["rows"]) < 500:
+        if payload["source"] != SOURCE_ID or payload["demo_errors"] is not True or payload["count"] != 620 or len(payload["rows"]) != 620:
             raise ValueError
-        return pd.DataFrame(payload["rows"], columns=[
-            "customer_id","name","email","signup_date","age","annual_spend","region"
-        ])
-    except (OSError, ValueError, KeyError, http.client.HTTPException):
+        expected = demo_frame()
+        frame = pd.DataFrame(payload["rows"], columns=expected.columns)
+        if not frame.equals(expected):
+            raise ValueError
+        frame.attrs["public_sample_source"] = SOURCE_ID
+        return frame
+    except (OSError, ValueError, KeyError, TypeError, http.client.HTTPException):
         raise ApiConnectionError("The database-backed sample API is unavailable. Please retry.") from None
     finally:
         conn.close()

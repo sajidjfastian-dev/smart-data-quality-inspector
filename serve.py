@@ -6,7 +6,7 @@ import streamlit as st
 from starlette.routing import Route
 from sample_endpoint import sample_rows
 from demo_store import DemoStoreError
-from scripts.seed_demo import seed
+from scripts.seed_public_sample import seed_public
 
 
 @asynccontextmanager
@@ -15,10 +15,10 @@ async def lifespan(app):
     # This is data-only initialization, before requests are served. The advisory
     # lock makes first startup safe across multiple deployment instances.
     try:
-        await asyncio.to_thread(seed, apply_development_schema=False)
+        await asyncio.to_thread(seed_public)
     except DemoStoreError:
         logging.getLogger(__name__).error(
-            "Synthetic demo initialization unavailable. Ensure the managed schema "
+            "Public sample initialization unavailable. Ensure the managed schema "
             "was applied through Publish. Private session-only inspection remains available."
         )
     yield
