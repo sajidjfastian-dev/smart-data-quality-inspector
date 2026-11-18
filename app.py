@@ -2438,7 +2438,7 @@ if not datasets or st.session_state.get("workspace_page") == "home":
         <section class="welcome-panel" aria-label="Data quality introduction">
           <div class="welcome-copy">
             <div class="welcome-eyebrow">Data quality, made clear</div>
-            <h1 class="welcome-title"><span class="welcome-lead">Inspect. Correct.</span> <span class="welcome-accent">Approve.</span></h1>
+            <h1 class="welcome-title"><span class="welcome-lead">Turn data into</span> <span class="welcome-accent">decisions.</span></h1>
             <p class="welcome-description">
               Find missing values, duplicates, invalid formats and outliers in your data.
               Move from findings to reviewed decisions, with you in control.
