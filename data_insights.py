@@ -165,7 +165,8 @@ def _completeness_chart(data, profile, sensitive_columns):
 
 
 def render_data_insights(data, column_profile, numeric_columns, date_columns,
-                         active_dataset, column_signature, parser, sensitive_columns=()):
+                         active_dataset, column_signature, parser, sensitive_columns=(),
+                         summary_renderer=None):
     st.markdown(
         '<div class="dashboard-intro"><strong>See the bigger picture</strong>'
         '<span>Explore the shape, distributions, common values, and timeline of your active file.</span></div>',
@@ -177,9 +178,10 @@ def render_data_insights(data, column_profile, numeric_columns, date_columns,
         translate("Based on {0} evenly spaced rows from {1}; exploratory sample, not a random sample.").format(f"{sample_count:,}", f"{len(data):,}")
         if sampled else translate("Based on all {0} rows.").format(f"{len(data):,}")
     )
-    st.caption(translate("Snapshot and numeric views use the complete file.") + " "
-        + (translate("Categories and dates use an evenly spaced sample of up to 100,000 rows.") + " " if sampled else "")
-        + translate("Quality checks still inspect the complete file."))
+    if summary_renderer:
+        summary_renderer()
+    if sampled:
+        st.caption(translate("Categories and dates use an evenly spaced sample of up to 100,000 rows."))
     snapshot, numbers, categories, dates, relationships = st.tabs(
         ["Snapshot", "Numeric", "Categories", "Dates", "Relationships"],
         key=f"insight_views_{column_signature}", on_change="rerun",

@@ -314,6 +314,18 @@
         flex: 1 1 100% !important;
         width: 100% !important;
     }
+    .st-key-preview_workspace [data-testid="stHorizontalBlock"],
+    .st-key-insights_workspace [data-testid="stHorizontalBlock"] {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    .st-key-preview_workspace [data-testid="stHorizontalBlock"] > [data-testid="stColumn"],
+    .st-key-insights_workspace [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+        flex: 1 1 100% !important;
+        width: 100% !important;
+        min-width: 0;
+    }
+    .st-key-preview_workspace, .st-key-insights_workspace {min-width: 0;}
     .st-key-correction_workspace [data-testid="stExpanderDetails"] {
         padding: 13px;
     }

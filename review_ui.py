@@ -2,7 +2,7 @@
 import math
 import html
 import pandas as pd
-from localization import native as st, translate as t, language
+from localization import native as st, translate as t, language, display_findings
 from security_guardrails import MASK, mask_dataframe
 from review_approval import approve, is_approved, return_for_revision
 
@@ -84,9 +84,18 @@ def render_checker_review(state, dataset, original, corrected, changes, remainin
             st.caption(t("On small screens, scroll the comparison horizontally to see both values."))
         if actions or not remaining.empty:
             st.warning(t("Approval does not mean error-free data. Review all remaining findings before proceeding."))
-            with st.expander(t("Remaining findings")):
-                from issue_workspace import render_findings
-                render_findings(remaining, protected, key + "_remaining", corrected, downloads=False)
+            if actions:
+                with st.expander(t("Review unresolved issues")):
+                    from issue_workspace import render_findings
+                    render_findings(remaining, protected, key + "_remaining", corrected, downloads=False)
+            elif not remaining.empty:
+                with st.expander(t("Review unresolved issues")):
+                    from security_guardrails import mask_findings
+                    safe = mask_findings(remaining, protected)
+                    page_count = max(1, math.ceil(len(safe) / 50))
+                    page = st.number_input(t("Issues page"), 1, page_count, key=key + "_issues_page") if page_count > 1 else 1
+                    st.caption(t("Showing {0} issues · page {1} of {2}").format(f"{len(safe):,}", page, page_count))
+                    st.dataframe(display_findings(safe.iloc[(page-1)*50:page*50]), hide_index=True, width="stretch")
         else:
             st.success(t("No remaining findings."))
         if not actions:

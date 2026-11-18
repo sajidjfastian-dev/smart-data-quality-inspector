@@ -136,7 +136,7 @@ def render_assistant_header(
         st.subheader(translate("Your data assistant"))
         st.markdown(
             translate(
-                "Understand findings and prioritize corrections."
+                "Chat about your data, findings, and possible next steps."
             )
         )
         copy_label = translate("Corrected copy" if has_fixed else "Original file")

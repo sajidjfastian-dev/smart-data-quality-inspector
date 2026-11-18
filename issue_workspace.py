@@ -229,19 +229,17 @@ def render_findings(issues, protected, key, data, downloads=True, filename="issu
             + escape(t("{0} matching / {1} current-version findings").format(f"{len(filtered):,}", f"{len(safe):,}"))
             + '</strong><span>'
             + escape(t("{0} affected rows in these results").format(f"{affected_rows(filtered, len(data)):,}"))
-            + '</span><small>' + escape(t(
-                "The report includes every matching finding, not just this page. Protected values stay masked."
-            )) + '</small></div>', unsafe_allow_html=True,
+            + '</span></div>', unsafe_allow_html=True,
         )
-        actions = st.columns([1.1, 1, 1.3], gap="small")
-        with actions[0]:
-            if downloads:
+        actions = st.columns([1.1, 1, 1.3] if downloads else [1, 1.3], gap="small")
+        if downloads:
+            with actions[0]:
                 st.download_button(
                     t("Download issue report"),
                     data=lambda frame=filtered: frame.to_csv(index=False).encode("utf-8-sig"),
                     file_name=filename, mime="text/csv", key=key + "_download", disabled=filtered.empty,
                 )
-        with actions[1]:
+        with actions[1 if downloads else 0]:
             st.button(t("Clear filters"), key=key + "_clear", on_click=_clear_filters, args=(key,))
         if filtered.empty:
             if safe.empty:
@@ -259,9 +257,11 @@ def render_findings(issues, protected, key, data, downloads=True, filename="issu
             page_key = key + "_page"
             if not 1 <= st.session_state.get(page_key, 1) <= pages:
                 st.session_state[page_key] = 1
-            with actions[2]:
-                page = st.number_input(t("Findings page"), 1, pages, key=page_key)
-            st.caption(t("Page {0} of {1}; all matching findings are accessible.").format(page, pages))
+            page = 1
+            if pages > 1:
+                with actions[-1]:
+                    page = st.number_input(t("Findings page"), 1, pages, key=page_key)
+                st.caption(t("Page {0} of {1}; all matching findings are accessible.").format(page, pages))
             _table(display_findings(filtered.iloc[(page - 1) * 100:page * 100]))
 
         # Deliberately outside the filtered-empty branch: a search cannot hide

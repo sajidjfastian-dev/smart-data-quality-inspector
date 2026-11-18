@@ -2974,16 +2974,82 @@ with overview_tab:
         numeric_columns, iqr_multiplier, column_signature,
     )
 
-with insights_tab:
+with insights_tab, st.container(key="insights_workspace"):
     if insights_tab.open:
+        from insight_summary import dataset_facts, masked_sample
+
+        def render_insight_summary():
+            facts = dataset_facts(data, column_profile, numeric_columns, date_columns, display_sensitive_columns)
+            with st.container(key="dataset_summary", border=True):
+                st.subheader("Data summary")
+                st.write(translate("This file contains {0} rows and {1} fields, with {2} missing cells.").format(
+                    f"{facts['rows']:,}", f"{facts['columns']:,}", f"{facts['missing_cells']:,}"))
+                visible = facts["visible_fields"][:8]
+                if visible:
+                    st.write(translate("Fields include: {0}.").format(", ".join(visible)))
+                    if len(facts["visible_fields"]) > len(visible):
+                        st.caption(translate("Showing {0} of {1} unprotected fields.").format(len(visible), len(facts["visible_fields"])))
+                if facts["protected_fields"]:
+                    st.caption(translate("{0} protected fields are excluded from the field list.").format(facts["protected_fields"]))
+                endpoint = st.session_state.get("assistant_api_url", "").strip()
+                model = st.session_state.get("assistant_model_id", "").strip()
+                api_key = st.session_state.get("assistant_api_key", "").strip()
+                consent = st.session_state.get("assistant_share_dataset", False)
+                allowed = bool(endpoint and model and api_key and consent and privacy_reviewed)
+                summary_key = f"insight_ai_summary_{column_signature}"
+                version = (frame_digest(data), frame_digest(issues), tuple(sorted(map(str, sensitive_columns))),
+                           tuple(map(str, numeric_columns)), tuple(map(str, date_columns)), endpoint, model,
+                           hashlib.sha256(api_key.encode()).hexdigest(), language())
+                saved = st.session_state.get(summary_key)
+                if saved and saved["version"] != version:
+                    st.session_state.pop(summary_key, None)
+                    saved = None
+                if allowed:
+                    st.caption("AI can describe a masked sample. Check its interpretation against the charts; it may be incorrect.")
+                    if st.button("Generate AI summary", key=f"generate_insight_{column_signature}", icon=":material/auto_awesome:"):
+                        try:
+                            sample = masked_sample(data, sensitive_columns)
+                            # Include full-file structural facts, not an unmasked profile.
+                            profile = pd.DataFrame([{"Rows in full file": facts["rows"], "Columns in full file": facts["columns"],
+                                                     "Missing cells in full file": facts["missing_cells"]}])
+                            with st.spinner("Generating a summary of the masked sample..."):
+                                answer = request_configured_assistant(
+                                    endpoint, api_key, model,
+                                    "Describe what this dataset appears to contain using only the field names and sample provided. "
+                                    "Clearly label any inferred purpose as uncertain. Do not extrapolate sample patterns to the full file. "
+                                    "Do not invent facts or corrections. Use the full-file structural counts supplied separately.",
+                                    sample, issues[["Issue Type"]], profile, "Active dataset", [],
+                                    response_language=language(),
+                                    workflow_context=json.dumps({"full_file_facts": facts, "sample_rows": len(sample),
+                                                                 "sampling": "up to 25 evenly spaced rows"}, ensure_ascii=False),
+                                )
+                            safe_answer = mask_text_with_dataset(answer, data, display_sensitive_columns)
+                            st.session_state[summary_key] = {"version": version, "answer": safe_answer}
+                            saved = st.session_state[summary_key]
+                        except AssistantRequestError as error:
+                            st.error(translate("The model request failed: {0}").format(translate(str(error))))
+                    if saved:
+                        st.markdown("**AI interpretation · masked sample**")
+                        st.markdown(mask_text(saved["answer"]))
+                else:
+                    st.caption("For an AI interpretation, configure the LLM assistant and allow data sharing in Settings after reviewing privacy.")
+
         render_data_insights(
             data, column_profile, numeric_columns, date_columns,
             active_dataset, column_signature, parse_numeric_series, display_sensitive_columns,
+            summary_renderer=render_insight_summary,
         )
 
 with review_tab, st.container(key="correction_workspace"):
     st.subheader("1 · Apply automatic fixes")
     st.caption("Apply available rule-based corrections to a copy, then review and submit. Your original stays unchanged.")
+    from insight_summary import quality_suggestions
+    suggested_checks = quality_suggestions(data, enabled_checks, email_columns, date_columns, numeric_columns)
+    if suggested_checks:
+        with st.expander("Suggested quality controls", expanded=False):
+            st.caption("Consider these in Settings → Inspection checks. Enabling a control does not automatically fix its findings.")
+            for suggestion in suggested_checks:
+                st.markdown("- " + translate(suggestion))
     fixed_datasets = st.session_state.setdefault("fixed_datasets", {})
     current_change_record = st.session_state.get("fix_change_indexes", {}).get(active_dataset)
     manual_edits = current_change_record is not None and current_change_record["changes"]["Change reason"].str.startswith("Manual correction").any()
@@ -3173,7 +3239,7 @@ with review_tab, st.container(key="correction_workspace"):
     else:
         st.warning("Reapply fixes to build a complete change review before approval.")
 
-with preview_tab:
+with preview_tab, st.container(key="preview_workspace"):
     st.subheader("Preview & export")
     st.caption(
         f"**{active_dataset}** · Original data stays unchanged."
@@ -3299,12 +3365,7 @@ with preview_tab:
                     width="stretch",
                     icon=":material/folder_zip:",
                 )
-        else:
-            st.info("Upload multiple files to export the full batch as one ZIP.")
-    st.caption(
-        "Quality reports are calculated independently for each file. "
-        "Uploaded files stay in the current app session and are not saved to a database."
-    )
+
 
 with assistant_tab:
     assistant_data = fixed_datasets.get(active_dataset, data)
