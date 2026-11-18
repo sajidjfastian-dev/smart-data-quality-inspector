@@ -116,14 +116,7 @@ def render_request_dashboard(state):
         records = list(request_workflow.requests(state).values())
         if role == "Submitter":
             from account_identity import owns, public_example
-            public_mode = st.checkbox(
-                localization.translate("Show public sample examples"),
-                key="rd_public_examples",
-                help=localization.translate("Public examples are read-only and are not your requests."),
-            )
-            records = [item for item in records if public_example(item)] if public_mode else [
-                item for item in records if owns(state, item)
-            ]
+            records = [item for item in records if owns(state, item) or public_example(item)]
         records.sort(key=lambda item: (item.get("created_at", ""), item["reference"]), reverse=True)
 
         if st.session_state.pop("rd_creation_error", False):
@@ -308,6 +301,7 @@ def _render_register_rows(state, filtered, start):
                 + escape(localization.translate("Action")) + "</span>", unsafe_allow_html=True,
             )
     for index, item in enumerate(filtered[start:start + _PAGE_SIZE], start=start):
+        from account_identity import public_example
         revision = item["revisions"][-1]
         status = revision["status"]
         tone = "approved" if status in _APPROVED else (
@@ -318,7 +312,10 @@ def _render_register_rows(state, filtered, start):
             detail, view = st.columns([9, 1.2], vertical_alignment="center")
             with detail:
                 cells = [
-                    _cell(localization.translate("Reference"), item["reference"], "request-register-reference"),
+                    _cell(localization.translate("Reference"),
+                          item["reference"] + (" · " + localization.translate("Public sample")
+                                               if public_example(item) else ""),
+                          "request-register-reference"),
                     _cell(localization.translate("Submitter"), item["submitted_by"]),
                     _cell(localization.translate("Submission date (Asia/Dubai, UTC+04:00)"),
                           submitted.strftime("%Y-%m-%d %H:%M") if submitted else "—",

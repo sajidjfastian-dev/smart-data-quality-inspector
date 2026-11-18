@@ -1,5 +1,7 @@
 """Read-only business-rule coverage for the current correction workspace."""
 import html
+import hashlib
+import json
 
 from business_rules import CORRECTABLE, applicability, findings, missing, visible_rules
 
@@ -19,6 +21,15 @@ STANDARD_RULES = (
     ("numeric", "Invalid numeric values", ("Invalid Number",), "Numeric columns",
      "Check only; invalid numbers require source verification."),
 )
+
+
+def selection_key(scope, category, rule):
+    """Stable within a file and revision, even for duplicate legacy rules."""
+    identity = str(rule) if category in ("standard", "fix") else json.dumps(rule, sort_keys=True, default=str)
+    if category == "business":
+        identity = str(rule["id"])
+    digest = hashlib.sha256(identity.encode()).hexdigest()[:16]
+    return f"review_rule_{scope}_{category}_{digest}"
 
 
 def rule_results(data, rules):
@@ -61,17 +72,21 @@ def rule_results(data, rules):
 def render_business_rule_review(data, rules, protected, corrected=False, *,
                                 enabled_checks=None, standard_findings=None,
                                 email_columns=(), date_columns=(), numeric_columns=(),
-                                legacy_rules=(), fix_settings=None):
+                                legacy_rules=(), fix_settings=None, selection_scope=None,
+                                on_selection_change=None, selection_args=(), choices=None):
     from localization import native as st, translate as t
+    choices = choices or {}
 
     all_count = len(rules) + len(legacy_rules) + (
         len(STANDARD_RULES) + int(fix_settings is not None) if enabled_checks is not None else 0
     )
-    with st.expander(t("Configured business rules") + f" · {all_count}", expanded=False):
+    with st.expander(t("Configured business rules") + f" · {all_count}", expanded=selection_scope is not None):
         if not all_count:
             st.info(t("No business rules configured. Add rules in Settings → Business rules; they will appear here for every file."))
             return
         st.caption(t("Results use the current corrected copy." if corrected else "Results use the original file."))
+        if selection_scope is not None:
+            st.caption(t("All rules are selected by default. Uncheck a rule for this file, then apply fixes again."))
         st.caption(t("Inspection flags count rows per rule, not unique issues across rules. Mixed-type columns can include flags for incompatible cells."))
         if enabled_checks is not None:
             targets = {"All columns": list(data.columns), "Email columns": list(email_columns),
@@ -80,14 +95,20 @@ def render_business_rule_review(data, rules, protected, corrected=False, *,
                 enabled = key in enabled_checks
                 applicable = bool(targets[target])
                 with st.container(border=True):
-                    st.markdown("**" + html.escape(t(label)) + "**")
+                    if selection_scope is not None:
+                        widget_key = selection_key(selection_scope, "standard", key)
+                        st.checkbox(t(label), value=choices.get(widget_key, True), key=widget_key,
+                                    on_change=on_selection_change, args=selection_args + (widget_key,))
+                    else:
+                        st.markdown("**" + html.escape(t(label)) + "**")
                     st.caption(" · ".join((t("Enabled" if enabled else "Disabled"),
                                              t("Applicable" if applicable else "Not applicable"))))
                     st.caption(t("Target") + ": " + t(target))
                     st.caption(t(behavior))
                     fix_key = {"missing": "missing_numeric", "duplicates": "duplicates", "date": "dates"}.get(key)
                     if fix_key and fix_settings is not None:
-                        fix_on = fix_settings.get(fix_key, True) and enabled and applicable
+                        fix_on = (fix_settings.get(fix_key, True) and enabled and applicable
+                                  and (key != "missing" or bool(numeric_columns)))
                         st.caption(t("Automatic correction enabled" if fix_on else "Automatic correction off or not applicable"))
                     if not enabled:
                         st.caption(t("Not evaluated — rule is disabled."))
@@ -98,14 +119,25 @@ def render_business_rule_review(data, rules, protected, corrected=False, *,
                         st.caption(t("Inspection flags") + f": {count:,}")
             if fix_settings is not None:
                 with st.container(border=True):
-                    st.markdown("**" + t("Trim leading and trailing whitespace") + "**")
+                    if selection_scope is not None:
+                        widget_key = selection_key(selection_scope, "fix", "whitespace")
+                        st.checkbox(t("Trim leading and trailing whitespace"), value=choices.get(widget_key, True),
+                                    key=widget_key, on_change=on_selection_change, args=selection_args + (widget_key,))
+                    else:
+                        st.markdown("**" + t("Trim leading and trailing whitespace") + "**")
                     st.caption(t("Enabled" if fix_settings.get("whitespace", True) else "Disabled") + " · "
                                + t("Automatic correction"))
                     st.caption(t("Target") + ": " + t("Text columns"))
-        for legacy in visible_rules(legacy_rules, protected):
+        for index, (raw_legacy, legacy) in enumerate(zip(legacy_rules, visible_rules(legacy_rules, protected))):
             with st.container(border=True):
-                st.markdown("**" + html.escape(t(legacy["kind"])) + "**")
-                st.caption(t("Enabled") + " · " + t("Applicable" if legacy["column"] in data else "Not applicable"))
+                widget_key = selection_key(selection_scope, f"legacy_{index}", raw_legacy) if selection_scope else None
+                selected = choices.get(widget_key, True)
+                if selection_scope is not None:
+                    st.checkbox(t(legacy["kind"]) + " · " + str(legacy["column"]), value=selected,
+                                key=widget_key, on_change=on_selection_change, args=selection_args + (widget_key,))
+                else:
+                    st.markdown("**" + html.escape(t(legacy["kind"])) + "**")
+                st.caption(t("Enabled" if selected else "Disabled") + " · " + t("Applicable" if legacy["column"] in data else "Not applicable"))
                 st.markdown(
                     "<div><strong>" + html.escape(t("Target column")) + ":</strong> <bdi>"
                     + html.escape(str(legacy["column"])) + "</bdi><br><strong>"
@@ -116,7 +148,7 @@ def render_business_rule_review(data, rules, protected, corrected=False, *,
                 if legacy["kind"] == "Allowed values":
                     st.caption(t("Unambiguous allowed values can be normalized."))
                     if fix_settings is not None:
-                        st.caption(t("Automatic correction enabled" if fix_settings.get("allowed", True)
+                        st.caption(t("Automatic correction enabled" if selected and fix_settings.get("allowed", True)
                                      else "Automatic correction off or not applicable"))
                 else:
                     st.caption(t("Check only"))
@@ -125,7 +157,13 @@ def render_business_rule_review(data, rules, protected, corrected=False, *,
         for index, (result, safe) in enumerate(zip(results, safe_rules), 1):
             rule = result["rule"]
             with st.container(border=True):
-                st.markdown(f"**{index} · {t(rule['kind'])}**")
+                if selection_scope is not None:
+                    widget_key = selection_key(selection_scope, "business", rule)
+                    st.checkbox(f"{index} · {t(rule['kind'])} · {rule['column']}",
+                                value=choices.get(widget_key, True), key=widget_key,
+                                on_change=on_selection_change, args=selection_args + (widget_key,))
+                else:
+                    st.markdown(f"**{index} · {t(rule['kind'])}**")
                 st.caption(" · ".join([
                     t("Enabled" if result["enabled"] else "Disabled"),
                     t(result["applicability"]),

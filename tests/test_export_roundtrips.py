@@ -231,15 +231,15 @@ class SampleAndBatchExportTests(unittest.TestCase):
             for name in archive.namelist():
                 self.assertEqual(archive.read(name), (ROOT / "sample_data" / name).read_bytes())
 
-    def test_batch_contains_one_cleaned_csv_per_sample(self):
+    def test_batch_contains_exact_supplied_file_versions(self):
         progress = []
         snapshots = {name: frame.copy(deep=True) for name, frame in self.samples.items()}
         payload = APP.build_cleaned_batch_archive(
             self.samples, lambda fraction, text: progress.append((fraction, text)),
         )
         expected_names = [
-            "customers_cleaned.csv", "orders.xlsx_cleaned.csv", "products_cleaned.csv",
-            "support_tickets.xlsx_cleaned.csv", "web_events_cleaned.csv",
+            (name[:-4] if name.lower().endswith(".csv") else name) + "_preview.csv"
+            for name in self.samples
         ]
         with ZipFile(BytesIO(payload)) as archive:
             self.assertIsNone(archive.testzip())
@@ -247,7 +247,7 @@ class SampleAndBatchExportTests(unittest.TestCase):
             for (name, original), entry in zip(self.samples.items(), expected_names):
                 self.assertStoredEqual(
                     APP.read_data_file(entry, archive.read(entry)),
-                    APP.clean_data(original),
+                    original,
                 )
                 assert_frame_equal(original, snapshots[name])
         self.assertEqual(len(progress), len(self.samples))
@@ -258,10 +258,10 @@ class SampleAndBatchExportTests(unittest.TestCase):
     def test_small_batch_has_explicit_values_and_safe_entry_names(self):
         frame = pd.DataFrame({"name": [" A ", " A ", " B "], "amount": [2.5, 2.5, np.nan]})
         snapshot = frame.copy(deep=True)
-        expected = pd.DataFrame({"name": ["A", "B"], "amount": [2.5, 2.5]})
+        expected = frame.copy(deep=True)
         payload = APP.build_cleaned_batch_archive({"folder/report 1.xlsx": frame})
         with ZipFile(BytesIO(payload)) as archive:
-            self.assertEqual(archive.namelist(), ["folder_report 1.xlsx_cleaned.csv"])
+            self.assertEqual(archive.namelist(), ["folder_report 1.xlsx_preview.csv"])
             entry = archive.namelist()[0]
             self.assertStoredEqual(APP.read_data_file(entry, archive.read(entry)), expected)
         assert_frame_equal(frame, snapshot)
@@ -270,7 +270,7 @@ class SampleAndBatchExportTests(unittest.TestCase):
         frame = pd.DataFrame({"Rows": ["Upload", "العربية"]})
         payload = APP.build_cleaned_batch_archive({"بيانات.csv": frame, "بيانات.CSV": frame})
         with ZipFile(BytesIO(payload)) as archive:
-            self.assertEqual(archive.namelist(), ["بيانات_cleaned.csv", "بيانات_cleaned (2).csv"])
+            self.assertEqual(archive.namelist(), ["بيانات_preview.csv", "بيانات_preview (2).csv"])
             for name in archive.namelist():
                 assert_frame_equal(pd.read_csv(BytesIO(archive.read(name))), frame)
 

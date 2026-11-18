@@ -19,6 +19,25 @@ class DashboardTests(unittest.TestCase):
     def clean(self, app):
         self.assertEqual([e.message for e in app.exception], [])
 
+    def test_public_samples_and_owned_requests_show_without_exposing_other_accounts(self):
+        app = self.app()
+        state = sample_seed_state("Sajid")
+        own, public, foreign = (new_request(state) for _ in range(3))
+        state["demo_requests"][own]["owner_id"] = TEST_SUBJECT
+        state["demo_requests"][public].update(
+            synthetic=True, source_id="quality-v1", session_id="DEMO-HISTORY-01"
+        )
+        state["demo_requests"][foreign]["owner_id"] = "another-account"
+        app.session_state["demo_requests"] = state["demo_requests"]
+        app.run()
+        self.clean(app)
+        keys = {button.key for button in app.button}
+        self.assertIn(f"rd_view_{own}", keys)
+        self.assertIn(f"rd_view_{public}", keys)
+        self.assertNotIn(f"rd_view_{foreign}", keys)
+        self.assertNotIn("rd_public_examples", [checkbox.key for checkbox in app.checkbox])
+        self.assertIn("Public sample", "\n".join(item.value for item in app.markdown))
+
     def test_login_and_request_upload_visibility(self):
         app = AppTest.from_file(APP, default_timeout=45).run()
         self.clean(app)

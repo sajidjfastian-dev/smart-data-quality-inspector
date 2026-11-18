@@ -35,11 +35,12 @@ class InspectionCorrectionTests(unittest.TestCase):
         self.assertNotIn("Invalid Number", set(self.app.session_state["quality_scan_cache"]["test.csv"]["issues"]["Issue Type"]))
         self.widget("checkbox", "Invalid numeric values").check().run()
 
-        self.widget("selectbox", "Rule column").select("region")
-        self.widget("selectbox", "Rule type").select("Allowed values")
-        self.widget("text_input", "Expected value").set_value("North,South,West,East")
-        self.widget("button", "Add rule").click().run()
-        self.assertTrue(self.widget("checkbox", "Normalize case and spacing to allowed values").value)
+        self.widget("text_input", "Target column name").set_value("region")
+        self.widget("selectbox", "Business rule type").select("Allowed values")
+        self.widget("text_input", "Business rule value").set_value("North,South,West,East")
+        self.widget("selectbox", "Rule behavior").select("Correct automatically")
+        self.widget("button", "Add business rule").click().run()
+        self.assertTrue(self.widget("checkbox", "1 · Allowed values · region").value)
         self.widget("button", "Apply automatic fixes").click().run()
         self.assertFalse(self.app.exception)
         fixed = self.app.session_state["fixed_datasets"]["test.csv"]
@@ -50,7 +51,7 @@ class InspectionCorrectionTests(unittest.TestCase):
         changes = self.app.session_state["fix_change_indexes"]["test.csv"]["changes"]
         self.assertEqual(set(changes.loc[changes["Column position"].isna(), "Original row"]), {2, 6})
         self.assertIn("Removed duplicate after normalization", set(changes["Change reason"]))
-        self.assertIn("Normalized to allowed value", set(changes["Change reason"]))
+        self.assertIn("Business rule: Allowed values", set(changes["Change reason"]))
         remaining = self.app.session_state["review_scan_cache"]["test.csv"]["issues"]
         self.assertEqual(set(remaining["Issue Type"]) & {"Invalid Number", "Invalid Email"},
                          {"Invalid Number", "Invalid Email"})

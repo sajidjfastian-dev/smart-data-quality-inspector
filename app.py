@@ -1163,7 +1163,9 @@ def build_cleaned_batch_archive(datasets, progress_callback=None, sensitive_colu
     with ZipFile(archive, mode="w") as zip_file:
         used_names = set()
         for index, (dataset_name, dataset) in enumerate(datasets.items()):
-            cleaned = clean_data(dataset)
+            # Export the exact prepared version supplied by the workspace; never
+            # run an additional, unselected cleanup during a download.
+            cleaned = dataset
             if sensitive_columns_by_dataset is not None:
                 cleaned = mask_dataframe(cleaned, sensitive_columns_by_dataset[dataset_name])
             # Preserve Unicode and spaces while preventing ZIP paths and controls.
@@ -1172,10 +1174,10 @@ def build_cleaned_batch_archive(datasets, progress_callback=None, sensitive_colu
             if not safe_name.lower().endswith(".csv"):
                 safe_name = f"{safe_name}.csv"
             stem = safe_name.rsplit(".", 1)[0]
-            entry_name = f"{stem}_cleaned.csv"
+            entry_name = f"{stem}_preview.csv"
             suffix = 2
             while entry_name.casefold() in used_names:
-                entry_name = f"{stem}_cleaned ({suffix}).csv"
+                entry_name = f"{stem}_preview ({suffix}).csv"
                 suffix += 1
             used_names.add(entry_name.casefold())
             zip_file.writestr(
@@ -1880,15 +1882,20 @@ def brand_logo(_variant):
         'alt="" aria-hidden="true" />'
     )
 
-def delete_custom_rule(rules_key, selector_key, index):
-    st.session_state[rules_key].pop(index)
-    st.session_state[selector_key] = 0
-    st.session_state["rule_notice"] = "Quality rule deleted."
-
-
-def apply_all_checks():
-    for name in ("missing", "duplicates", "email", "date", "outliers", "numeric"):
-        st.session_state[f"check_{name}"] = True
+def review_rule_selection_changed(dataset, scope, key):
+    """A changed selection requires a new inspection and correction preview."""
+    choices = st.session_state.setdefault("review_rule_choices", {}).setdefault(scope, {})
+    record = st.session_state.get("fix_change_indexes", {}).get(dataset)
+    if (dataset in st.session_state.get("fixed_datasets", {}) and record is not None
+            and record["changes"]["Change reason"].str.startswith("Manual correction").any()):
+        st.session_state[key] = choices.get(key, True)
+        st.session_state["review_rule_notice"] = "Existing manual corrections are preserved; rule selection cannot be changed for this copy."
+        return
+    choices[key] = st.session_state[key]
+    invalidate(st.session_state, dataset)
+    for key in ("fixed_datasets", "quality_scan_cache", "review_scan_cache", "fixed_export_cache"):
+        st.session_state.setdefault(key, {}).pop(dataset, None)
+    st.session_state["batch_export_cache"] = None
 
 
 def request_list_page():
@@ -1937,6 +1944,15 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
             with business_tab:
                 from business_rules import render_editor
                 session_rules = render_editor(st, st.session_state, active_data)
+                from business_rule_review import STANDARD_RULES
+                with st.expander("Included business rules", expanded=True):
+                    st.caption("These rules are selected by default. Change the selection for a file in Review & fix.")
+                    for _, label, _, _, behavior in STANDARD_RULES:
+                        st.markdown(f"**{translate(label)}** · {translate(behavior)}")
+                    st.markdown(
+                        f"**{translate('Trim leading and trailing whitespace')}** · "
+                        + translate("Removes extra spaces from text values.")
+                    )
             sensitive_columns = set(detected_sensitive or ())
             privacy_reviewed = False
             with privacy_tab:
@@ -2033,43 +2049,11 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                         width="stretch", key="clear_assistant_settings",
                     )
             with checks_tab:
-                st.markdown("### Standard business rules")
-                st.caption("Choose which standard rules run. Changes rescan the active file. Configure these before loading data.")
-                st.button(translate("Apply all built-in checks"), key="apply_all_quality_checks", on_click=apply_all_checks)
-                checks = {}
-                from business_rule_review import STANDARD_RULES
-                for key, label, _, _, _ in STANDARD_RULES:
-                    checks[key] = st.checkbox(
-                        translate(label), value=True, key=f"check_{key}",
-                        help=translate("Accepts finite numbers, optional currency prefixes, comma groups of three, parentheses for negatives, and scientific notation. Other formats require source verification.") if key == "numeric" else None,
-                    )
-                enabled_checks = {key for key, enabled in checks.items() if enabled}
-                with st.expander("Automatic correction options", expanded=False):
-                    st.caption("These options apply only safe supported corrections. Other findings remain for source verification.")
-                    for suffix, label, default in (
-                        ("duplicates", "Remove exact duplicate rows", True),
-                        ("whitespace", "Trim leading and trailing whitespace", True),
-                        ("missing_numeric", "Fill missing values in selected Numeric columns with the median", True),
-                        ("dates", "Standardize valid dates to YYYY-MM-DD", True),
-                        ("allowed", "Normalize case and spacing to allowed values", True),
-                    ):
-                        st.checkbox(label, value=default, key=f"business_fix_{suffix}")
-                global_checks = tuple(sorted(enabled_checks))
-                previous_checks = st.session_state.get("approval_global_checks")
-                fix_settings = tuple(st.session_state[f"business_fix_{name}"] for name in
-                                     ("duplicates", "whitespace", "missing_numeric", "dates", "allowed"))
-                previous_fixes = st.session_state.get("approval_fix_settings")
-                if (previous_checks is not None and previous_checks != global_checks) or (
-                    previous_fixes is not None and previous_fixes != fix_settings
-                ):
-                    for name in list(st.session_state.get("review_contexts", {})):
-                        invalidate(st.session_state, name)
-                    st.session_state["fixed_datasets"] = {}
-                    st.session_state["review_scan_cache"] = {}
-                    st.session_state["fixed_export_cache"] = {}
-                    st.session_state["batch_export_cache"] = None
-                st.session_state["approval_global_checks"] = global_checks
-                st.session_state["approval_fix_settings"] = fix_settings
+                from business_rule_review import STANDARD_RULES, selection_key
+                chosen = st.session_state.setdefault("review_rule_choices", {}).get(column_signature, {})
+                enabled_checks = {key for key, _, _, _, _ in STANDARD_RULES
+                                  if column_signature is None or chosen.get(
+                                      selection_key(column_signature, "standard", key), True)}
                 if columns is None:
                     st.info("Load a file to configure detected column types.")
                     with api_tab:
@@ -2100,80 +2084,15 @@ def render_settings(anchor, columns=None, defaults=None, column_signature=None,
                         value=1.5, step=0.1, format="%.1f×", key=f"rule_iqr_{column_signature}",
                         help="Values outside Q1 − multiplier × IQR or Q3 + multiplier × IQR are flagged.",
                     )
-                st.divider()
-                st.markdown("### Define your data quality rules")
-                st.caption("Add, edit or delete rules below. Every change requires a new checker approval.")
-                notice = st.session_state.pop("rule_notice", None)
-                if notice:
-                    st.success(translate(notice))
-                st.caption(
-                    "Missing values use the missing-values check. Only available automatic "
-                    "corrections can be applied here; verify unresolved findings against your source."
-                )
                 rules_key = f"custom_rules_{column_signature}"
                 rules = st.session_state.setdefault(rules_key, [])
-                # Session-wide rules are merged below, never edited through the
-                # legacy per-file form (including when restoring a draft).
+                # Preserve restored legacy rules without exposing a second editor.
                 rules[:] = [rule for rule in rules if not rule.get("business")]
-                rule_choices = ["New rule"] + [
-                    f"{index + 1}. {rule['column']} · {rule['kind']}"
-                    for index, rule in enumerate(rules)
-                ]
-                selected_rule = st.selectbox(
-                    "Rule to edit", options=range(len(rule_choices)),
-                    format_func=lambda index, locale=language(): translate("New rule", locale) if index == 0 else f"{index}. {rules[index - 1]['column']} · {translate(rules[index - 1]['kind'], locale)}",
-                    key=f"edit_rule_{column_signature}",
-                )
-                selected = rules[selected_rule - 1] if selected_rule else None
-                kinds = ["Must contain", "Allowed values", "Minimum number", "Maximum number"]
-                with st.form(key=f"custom_rule_form_{column_signature}_{selected_rule}"):
-                    rule_column = st.selectbox(
-                        "Rule column", columns,
-                        index=columns.index(selected["column"]) if selected else 0,
-                    )
-                    rule_kind = st.selectbox(
-                        "Rule type", kinds, format_func=lambda value, locale=language(): translate(value, locale),
-                        index=kinds.index(selected["kind"]) if selected else 0,
-                    )
-                    expected = st.text_input(
-                        "Expected value", value=selected["expected"] if selected else "",
-                        help="Text to include, comma-separated allowed values, or a numeric limit.",
-                    )
-                    save_rule = st.form_submit_button(
-                        translate("Save changes" if selected else "Add rule"), width="stretch"
-                    )
-                if save_rule:
-                    expected = expected.strip()
-                    error = None
-                    if not expected:
-                        error = "Enter an expected value."
-                    elif rule_kind == "Allowed values" and not any(
-                        part.strip() for part in expected.split(",")
-                    ):
-                        error = "Enter at least one allowed value."
-                    elif rule_kind in ("Minimum number", "Maximum number"):
-                        try:
-                            if not np.isfinite(float(expected)):
-                                raise ValueError
-                        except ValueError:
-                            error = "Enter a finite number for the limit."
-                    if error:
-                        st.error(translate(error))
-                    else:
-                        rule = {"column": rule_column, "kind": rule_kind, "expected": expected}
-                        if selected_rule:
-                            rules[selected_rule - 1] = rule
-                        else:
-                            rules.append(rule)
-                        st.session_state["rule_notice"] = "Quality rule saved."
-                        st.rerun()
-                if selected_rule:
-                    st.button(
-                        "Delete selected rule", key=f"delete_rule_{column_signature}",
-                        width="stretch", on_click=delete_custom_rule,
-                        args=(rules_key, f"edit_rule_{column_signature}", selected_rule - 1),
-                    )
-                rules = list(rules) + [rule for rule in session_rules if rule["column"] in columns]
+                legacy_rules = [rule for index, rule in enumerate(rules) if chosen.get(
+                    selection_key(column_signature, f"legacy_{index}", rule), True)]
+                selected_business = [rule for rule in session_rules if rule["column"] in columns
+                                     and chosen.get(selection_key(column_signature, "business", rule), True)]
+                rules = legacy_rules + selected_business
                 settings_rules = column_rule_signature(email_columns, date_columns, numeric_columns,
                                                        iqr_multiplier, enabled_checks, rules)
                 sync_context(st.session_state, active_dataset, active_data, fixed_data,
@@ -2635,8 +2554,10 @@ if restored_rules:
     for kind in ("email", "date", "numeric"):
         st.session_state[f"rule_{kind}_columns_{column_signature}"] = list(restored_rules[kind])
     st.session_state[f"custom_rules_{column_signature}"] = restored_rules["custom"]
+    from business_rule_review import selection_key
+    choices = st.session_state.setdefault("review_rule_choices", {}).setdefault(column_signature, {})
     for check in ("missing", "duplicates", "email", "date", "outliers", "numeric"):
-        st.session_state[f"check_{check}"] = check in restored_rules["enabled"]
+        choices.setdefault(selection_key(column_signature, "standard", check), check in restored_rules["enabled"])
 restored_protected = st.session_state.pop("request_restore_protected", None)
 if restored_protected is not None:
     st.session_state[f"privacy_manual_{column_signature}"] = list(restored_protected)
@@ -3086,18 +3007,33 @@ with review_tab, st.container(key="correction_workspace"):
                         suggestion["column"], translate(suggestion["kind"])))
                     st.caption(translate(suggestion["reason"]))
     fixed_datasets = st.session_state.setdefault("fixed_datasets", {})
-    from business_rule_review import render_business_rule_review
+    from business_rule_review import render_business_rule_review, selection_key
+    if st.session_state.get("review_rule_notice"):
+        st.info(st.session_state.pop("review_rule_notice"))
+    selection_choices = st.session_state.setdefault("review_rule_choices", {}).get(column_signature, {})
+    configured_business_rules = [
+        {**rule, "enabled": selection_choices.get(selection_key(column_signature, "business", rule), True)}
+        for rule in st.session_state.get("business_rules", [])
+    ]
+    configured_legacy_rules = [
+        rule for rule in st.session_state.get(f"custom_rules_{column_signature}", [])
+        if not rule.get("business")
+    ]
+    whitespace_enabled = selection_choices.get(selection_key(column_signature, "fix", "whitespace"), True)
     render_business_rule_review(
         fixed_datasets.get(active_dataset, data),
-        st.session_state.get("business_rules", []),
+        configured_business_rules,
         display_sensitive_columns,
         corrected=active_dataset in fixed_datasets,
         enabled_checks=enabled_checks,
         standard_findings=fixed_findings if active_dataset in fixed_datasets else issues,
         email_columns=email_columns, date_columns=date_columns, numeric_columns=numeric_columns,
-        legacy_rules=[rule for rule in custom_rules if not rule.get("business")],
-        fix_settings={name: st.session_state.get(f"business_fix_{name}", True) for name in
-                      ("duplicates", "whitespace", "missing_numeric", "dates", "allowed")},
+        legacy_rules=configured_legacy_rules,
+        fix_settings={"duplicates": "duplicates" in enabled_checks,
+                      "whitespace": whitespace_enabled, "missing_numeric": "missing" in enabled_checks,
+                      "dates": "date" in enabled_checks, "allowed": True},
+        selection_scope=column_signature, on_selection_change=review_rule_selection_changed,
+        selection_args=(active_dataset, column_signature), choices=selection_choices,
     )
     current_change_record = st.session_state.get("fix_change_indexes", {}).get(active_dataset)
     manual_edits = current_change_record is not None and current_change_record["changes"]["Change reason"].str.startswith("Manual correction").any()
@@ -3106,11 +3042,11 @@ with review_tab, st.container(key="correction_workspace"):
     notice = st.session_state.pop("resolve_" + column_signature + "_notice", None)
     if notice:
         st.success(notice)
-    fix_duplicates = st.session_state.get("business_fix_duplicates", True) and "duplicates" in enabled_checks
-    fix_whitespace = st.session_state.get("business_fix_whitespace", True)
-    fix_missing_numeric = st.session_state.get("business_fix_missing_numeric", True) and bool(numeric_columns) and "missing" in enabled_checks
-    fix_date_formats = st.session_state.get("business_fix_dates", True) and bool(date_columns) and "date" in enabled_checks
-    fix_allowed = st.session_state.get("business_fix_allowed", True) and any(
+    fix_duplicates = "duplicates" in enabled_checks
+    fix_whitespace = whitespace_enabled
+    fix_missing_numeric = bool(numeric_columns) and "missing" in enabled_checks
+    fix_date_formats = bool(date_columns) and "date" in enabled_checks
+    fix_allowed = any(
         rule["kind"] == "Allowed values" and not rule.get("business") for rule in custom_rules
     )
     with st.container():
@@ -3198,6 +3134,7 @@ with review_tab, st.container(key="correction_workspace"):
                 if rejected:
                     fixed_copy, changes = restore_rows(data, fixed_copy, changes, rejected)
                 fixed_datasets[active_dataset] = fixed_copy
+                st.session_state["batch_export_cache"] = None
                 st.session_state.setdefault("fix_change_indexes", {})[active_dataset] = {
                     "original": frame_digest(data), "fixed": frame_digest(fixed_copy), "changes": changes,
                 }
@@ -3361,40 +3298,41 @@ with preview_tab, st.container(key="preview_workspace"):
             )
             if not all_reviewed:
                 st.info("Review sensitive columns for each file before preparing a batch download.")
+            st.caption("The ZIP contains each file's current corrected copy, or its original if no fixes were applied.")
             batch_archive = st.session_state.get("batch_export_cache")
             if batch_archive is None and st.button(
-                "Prepare cleaned batch ZIP",
+                "Prepare workspace batch ZIP",
                 width="stretch",
                 icon=":material/folder_zip:",
                 key=f"prepare_batch_export_{column_signature}",
                 disabled=not all_reviewed,
             ):
                 with st.status(
-                    "Preparing the cleaned batch export...",
+                    "Preparing the workspace batch export...",
                     expanded=True,
                 ) as batch_status:
                     batch_loader = st.empty()
                     render_inspection_loader(
-                        "Preparing the cleaned batch export",
-                        f"Cleaning {len(datasets):,} files into a downloadable ZIP.",
+                        "Preparing the workspace batch export",
+                        f"Packaging {len(datasets):,} current file versions into a downloadable ZIP.",
                         batch_loader,
                     )
                     batch_progress = st.progress(
                         0.0,
-                        text="Preparing cleaned files...",
+                        text="Preparing file versions...",
                     )
 
                     def update_batch_export_progress(fraction, message):
                         batch_progress.progress(fraction, text=f"{fraction:.0%} · {translate_progress(message)}")
                         batch_status.update(
-                            label="Preparing the cleaned batch export...",
+                            label="Preparing the workspace batch export...",
                             state="running",
                             expanded=True,
                         )
 
                     try:
                         batch_archive = build_cleaned_batch_archive(
-                            datasets,
+                            {name: fixed_datasets.get(name, frame) for name, frame in datasets.items()},
                             progress_callback=update_batch_export_progress,
                             sensitive_columns_by_dataset={
                                 name: privacy_policies[name]["columns"] for name in datasets
@@ -3413,16 +3351,16 @@ with preview_tab, st.container(key="preview_workspace"):
                     batch_progress.empty()
                     batch_loader.empty()
                     batch_status.update(
-                        label="Cleaned batch export is ready",
+                        label="Workspace batch export is ready",
                         state="complete",
                         expanded=False,
                     )
                 batch_archive = st.session_state["batch_export_cache"]
             if batch_archive is not None:
                 st.download_button(
-                    "Download all cleaned files",
+                    "Download workspace files",
                     data=batch_archive,
-                    file_name="cleaned_data_batch.zip",
+                    file_name="workspace_data_batch.zip",
                     mime="application/zip",
                     width="stretch",
                     icon=":material/folder_zip:",

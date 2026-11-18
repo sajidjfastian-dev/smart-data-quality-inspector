@@ -13,3 +13,9 @@ The user considers inspection checks and business rules one combined "Business r
 **Why:** The user wants to define controls such as duplicate removal and format checks in one place, rather than distinguish inspection checks from business rules.
 
 **How to apply:** Present built-in controls and custom rules together while keeping their actual check and correction capabilities clear; do not imply that check-only findings can be automatically corrected.
+
+All business rules are selected by default. Users can deselect rules for the current file in Review & fix and reapply corrections without changing the shared rule definitions.
+
+**Why:** The user wants Settings to define rules and Review & fix to provide a simple, file-specific choice.
+
+**How to apply:** Show the full rule list there, keep selections independent per file, and invalidate the previous corrected preview and approval when choices change.

@@ -139,15 +139,21 @@ class RuleUiTests(unittest.TestCase):
         self.assertEqual(self.app.session_state["inspector_datasets"]["one.csv"].status.tolist(), ["pending", "other"])
         self.widget("selectbox", "Active file").select("two.csv").run()
         self.assertIn("Custom: Value mapping", self.app.session_state["quality_scan_cache"]["two.csv"]["issues"]["Issue Type"].tolist())
-        self.widget("selectbox", "Business rule to edit").set_value(1).run()
-        self.widget("checkbox", "Enable business rule").uncheck()
-        self.widget("button", "Save business rule").click().run()
+        self.widget("checkbox", "1 · Value mapping · status").uncheck().run()
         self.clean()
         self.assertNotIn("Custom: Value mapping", self.app.session_state["quality_scan_cache"]["two.csv"]["issues"]["Issue Type"].tolist())
         self.widget("selectbox", "Business rule to edit").set_value(1).run()
         self.widget("button", "Delete business rule").click().run()
         self.clean()
         self.assertEqual(self.app.session_state["business_rules"], [])
+
+    def test_standard_rules_available_before_upload(self):
+        self.clean()
+        labels = "\n".join(item.value for item in self.app.markdown)
+        self.assertIn("Duplicate rows", labels)
+        self.assertIn("Invalid and inconsistent dates", labels)
+        self.assertIn("Trim leading and trailing whitespace", labels)
+        self.assertNotIn("inspector_datasets", self.app.session_state)
 
     def test_invalid_rule_is_not_saved(self):
         self.widget("text_input", "Target column name").set_value("amount")

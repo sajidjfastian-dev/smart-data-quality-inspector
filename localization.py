@@ -31,6 +31,14 @@ _ROOT = Path(__file__).resolve().parent
 _ARABIC = json.loads((_ROOT / "assets" / "translations" / "ar.json").read_text(encoding="utf-8"))
 _ARABIC.update({
     "Business rules": "قواعد العمل",
+    "Included business rules": "قواعد العمل المضمنة",
+    "These rules are selected by default. Change the selection for a file in Review & fix.": "هذه القواعد محددة افتراضياً. يمكنك تغيير التحديد لكل ملف في المراجعة والتصحيح.",
+    "Removes extra spaces from text values.": "يزيل المسافات الزائدة من القيم النصية.",
+    "Public sample": "عينة عامة",
+    "All rules are selected by default. Uncheck a rule for this file, then apply fixes again.": "جميع القواعد محددة افتراضياً. ألغِ تحديد أي قاعدة لهذا الملف، ثم أعد تطبيق التصحيحات.",
+    "The ZIP contains each file's current corrected copy, or its original if no fixes were applied.": "يحتوي الملف المضغوط على النسخة المصححة الحالية لكل ملف، أو النسخة الأصلية إذا لم تُطبّق تصحيحات.",
+    "Prepare workspace batch ZIP": "إعداد ملف مضغوط لبيانات مساحة العمل",
+    "Download workspace files": "تنزيل ملفات مساحة العمل",
     "Business rule to edit": "قاعدة العمل المراد تعديلها",
     "Suggested business rules": "قواعد أعمال مقترحة",
     "Based on field names and types, not business policy. Confirm the rule and its values in Settings; nothing is applied automatically.": "تستند الاقتراحات إلى أسماء الحقول وأنواعها، وليس إلى سياسة العمل. أكّد القاعدة وقيمها في الإعدادات؛ لا يُطبّق شيء تلقائياً.",

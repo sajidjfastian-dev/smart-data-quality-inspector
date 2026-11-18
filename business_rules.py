@@ -188,7 +188,7 @@ def render_editor(st, state, data=None):
     if state.pop("business_rules_notice", False):
         st.success("Rules updated. Apply automatic fixes again to prepare a fresh correction preview.")
     selection = st.selectbox("Business rule to edit", range(len(rules) + 1),
-                            format_func=lambda i: "New rule" if i == 0 else f"{i}. {rules[i-1]['column']} · {rules[i-1]['kind']}" + (" (disabled)" if not rules[i-1].get("enabled", True) else ""),
+                            format_func=lambda i: "New rule" if i == 0 else f"{i}. {rules[i-1]['column']} · {rules[i-1]['kind']}",
                             key="business_rule_selection")
     selected = rules[selection - 1] if selection else None
     with st.form(f"business_rule_editor_{selection}"):
@@ -201,7 +201,6 @@ def render_editor(st, state, data=None):
         mode = st.selectbox("Rule behavior", ["Check only", "Correct automatically"],
                             index=int(bool(selected and selected.get("mode") == "Correct automatically")),
                             format_func=translate)
-        enabled = st.checkbox("Enable business rule", value=selected.get("enabled", True) if selected else True)
         save = st.form_submit_button("Save business rule" if selected else "Add business rule")
     delete = st.button("Delete business rule", disabled=not selected)
     if save or delete:
@@ -210,7 +209,7 @@ def render_editor(st, state, data=None):
                 rules.pop(selection - 1)
             else:
                 rule = validate(dict(column=column, kind=kind, expected=expected.strip(),
-                                     mode=mode, enabled=enabled, business=True,
+                                     mode=mode, enabled=True, business=True,
                                      id=selected["id"] if selected else uuid.uuid4().hex))
                 if selected:
                     rules[selection - 1] = rule
@@ -231,7 +230,4 @@ def render_editor(st, state, data=None):
             st.rerun()
         except ValueError as error:
             st.error(str(error))
-    if data is not None:
-        for message in applicability(data, [r for r in rules if r.get("enabled", True)]):
-            st.warning(message)
-    return [r.copy() for r in rules if r.get("enabled", True)]
+    return [{**r, "enabled": True} for r in rules]
