@@ -51,7 +51,11 @@ class DownloadInteractionTests(unittest.TestCase):
         os.environ.setdefault("PLAYWRIGHT_NODEJS_PATH", shutil.which("node") or "")
         cls.pw = sync_playwright().start()
         cls.addClassCleanup(cls.pw.stop)
-        cls.browser = cls.pw.chromium.launch(executable_path="/repl/tools/bin/chromium", args=["--no-sandbox"])
+        executable_path = os.environ.get("PLAYWRIGHT_CHROMIUM_EXECUTABLE")
+        options = {"executable_path": executable_path} if executable_path else {}
+        if os.name != "nt":
+            options["args"] = ["--no-sandbox"]
+        cls.browser = cls.pw.chromium.launch(**options)
         cls.addClassCleanup(cls.browser.close)
 
     def setUp(self):

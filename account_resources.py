@@ -11,6 +11,7 @@ from pathlib import Path
 _lock = threading.Lock()
 _bindings = {}
 _public = set()
+_deferred_owners = {}
 
 
 def token_key(token):
@@ -26,10 +27,39 @@ def bind(token):
             for sid in list(_bindings):
                 if _bindings[sid][1] <= now:
                     del _bindings[sid]
+            for file_id in list(_deferred_owners):
+                sid, expires = _deferred_owners[file_id]
+                if expires <= now or (sid == context.session_id and not token):
+                    del _deferred_owners[file_id]
             if token:
                 _bindings[context.session_id] = (token_key(token), now + 3600)
             else:
                 _bindings.pop(context.session_id, None)
+        _install_deferred_download_guard()
+
+
+def _install_deferred_download_guard():
+    from streamlit.runtime import get_instance
+
+    manager = get_instance().media_file_mgr
+    if getattr(manager, "_dq_deferred_download_guard", False):
+        return
+    execute_deferred = manager.execute_deferred
+
+    def execute(file_id):
+        with manager._lock:
+            entry = manager._deferred_callables.get(file_id)
+        url = execute_deferred(file_id)
+        if entry:
+            now = time.time()
+            with _lock:
+                binding = _bindings.get(entry["session_id"])
+                if binding and binding[1] > now:
+                    _deferred_owners[media_id(url)] = (entry["session_id"], binding[1])
+        return url
+
+    manager.execute_deferred = execute
+    manager._dq_deferred_download_guard = True
 
 
 def allow_public_video(path):
@@ -75,7 +105,12 @@ def allowed(path, token):
         return path.split("/")[3] in sessions
     manager = get_instance().media_file_mgr
     with manager._lock:
-        return any(media_id(path) in manager._files_by_session_and_coord.get(sid, {}).values()
-                   for sid in sessions)
+        resource_id = media_id(path)
+        if any(resource_id in manager._files_by_session_and_coord.get(sid, {}).values()
+               for sid in sessions):
+            return True
+    with _lock:
+        owner = _deferred_owners.get(resource_id)
+        return bool(owner and owner[0] in sessions and owner[1] > now)
 
 

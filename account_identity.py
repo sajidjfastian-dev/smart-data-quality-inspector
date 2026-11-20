@@ -9,6 +9,7 @@ class _SeedCapability:
 
 
 _SEED_CAPABILITY = _SeedCapability()
+_LOCAL_DEMO_CAPABILITY = object()
 
 
 def sample_seed_state(name):
@@ -18,6 +19,10 @@ def sample_seed_state(name):
 
 def is_seed(state):
     return state.get("_seed_capability") is _SEED_CAPABILITY
+
+
+def is_local_demo(state):
+    return state.get("_local_demo_capability") is _LOCAL_DEMO_CAPABILITY
 
 
 def owns(state, record):

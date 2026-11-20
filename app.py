@@ -20,7 +20,7 @@ from data_insights import render_data_insights
 from change_preview import render_change_preview
 from quality_overview import overview_translate, render_quality_overview
 from workspace_presentation import install_presentation_styles, remove_legacy_footer, render_account_panel, render_signed_out_sidebar, render_signed_in_sidebar
-from demo_session import is_signed_in, sync_account, watch_account, sign_out
+from demo_session import is_signed_in, is_local_demo_session, sync_account, watch_account, sign_out
 from review_approval import sync_context, invalidate, change_index, frame_digest
 from review_ui import render_checker_review
 from issue_workspace import render_issue_workspace
@@ -42,7 +42,7 @@ st.set_page_config(
     layout="wide",
 )
 sync_account()
-if is_signed_in():
+if is_signed_in() and not is_local_demo_session():
     watch_account()
     if "_business_rules_version" not in st.session_state:
         from business_rule_store import load_into_state
@@ -1058,7 +1058,7 @@ def serialize_data_file(filename, data):
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             ".xlsx",
         )
-    return data.to_csv(index=False).encode("utf-8-sig"), "text/csv", ".csv"
+    return data.to_csv(index=False, lineterminator="\n").encode("utf-8-sig"), "text/csv", ".csv"
 
 
 def read_uploaded_file(uploaded_file, progress_callback=None):
@@ -1195,7 +1195,7 @@ def build_cleaned_batch_archive(datasets, progress_callback=None, sensitive_colu
             used_names.add(entry_name.casefold())
             zip_file.writestr(
                 entry_name,
-                cleaned.to_csv(index=False),
+                cleaned.to_csv(index=False, lineterminator="\n"),
             )
             if progress_callback:
                 progress_callback(
@@ -2173,7 +2173,7 @@ with st.container(key="app_header"):
 # Keep one sidebar uploader and one widget key for both empty and active workspaces.
 landing_at_start = not bool(st.session_state.get("inspector_datasets", {}))
 welcome_placeholder = st.empty()
-if is_signed_in() and not st.session_state.get("_persistent_demo_ready"):
+if is_signed_in() and not is_local_demo_session() and not st.session_state.get("_persistent_demo_ready"):
     from persistent_demo import initialize
     from demo_store import DemoStoreError
     try:

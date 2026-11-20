@@ -20,7 +20,9 @@ def metadata():
 def original():
     manifest = metadata()
     content = (ROOT / "ecb_fx_original.csv").read_bytes()
-    if hashlib.sha256(content).hexdigest() != manifest["sha256"]:
+    # Git's core.autocrlf can rewrite checked-out CSV line endings on Windows.
+    normalized_content = content.replace(b"\r\n", b"\n")
+    if hashlib.sha256(normalized_content).hexdigest() != manifest["sha256"]:
         raise ValueError("Public sample checksum mismatch.")
     return pd.read_csv(ROOT / "ecb_fx_original.csv")
 

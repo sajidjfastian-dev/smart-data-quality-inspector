@@ -3,7 +3,13 @@
 import html
 from pathlib import Path
 
-from demo_session import sign_out, signed_in_user
+from demo_session import (
+    is_local_demo_session,
+    local_demo_login_enabled,
+    sign_in_as_demo,
+    sign_out,
+    signed_in_user,
+)
 from localization import native, st, translate
 
 
@@ -93,11 +99,18 @@ def render_account_panel():
         user = signed_in_user()
         if user:
             name = html.escape(user)
+            identity_label = (
+                "جلسة تجريبية محلية" if is_local_demo_session()
+                and native.session_state.get("interface_language") == "العربية"
+                else "Local demo session" if is_local_demo_session()
+                else "حساب Replit موثّق" if native.session_state.get("interface_language") == "العربية"
+                else "Verified Replit account"
+            )
             native.markdown(
                 '<div class="account-card">'
                 f'<span class="account-avatar" aria-hidden="true">{name[:1]}</span>'
                 f'<span class="account-text"><strong>{name}</strong>'
-                f'<small>{html.escape("حساب Replit موثّق" if native.session_state.get("interface_language") == "العربية" else "Verified Replit account")}</small></span>'
+                f'<small>{html.escape(identity_label)}</small></span>'
                 '</div>', unsafe_allow_html=True,
             )
         with native.container(key="account_actions", horizontal=True, gap="small", vertical_alignment="center"):
@@ -107,12 +120,21 @@ def render_account_panel():
                     translate("Log out"), key="sidebar_logout", icon=":material/logout:",
                     width="stretch", on_click=sign_out,
                 )
+            elif local_demo_login_enabled():
+                native.button(
+                    translate("Continue as Demo"), key="demo_login",
+                    icon=":material/person:", type="primary", width="stretch",
+                    on_click=sign_in_as_demo,
+                )
             else:
                 with native.container(key="sidebar_login"):
                     native.link_button(translate("Continue with SSO"), "/auth/login",
                                        icon=":material/login:", type="primary", width="stretch")
         if not user:
-            native.caption("سجّل الدخول بحساب Replit" if native.session_state.get("interface_language") == "العربية" else "Sign in with your Replit account")
+            if local_demo_login_enabled():
+                native.caption(translate("Local demo only. Session data is not saved."))
+            else:
+                native.caption("سجّل الدخول بحساب Replit" if native.session_state.get("interface_language") == "العربية" else "Sign in with your Replit account")
     # Toasts render after the panel so they never shift the panel's position between reruns.
     notice = native.session_state.pop("account_notice", None)
     if notice == "signed_in":

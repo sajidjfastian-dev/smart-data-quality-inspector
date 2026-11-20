@@ -14,7 +14,7 @@ import pandas as pd
 
 from review_approval import frame_digest, sync_context, approve
 from demo_change_ticket import generate_ticket
-from account_identity import owns, auth_state, is_seed, sample_seed_state
+from account_identity import owns, auth_state, is_seed, is_local_demo, sample_seed_state
 
 ROLES = ("Submitter", "Approver")
 STATUSES = ("Draft", "Submitted", "Approved", "Rejected", "Ticket approved", "CAB approved", "Simulated")
@@ -30,7 +30,7 @@ def timestamp():
 
 
 def require_role(state, role):
-    if not is_seed(state):
+    if not is_seed(state) and not is_local_demo(state):
         from account_auth import session_identity
         identity = session_identity(state.get("_auth_session"))
         if not identity or identity["subject"] != state.get("auth_subject"):

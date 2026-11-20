@@ -192,6 +192,7 @@ def invalidate_rule_results(state):
 def render_editor(st, state, data=None, protected_columns=()):
     from localization import translate
     from business_rule_text import parse_rule_text, rule_as_text
+    from account_identity import is_local_demo
     from business_rule_store import load_into_state, save as save_rules
     from demo_store import DemoStoreError, DemoConflict
     rules = state.setdefault("business_rules", [])
@@ -207,7 +208,10 @@ def render_editor(st, state, data=None, protected_columns=()):
     protected = {str(c) for c in protected_columns}
     hide_values = bool(selected and str(selected["column"]) in protected and selected.get("expected"))
     st.markdown("### Business rules")
-    st.caption("Rules are private to your account and kept until you delete them. Rule values are saved; uploaded files remain session-only.")
+    if is_local_demo(state):
+        st.caption("Demo rules and uploaded files are kept only in this session.")
+    else:
+        st.caption("Rules are private to your account and kept until you delete them. Rule values are saved; uploaded files remain session-only.")
     st.caption("Use the examples and the exact column name. Rules apply to matching files.")
     if state.pop("business_rules_notice", False):
         st.success("Rules updated. Apply automatic fixes again to prepare a fresh correction preview.")
@@ -255,6 +259,12 @@ def render_editor(st, state, data=None, protected_columns=()):
                                      disabled=bool(state.get("_business_rules_conflict")))
 
     def persist(updated):
+        if is_local_demo(state):
+            state["business_rules"] = updated
+            state["_business_rules_version"] += 1
+            invalidate_rule_results(state)
+            state["business_rules_notice"] = True
+            return
         saved, version = save_rules(state.get("_auth_session"), state.get("auth_subject"),
                                     updated, state["_business_rules_version"])
         state["business_rules"] = saved

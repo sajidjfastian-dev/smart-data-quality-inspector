@@ -11,9 +11,15 @@ COPY requirements.txt ./requirements.txt
 RUN python -m pip install --no-cache-dir -r requirements.txt \
     && useradd --create-home --uid 10001 appuser
 
-COPY app.py ./app.py
+ENV SMART_DQ_DEMO_LOGIN_ENABLED=true
+
+COPY *.py ./
+COPY .streamlit ./.streamlit
+COPY assets ./assets
 COPY sample_data ./sample_data
 COPY demo_media ./demo_media
+
+RUN python -c "from streamlit.testing.v1 import AppTest; app = AppTest.from_file('app.py', default_timeout=30).run(); assert not app.exception, app.exception"
 
 USER 10001
 

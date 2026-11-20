@@ -1,6 +1,7 @@
 """Read-only, masked evidence explorer shared by active files and request detail."""
 import math
 from html import escape
+from functools import partial
 from pathlib import Path
 
 import pandas as pd
@@ -241,7 +242,7 @@ def render_findings(issues, protected, key, data, downloads=True, filename="issu
             with actions[0]:
                 st.download_button(
                     t("Download issue report"),
-                    data=filtered.to_csv(index=False).encode("utf-8-sig"),
+                    data=partial(_serialize_findings, filtered),
                     file_name=filename, mime="text/csv", key=key + "_download", disabled=filtered.empty,
                 )
         with actions[1 if downloads else 0]:
@@ -268,7 +269,6 @@ def render_findings(issues, protected, key, data, downloads=True, filename="issu
                     page = st.number_input(t("Findings page"), 1, pages, key=page_key)
                 st.caption(t("Page {0} of {1}; all matching findings are accessible.").format(page, pages))
             _table(display_findings(filtered.iloc[(page - 1) * 100:page * 100]))
-
         # Deliberately outside the filtered-empty branch: a search cannot hide
         # row context or remove findings from the exact row detail.
         with st.expander(t("Row-level issue detail"), expanded=False):
@@ -288,6 +288,10 @@ def render_findings(issues, protected, key, data, downloads=True, filename="issu
                 else:
                     st.caption(t("All findings on this row"))
                     _table(display_findings(related))
+
+
+def _serialize_findings(filtered):
+    return filtered.to_csv(index=False, lineterminator="\n").encode("utf-8-sig")
 
 
 def _select_file(name):

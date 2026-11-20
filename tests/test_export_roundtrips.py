@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def load_export_functions():
     """Compile actual function bodies and initial constants, not UI statements."""
     path = ROOT / "app.py"
-    tree = ast.parse(path.read_text(), filename=str(path))
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     names = {
         "is_missing", "parse_date", "parse_numeric_series", "infer_column_rules",
         "clean_data", "standardize_date_value", "serialize_data_file",
@@ -227,9 +227,14 @@ class SampleAndBatchExportTests(unittest.TestCase):
     def test_sample_pack_contains_exact_original_files(self):
         with ZipFile(BytesIO(APP.connected_sample_archive())) as archive:
             self.assertIsNone(archive.testzip())
-            self.assertEqual(archive.namelist(), list(APP.CONNECTED_SAMPLE_FILES))
-            for name in archive.namelist():
+            expected_files = [*APP.CONNECTED_SAMPLE_FILES, "ecb_fx_manifest.json"]
+            self.assertEqual(archive.namelist(), expected_files)
+            for name in APP.CONNECTED_SAMPLE_FILES:
                 self.assertEqual(archive.read(name), (ROOT / "sample_data" / name).read_bytes())
+            self.assertEqual(
+                archive.read("ecb_fx_manifest.json"),
+                (ROOT / "sample_data" / "ecb_fx_manifest.json").read_bytes(),
+            )
 
     def test_batch_contains_exact_supplied_file_versions(self):
         progress = []

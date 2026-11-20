@@ -110,6 +110,8 @@ docker run -d --name smart-data-quality-inspector --restart unless-stopped -p 12
 
 Open `http://localhost:8501`. The application binds to port 8501 in the container, while the host port is restricted to localhost by default. To update an existing local container, stop and remove it before running the new image. Before sharing the app over a network, add authentication and an HTTPS reverse proxy.
 
+The Docker image enables a local **Continue as Demo** sign-in and hides Replit SSO. Demo requests, rules, and uploads stay in the current session; this mode is for local evaluation only and must not be exposed to a network. To use Replit SSO, run the ASGI service through `serve.py` with its configured identity and database settings.
+
 ## Deployment workflow
 
 Deployment is managed on the local server with Docker. The Streamlit Deploy

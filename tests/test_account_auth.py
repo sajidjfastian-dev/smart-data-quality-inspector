@@ -288,18 +288,23 @@ class StreamlitAccountBoundaryTests(unittest.TestCase):
             # This is the manager path used by eager st.download_button bytes.
             url = manager.add(b"masked,csv\n1,2\n", "text/csv", "clean-copy", "clean.csv", True)
             placeholder = manager.add_deferred(lambda: b"deferred", "text/csv", "legacy", "old.csv")
+        runtime = SimpleNamespace(media_file_mgr=manager)
+        with patch("streamlit.runtime.get_instance", return_value=runtime), \
+                patch("streamlit.runtime.scriptrunner.get_script_run_ctx",
+                      return_value=SimpleNamespace(session_id="stream-a")):
+            resources.bind("token-a")
+        with patch("streamlit.runtime.media_file_manager._get_session_id", return_value="stream-a"):
             deferred_url = manager.execute_deferred(placeholder)
         with patch.object(resources, "_bindings", {"stream-a": (resources.token_key("token-a"), time.time()+60)}), \
                 patch("streamlit.runtime.get_instance", return_value=SimpleNamespace(media_file_mgr=manager)):
             self.assertTrue(resources.allowed(url, "token-a"))
             self.assertFalse(resources.allowed(url, "token-b"))
-            # Streamlit does not map generated deferred IDs. Do not restore
-            # callable download payloads without adding a safe owner binding.
-            self.assertFalse(resources.allowed(deferred_url, "token-a"))
+            self.assertTrue(resources.allowed(deferred_url, "token-a"))
+            self.assertFalse(resources.allowed(deferred_url, "token-b"))
         import ast
         from pathlib import Path
         for file in ("app.py", "issue_workspace.py"):
-            tree = ast.parse(Path(file).read_text())
+            tree = ast.parse(Path(file).read_text(encoding="utf-8"))
             for node in ast.walk(tree):
                 if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == "download_button":
                     for argument in node.keywords:

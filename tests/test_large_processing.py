@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def load_helpers():
     path = ROOT / "app.py"
-    tree = ast.parse(path.read_text(), filename=str(path))
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     functions = {
         "is_missing", "display_value", "parse_date",
         "date_shape", "parse_numeric_series", "scan_data", "read_uploaded_file",
